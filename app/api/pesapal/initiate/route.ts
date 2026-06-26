@@ -12,9 +12,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Pesapal not configured' }, { status: 500 })
     }
 
+    // ✅ CORRECT API endpoints for both environments
     const baseUrl = environment === 'sandbox'
       ? 'https://cybqa.pesapal.com/pesapalv3/api'
       : 'https://pay.pesapal.com/v3'
+
+    console.log('🔍 Pesapal environment:', environment)
+    console.log('🔍 Base URL:', baseUrl)
 
     // Step 1: Get OAuth token
     const authResponse = await fetch(`${baseUrl}/Auth/RequestToken`, {
@@ -28,10 +32,12 @@ export async function POST(req: Request) {
 
     const authData = await authResponse.json()
     if (!authResponse.ok) {
+      console.error('❌ Auth error:', authData)
       return NextResponse.json({ error: 'Failed to authenticate with Pesapal' }, { status: 500 })
     }
 
     const token = authData.token
+    console.log('✅ Auth token received')
 
     // Step 2: Initiate payment
     const paymentResponse = await fetch(`${baseUrl}/Transactions/SubmitOrderRequest`, {
@@ -54,14 +60,20 @@ export async function POST(req: Request) {
 
     const paymentData = await paymentResponse.json()
     if (!paymentResponse.ok) {
-      return NextResponse.json({ error: 'Payment initiation failed' }, { status: 500 })
+      console.error('❌ Payment error:', paymentData)
+      return NextResponse.json({ error: 'Payment initiation failed: ' + (paymentData.message || 'Unknown error') }, { status: 500 })
     }
 
     const redirectUrl = paymentData.redirect_url
+    console.log('✅ Redirect URL:', redirectUrl)
+
+    if (!redirectUrl) {
+      return NextResponse.json({ error: 'No redirect URL returned from Pesapal' }, { status: 500 })
+    }
 
     return NextResponse.json({ redirect_url: redirectUrl })
   } catch (error) {
-    console.error('Pesapal error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('❌ Pesapal error:', error)
+    return NextResponse.json({ error: 'Internal server error: ' + (error as Error).message }, { status: 500 })
   }
 }
