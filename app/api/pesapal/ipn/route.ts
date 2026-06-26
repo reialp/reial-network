@@ -42,7 +42,7 @@ export async function POST(req: Request) {
       .single()
 
     if (purchaseError || !purchase) {
-      console.error('Purchase not found:', orderMerchantReference)
+      console.error('❌ Purchase not found:', orderMerchantReference)
       return NextResponse.json({ error: 'Purchase not found' }, { status: 404 })
     }
 
@@ -53,16 +53,17 @@ export async function POST(req: Request) {
       .eq('id', purchase.id)
 
     if (updateError) {
-      console.error('Update error:', updateError)
+      console.error('❌ Update error:', updateError)
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
     // Increment sales
     await supabase.rpc('increment_sales', { content_id: purchase.content_id })
 
+    console.log('✅ IPN processed successfully for purchase:', purchase.id)
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('IPN error:', error)
+    console.error('❌ IPN error:', error)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
