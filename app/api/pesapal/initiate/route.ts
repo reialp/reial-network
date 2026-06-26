@@ -4,7 +4,6 @@ export async function POST(req: Request) {
   try {
     const { amount, purchaseId, description } = await req.json()
 
-    // Pesapal sandbox credentials from env
     const consumerKey = process.env.PESAPAL_CONSUMER_KEY
     const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET
     const environment = process.env.PESAPAL_ENVIRONMENT || 'sandbox'
@@ -13,7 +12,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Pesapal not configured' }, { status: 500 })
     }
 
-    // Pesapal API endpoints
     const baseUrl = environment === 'sandbox'
       ? 'https://cybqa.pesapal.com/pesapalv3/api'
       : 'https://pay.pesapal.com/v3'
@@ -30,7 +28,7 @@ export async function POST(req: Request) {
 
     const authData = await authResponse.json()
     if (!authResponse.ok) {
-      return NextResponse.json({ error: 'Failed to get auth token' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to authenticate with Pesapal' }, { status: 500 })
     }
 
     const token = authData.token
@@ -59,7 +57,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Payment initiation failed' }, { status: 500 })
     }
 
-    // Redirect URL from Pesapal
     const redirectUrl = paymentData.redirect_url
 
     return NextResponse.json({ redirect_url: redirectUrl })
