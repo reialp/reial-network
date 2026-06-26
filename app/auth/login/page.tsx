@@ -53,7 +53,6 @@ export default function LoginPage() {
       setError(error.message)
     } else {
       setResetMessage('✅ Password reset email sent! Check your inbox.')
-      setEmail('')
     }
     setLoading(false)
   }
