@@ -13,20 +13,30 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // 🔍 DEBUG: Log everything
+    console.log('🔍 Checkout - Full window.location:', window.location)
+    console.log('🔍 Checkout - Pathname:', window.location.pathname)
+    console.log('🔍 Checkout - Split path:', window.location.pathname.split('/'))
+    
     // ✅ Get ID from URL path
     const path = window.location.pathname
     const segments = path.split('/')
     const id = segments[segments.length - 1]
     
-    console.log('🔍 Checkout - ID from URL:', id)
+    console.log('🔍 Checkout - Extracted ID:', id)
+    console.log('🔍 Checkout - ID type:', typeof id)
+    console.log('🔍 Checkout - ID length:', id?.length)
     
-    // ✅ Validate ID BEFORE loading anything
+    // ✅ Validate ID
     if (!id || id === 'undefined' || id === 'null' || id === 'checkout' || id === '') {
+      console.error('❌ Invalid ID detected:', id)
       setError('Invalid film ID. Please go back and try again.')
       return
     }
 
     async function loadFilm() {
+      console.log('🔍 Loading film with ID:', id)
+      
       const { data, error } = await supabase
         .from('content')
         .select('*')
@@ -35,17 +45,17 @@ export default function CheckoutPage() {
         .single()
 
       if (error || !data) {
-        console.error('Film load error:', error)
+        console.error('❌ Film load error:', error)
         setError('Film not found. It may not be approved yet.')
         return
       }
+      console.log('✅ Film loaded:', data.title)
       setFilm(data)
     }
     loadFilm()
   }, [supabase])
 
   const handlePurchase = async () => {
-    // ✅ Don't proceed if film is not loaded
     if (!film) {
       setError('Film not loaded. Please refresh and try again.')
       return
@@ -62,7 +72,6 @@ export default function CheckoutPage() {
     }
 
     try {
-      // ✅ Create purchase record ONLY after all validation passes
       const purchaseResponse = await fetch('/api/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
