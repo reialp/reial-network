@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useSearch } from '@/context/SearchContext'
 
-interface Film {
+interface Content {
   id: string
   title: string
   description: string | null
@@ -17,14 +17,14 @@ interface Film {
   purchase_count: number
   views: number
   creator_name: string | null
-  slug: string | null // ✅ Added slug field
+  slug: string | null
 }
 
 export default function HomePage() {
   const supabase = createClient()
   const { searchTerm, selectedCategory, setSelectedCategory } = useSearch()
 
-  const [allFilms, setAllFilms] = useState<Film[]>([])
+  const [allContent, setAllContent] = useState<Content[]>([])
   const [loading, setLoading] = useState(true)
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
@@ -34,7 +34,7 @@ export default function HomePage() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    async function fetchFilms() {
+    async function fetchContent() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         setUserId(session.user.id)
@@ -54,7 +54,7 @@ export default function HomePage() {
           views,
           creator_id,
           slug
-        `) // ✅ Added slug to select
+        `)
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
 
@@ -87,13 +87,13 @@ export default function HomePage() {
           purchase_count: item.purchase_count || 0,
           views: item.views || 0,
           creator_name: creatorNames[item.creator_id] || 'Unknown Creator',
-          slug: item.slug || null // ✅ Added slug mapping
+          slug: item.slug || null
         }))
-        setAllFilms(mappedData)
+        setAllContent(mappedData)
       }
       setLoading(false)
     }
-    fetchFilms()
+    fetchContent()
   }, [supabase])
 
   // Fetch user's purchases with tokens
@@ -127,21 +127,21 @@ export default function HomePage() {
   }, [userId, supabase])
 
   useEffect(() => {
-    if (allFilms.length === 0) return
+    if (allContent.length === 0) return
     intervalRef.current = setInterval(() => {
       if (!isPaused) {
-        setCarouselIndex((prev) => (prev + 1) % allFilms.length)
+        setCarouselIndex((prev) => (prev + 1) % allContent.length)
       }
     }, 6000)
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [allFilms, isPaused])
+  }, [allContent, isPaused])
 
-  const categories = ['All', ...new Set(allFilms.map(f => f.category).filter((c): c is string => c !== null))]
+  const categories = ['All', ...new Set(allContent.map(f => f.category).filter((c): c is string => c !== null))]
 
-  const filteredFilms = useMemo(() => {
-    let result = allFilms
+  const filteredContent = useMemo(() => {
+    let result = allContent
     if (selectedCategory !== 'All') {
       result = result.filter(f => f.category === selectedCategory)
     }
@@ -153,69 +153,68 @@ export default function HomePage() {
       )
     }
     return result
-  }, [allFilms, selectedCategory, searchTerm])
+  }, [allContent, selectedCategory, searchTerm])
 
-  const totalFilms = allFilms.length
-  const totalSales = allFilms.reduce((sum, f) => sum + (f.purchase_count || 0), 0)
-  const totalRevenue = allFilms.reduce((sum, f) => sum + (f.price * (f.purchase_count || 0)), 0)
+  const totalContent = allContent.length
+  const totalSales = allContent.reduce((sum, f) => sum + (f.purchase_count || 0), 0)
+  const totalRevenue = allContent.reduce((sum, f) => sum + (f.price * (f.purchase_count || 0)), 0)
 
-  const carouselFilms = allFilms.slice(0, 5)
+  const carouselContent = allContent.slice(0, 5)
 
-  const renderFilmCard = (film: Film) => {
-    const isPurchased = purchasedIds.has(film.id)
-    const token = purchaseTokens[film.id]
+  const renderContentCard = (content: Content) => {
+    const isPurchased = purchasedIds.has(content.id)
+    const token = purchaseTokens[content.id]
     
-    // ✅ Use slug for film URL, fallback to ID if slug is missing
-    const filmSlug = film.slug || film.id
-    let watchUrl = `/film/${filmSlug}`
+    const contentSlug = content.slug || content.id
+    let watchUrl = `/film/${contentSlug}`
     if (isPurchased && token) {
       watchUrl = `/watch/${token}`
     } else if (isPurchased && !token) {
-      watchUrl = `/watch/${film.id}`
+      watchUrl = `/watch/${content.id}`
     }
     
     return (
       <Link
-        key={film.id}
+        key={content.id}
         href={watchUrl}
         className="group bg-[#1a1a1a] rounded-2xl overflow-hidden hover:scale-[1.03] transition-all duration-500 hover:shadow-2xl hover:shadow-[#f5c518]/10 border border-white/5 hover:border-[#f5c518]/20"
       >
         <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
-          {film.thumbnail_url ? (
+          {content.thumbnail_url ? (
             <Image
-              src={film.thumbnail_url}
-              alt={film.title}
+              src={content.thumbnail_url}
+              alt={content.title}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-110"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-20">🎬</div>
           )}
-          {film.category && (
+          {content.category && (
             <div className="absolute top-3 right-3 bg-[#f5c518]/90 text-black text-xs px-3 py-1 rounded-full font-semibold">
-              {film.category}
+              {content.category}
             </div>
           )}
           <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
             {isPurchased ? (
               <span className="bg-green-500/90 text-white text-sm font-bold px-3 py-1 rounded-full">✓ Owned</span>
             ) : (
-              <span className="bg-black/80 text-[#f5c518] text-sm font-bold px-3 py-1 rounded-full">KES {film.price}</span>
+              <span className="bg-black/80 text-[#f5c518] text-sm font-bold px-3 py-1 rounded-full">KES {content.price}</span>
             )}
           </div>
         </div>
         <div className="p-4">
           <h3 className="font-semibold text-sm group-hover:text-[#f5c518] transition-colors line-clamp-1">
-            {film.title}
+            {content.title}
           </h3>
           <p className="text-gray-500 text-xs mt-1">
-            {film.creator_name || 'Unknown Creator'}
+            {content.creator_name || 'Unknown Creator'}
           </p>
           <div className="flex items-center justify-between mt-3">
             {isPurchased ? (
               <span className="text-green-400 font-bold text-sm">✓ Purchased</span>
             ) : (
-              <span className="text-[#f5c518] font-bold text-sm">KES {film.price}</span>
+              <span className="text-[#f5c518] font-bold text-sm">KES {content.price}</span>
             )}
             <span className="text-gray-600 text-xs">{isPurchased ? '▶ Watch' : '🎬 Watch'}</span>
           </div>
@@ -283,41 +282,37 @@ export default function HomePage() {
           </div>
 
           {/* Right Column - Clickable Carousel */}
-          {carouselFilms.length > 0 && (
+          {carouselContent.length > 0 && (
             <div
               className="relative aspect-[4/3] max-h-[60vh] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
             >
-              {carouselFilms.map((film, idx) => {
-                const isPurchased = purchasedIds.has(film.id)
-                const token = purchaseTokens[film.id]
+              {carouselContent.map((content, idx) => {
+                const isPurchased = purchasedIds.has(content.id)
+                const token = purchaseTokens[content.id]
                 
-                // ✅ Use slug for film URL, fallback to ID if slug is missing
-                const filmSlug = film.slug || film.id
-                let linkUrl = `/film/${filmSlug}`
+                const contentSlug = content.slug || content.id
+                let linkUrl = `/film/${contentSlug}`
                 if (isPurchased && token) {
                   linkUrl = `/watch/${token}`
                 } else if (isPurchased && !token) {
-                  linkUrl = `/watch/${film.id}`
+                  linkUrl = `/watch/${content.id}`
                 }
-                
-                // Log for debugging
-                console.log(`Slide ${idx}: ${film.title}, URL: ${linkUrl}, Visible: ${idx === carouselIndex}`)
                 
                 return (
                   <Link
-                    key={film.id}
+                    key={content.id}
                     href={linkUrl}
-                    onClick={() => console.log(`✅ Clicked: ${film.title} → ${linkUrl}`)}
+                    onClick={() => console.log(`✅ Clicked: ${content.title} → ${linkUrl}`)}
                     className={`absolute inset-0 transition-all duration-700 ease-in-out cursor-pointer group ${
                       idx === carouselIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
                     }`}
                   >
-                    {film.thumbnail_url ? (
+                    {content.thumbnail_url ? (
                       <Image
-                        src={film.thumbnail_url}
-                        alt={film.title}
+                        src={content.thumbnail_url}
+                        alt={content.title}
                         fill
                         className="object-cover transition-transform duration-700 group-hover:scale-110"
                       />
@@ -325,16 +320,14 @@ export default function HomePage() {
                       <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-20 bg-[#1a1a1a]">🎬</div>
                     )}
                     
-                    {/* Gradient overlay - pointer-events-none so it doesn't block clicks */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
                     
-                    {/* Content overlay - pointer-events-none so clicks pass through to Link */}
                     <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
                       <h3 className="text-xl font-bold group-hover:text-[#f5c518] transition-colors">
-                        {film.title}
+                        {content.title}
                       </h3>
                       <p className="text-sm text-gray-300">
-                        {film.creator_name || 'Unknown Creator'}
+                        {content.creator_name || 'Unknown Creator'}
                       </p>
                       <div className="flex items-center gap-4 mt-2">
                         {isPurchased ? (
@@ -349,7 +342,7 @@ export default function HomePage() {
                         ) : (
                           <>
                             <span className="bg-[#f5c518] text-black text-sm font-bold px-3 py-1 rounded-full">
-                              KES {film.price}
+                              KES {content.price}
                             </span>
                             <span className="text-gray-300 text-sm group-hover:text-white transition-colors">
                               View Details →
@@ -359,7 +352,6 @@ export default function HomePage() {
                       </div>
                     </div>
                     
-                    {/* Hover play icon overlay - pointer-events-none so it doesn't block clicks */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-black/30 pointer-events-none">
                       <div className="w-20 h-20 bg-[#f5c518] rounded-full flex items-center justify-center transform scale-90 group-hover:scale-100 transition-transform duration-300">
                         <svg className="w-10 h-10 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
@@ -368,22 +360,19 @@ export default function HomePage() {
                       </div>
                     </div>
                     
-                    {/* Category badge - pointer-events-none so it doesn't block clicks */}
-                    {film.category && (
+                    {content.category && (
                       <div className="absolute top-4 right-4 bg-[#f5c518]/90 text-black text-xs px-3 py-1 rounded-full font-semibold pointer-events-none">
-                        {film.category}
+                        {content.category}
                       </div>
                     )}
                     
-                    {/* Slide indicator dots - these ARE clickable */}
                     <div className="absolute bottom-4 left-4 flex gap-2 z-10">
-                      {carouselFilms.map((_, dotIdx) => (
+                      {carouselContent.map((_, dotIdx) => (
                         <button
                           key={dotIdx}
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            console.log(`🎯 Dot clicked: ${dotIdx}`)
                             setCarouselIndex(dotIdx)
                           }}
                           className={`w-2.5 h-2.5 rounded-full transition ${
@@ -432,12 +421,12 @@ export default function HomePage() {
           <div>
             <h2 className="text-3xl md:text-4xl font-bold">Featured Content</h2>
             <p className="text-gray-500 text-sm mt-1">
-              {filteredFilms.length} {filteredFilms.length === 1 ? 'item' : 'items'} available
+              {filteredContent.length} {filteredContent.length === 1 ? 'item' : 'items'} available
             </p>
           </div>
         </div>
 
-        {filteredFilms.length === 0 ? (
+        {filteredContent.length === 0 ? (
           <div className="bg-[#1a1a1a] rounded-2xl p-16 text-center border border-white/5">
             <div className="text-6xl mb-4">🎬</div>
             <p className="text-xl text-gray-400">No content found.</p>
@@ -445,7 +434,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredFilms.map((film) => renderFilmCard(film))}
+            {filteredContent.map((content) => renderContentCard(content))}
           </div>
         )}
       </section>
@@ -459,7 +448,7 @@ export default function HomePage() {
           </div>
           <div className="flex gap-8">
             <div className="text-center">
-              <p className="text-2xl font-bold text-[#f5c518]">{totalFilms}</p>
+              <p className="text-2xl font-bold text-[#f5c518]">{totalContent}</p>
               <p className="text-gray-500 text-xs uppercase tracking-wider">Items</p>
             </div>
             <div className="text-center">
