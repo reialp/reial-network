@@ -1,4 +1,3 @@
-// app/auth/login/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -6,12 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
+// ✅ This forces the page to be dynamic and fixes the prerender error
+export const dynamic = 'force-dynamic'
+
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
 
-  // ✅ Get redirect URL from query params
   const redirectTo = searchParams.get('redirectTo') || '/dashboard'
 
   const [email, setEmail] = useState('')
@@ -37,7 +38,6 @@ export default function LoginPage() {
       return
     }
 
-    // ✅ Use window.location for reliable redirect
     console.log('🔀 Redirecting to:', redirectTo)
     window.location.href = redirectTo
   }
