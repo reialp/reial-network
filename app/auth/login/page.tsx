@@ -36,7 +36,8 @@ export default function LoginPage() {
       return
     }
 
-    // ✅ Redirect to the original page they wanted (or dashboard)
+    // ✅ Redirect to the original page they wanted (NOT always dashboard!)
+    console.log('🔀 Redirecting to:', redirectTo)
     router.push(redirectTo)
     router.refresh()
   }
