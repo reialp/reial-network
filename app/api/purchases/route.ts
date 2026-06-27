@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
     const supabase = await createClient()
 
-    // ✅ Check if already purchased (prevent duplicates)
+    // ✅ Check if already purchased
     const { data: existingPurchase } = await supabase
       .from('purchases')
       .select('watch_token, id')
@@ -48,7 +48,8 @@ export async function POST(req: Request) {
     // Generate watch token
     const watchToken = crypto.randomBytes(32).toString('hex')
 
-    // Create purchase record
+    // ✅ CRITICAL: Create purchase with status 'pending'
+    // ⚠️ DO NOT mark as completed here - only IPN should do that!
     const { data: purchase, error: purchaseError } = await supabase
       .from('purchases')
       .insert({
@@ -58,6 +59,8 @@ export async function POST(req: Request) {
         platform_fee: platformFee,
         creator_earnings: creatorEarnings,
         watch_token: watchToken,
+        status: 'pending', // ← CRITICAL: Always start as pending!
+        created_at: new Date().toISOString(),
       })
       .select()
       .single()
