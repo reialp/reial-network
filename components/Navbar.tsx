@@ -1,22 +1,24 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useSearch } from '@/context/SearchContext'
 
 export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+  const { searchTerm, setSearchTerm } = useSearch()
 
   const [user, setUser] = useState<any>(null)
   const [isCreator, setIsCreator] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    async function getUser() {
+    // ✅ Get initial session
+    const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         setUser(session.user)
@@ -32,19 +34,40 @@ export default function Navbar() {
       }
     }
     getUser()
-  }, [supabase])
+
+    // ✅ Listen for auth changes (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          setUser(session.user)
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_creator, is_admin')
+            .eq('id', session.user.id)
+            .single()
+          if (profile) {
+            setIsCreator(profile.is_creator || false)
+            setIsAdmin(profile.is_admin || false)
+          }
+          router.refresh()
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null)
+          setIsCreator(false)
+          setIsAdmin(false)
+          router.refresh()
+        }
+      }
+    )
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase, router])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/')
     router.refresh()
-  }
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/explore?search=${encodeURIComponent(searchQuery.trim())}`)
-    }
   }
 
   const navLinks = [
@@ -70,22 +93,20 @@ export default function Navbar() {
             <span className="text-[#f5c518]">.</span>
           </Link>
 
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-4">
+          <div className="hidden md:flex flex-1 max-w-md mx-4">
             <div className="relative w-full">
               <input
                 type="text"
-                placeholder="Search content, creators..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search films, creators..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm"
               />
-              <button type="submit" className="absolute right-2 top-1.5 text-gray-500 hover:text-white transition">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
+              <svg className="absolute right-3 top-2.5 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
-          </form>
+          </div>
 
           <div className="hidden md:flex items-center gap-6 flex-shrink-0">
             {navLinks.map((link) => (
@@ -125,15 +146,13 @@ export default function Navbar() {
         </div>
 
         <div className="md:hidden pb-3">
-          <form onSubmit={handleSearch}>
-            <input
-              type="text"
-              placeholder="Search content, creators..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm"
-            />
-          </form>
+          <input
+            type="text"
+            placeholder="Search films, creators..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm"
+          />
         </div>
 
         <div id="mobile-menu" className="hidden md:hidden pb-4">
