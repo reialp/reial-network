@@ -13,7 +13,6 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // ✅ Get ID from URL path
     const path = window.location.pathname
     const segments = path.split('/')
     const id = segments[segments.length - 1]
@@ -83,7 +82,8 @@ export default function CheckoutPage() {
       }
 
       // ✅ Step 2: Redirect to Pesapal for REAL payment
-      const paymentResponse = await fetch('/api/pesapal/initiate', {
+      // FIXED: Changed from /api/pesapal/initiate to /api/pesapal
+      const paymentResponse = await fetch('/api/pesapal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -96,15 +96,22 @@ export default function CheckoutPage() {
       const paymentResult = await paymentResponse.json()
       
       if (!paymentResponse.ok) {
+        console.error('Payment error:', paymentResult)
         setError(paymentResult.error || 'Payment initiation failed.')
         setLoading(false)
         return
       }
 
       // ✅ Redirect to Pesapal payment page
-      window.location.href = paymentResult.redirect_url
+      if (paymentResult.redirect_url) {
+        window.location.href = paymentResult.redirect_url
+      } else {
+        setError('No redirect URL received from payment provider.')
+        setLoading(false)
+      }
       
     } catch (err: any) {
+      console.error('Checkout error:', err)
       setError('Error: ' + err.message)
       setLoading(false)
     }
