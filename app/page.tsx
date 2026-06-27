@@ -29,7 +29,7 @@ export default function HomePage() {
   const [isPaused, setIsPaused] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set())
-  const [purchaseTokens, setPurchaseTokens] = useState<Record<string, string>>({}) // NEW
+  const [purchaseTokens, setPurchaseTokens] = useState<Record<string, string>>({})
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -93,25 +93,40 @@ export default function HomePage() {
     fetchFilms()
   }, [supabase])
 
-  // Fetch user's purchases - UPDATED to also get tokens
+  // Fetch user's purchases with tokens
   useEffect(() => {
     async function fetchPurchases() {
-      if (!userId) return
-      const { data } = await supabase
+      if (!userId) {
+        console.log('No user ID yet')
+        return
+      }
+      
+      console.log('Fetching purchases for user:', userId)
+      
+      const { data, error } = await supabase
         .from('purchases')
         .select('content_id, watch_token')
         .eq('buyer_id', userId)
         .is('revoked_at', null)
       
+      if (error) {
+        console.error('Error fetching purchases:', error)
+        return
+      }
+      
+      console.log('Purchase data received:', data)
+      
       if (data) {
         const ids = new Set(data.map(p => p.content_id))
         setPurchasedIds(ids)
+        console.log('Purchased IDs:', ids)
         
         // Store tokens keyed by content_id
         const tokens: Record<string, string> = {}
         data.forEach(p => {
           tokens[p.content_id] = p.watch_token
         })
+        console.log('Purchase tokens:', tokens)
         setPurchaseTokens(tokens)
       }
     }
@@ -153,15 +168,26 @@ export default function HomePage() {
 
   const carouselFilms = allFilms.slice(0, 5)
 
-  // UPDATED renderFilmCard - uses token for watch link
   const renderFilmCard = (film: Film) => {
     const isPurchased = purchasedIds.has(film.id)
     const token = purchaseTokens[film.id]
     
+    // Debug log for this film
+    console.log(`Film: ${film.title}, ID: ${film.id}, Purchased: ${isPurchased}, Token: ${token || 'No token'}`)
+    
+    // Build the watch URL
+    let watchUrl = `/film/${film.id}` // Default fallback
+    if (isPurchased && token) {
+      watchUrl = `/watch/${token}`
+    } else if (isPurchased && !token) {
+      // If purchased but no token, try using ID (as fallback)
+      watchUrl = `/watch/${film.id}`
+    }
+    
     return (
       <Link
         key={film.id}
-        href={isPurchased && token ? `/watch/${token}` : `/film/${film.id}`}
+        href={watchUrl}
         className="group bg-[#1a1a1a] rounded-2xl overflow-hidden hover:scale-[1.03] transition-all duration-500 hover:shadow-2xl hover:shadow-[#f5c518]/10 border border-white/5 hover:border-[#f5c518]/20"
       >
         <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
@@ -208,7 +234,7 @@ export default function HomePage() {
     )
   }
 
-  // UPDATED Loading state with spinner
+  // Loading state with spinner
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
