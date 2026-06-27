@@ -82,8 +82,8 @@ export default function CheckoutPage() {
       }
 
       // ✅ Step 2: Redirect to Pesapal for REAL payment
-      // FIXED: Changed from /api/pesapal/initiate to /api/pesapal
-      const paymentResponse = await fetch('/api/pesapal', {
+      // ✅ FIXED: Changed from /api/pesapal to /api/pesapal/initiate
+      const paymentResponse = await fetch('/api/pesapal/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
