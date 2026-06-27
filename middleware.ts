@@ -42,8 +42,8 @@ export async function middleware(request: NextRequest) {
     '/auth/login',
     '/auth/signup',
     '/explore',
-    '/film/',     // ← Added trailing slash to match /film/anything
-    '/creator/',  // ← Added trailing slash to match /creator/anything
+    '/film/',
+    '/creator/',
   ]
   
   const isPublic = publicRoutes.some(route => 
@@ -65,9 +65,12 @@ export async function middleware(request: NextRequest) {
     pathname === route || pathname.startsWith(route)
   )
 
-  // If protected and no session, redirect to login
+  // ✅ If protected and no session, redirect to login with redirectTo
   if (isProtected && !session) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    // ✅ PRESERVE the redirect URL!
+    const redirectTo = encodeURIComponent(pathname + request.nextUrl.search)
+    console.log('🔀 Middleware redirecting to login with:', redirectTo)
+    return NextResponse.redirect(new URL(`/auth/login?redirectTo=${redirectTo}`, request.url))
   }
 
   // If logged in and trying to access auth pages, redirect to dashboard
@@ -80,14 +83,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - api (API routes)
-     * - public folder
-     */
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
