@@ -110,8 +110,7 @@ export default function AdminPage() {
       return
     }
 
-    // ---- REAL DATA ----
-    // 1. Get content
+    // ✅ Fetch ALL content from ALL creators (no filter)
     const { data: contentData } = await supabase
       .from('content')
       .select(`
@@ -125,31 +124,19 @@ export default function AdminPage() {
     const totalSales = allContent.reduce((sum, c) => sum + (c.purchase_count || 0), 0)
     const totalRevenue = allContent.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0)
 
-    // 2. Get purchases (REAL data – no made-up numbers)
     const { data: purchases } = await supabase
       .from('purchases')
       .select('platform_fee, creator_earnings')
 
-    // ✅ Force these to be 0 if no purchases exist
-    const totalPlatformFees = purchases && purchases.length > 0 
-      ? purchases.reduce((sum, p) => sum + (p.platform_fee || 0), 0) 
-      : 0
-    
-    const totalPaidToCreators = purchases && purchases.length > 0 
-      ? purchases.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) 
-      : 0
+    const totalPlatformFees = purchases?.reduce((sum, p) => sum + (p.platform_fee || 0), 0) || 0
+    const totalPaidToCreators = purchases?.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) || 0
 
-    // 3. Get pending payouts
     const { data: pendingPayoutsData } = await supabase
       .from('payout_requests')
       .select('amount')
       .eq('status', 'pending')
 
-    const pendingPayouts = pendingPayoutsData && pendingPayoutsData.length > 0
-      ? pendingPayoutsData.reduce((sum, p) => sum + p.amount, 0)
-      : 0
-
-    console.log('📊 Admin stats:', { totalFilms, totalSales, totalRevenue, totalPlatformFees, totalPaidToCreators, pendingPayouts })
+    const pendingPayouts = pendingPayoutsData?.reduce((sum, p) => sum + p.amount, 0) || 0
 
     setStats({
       totalFilms,
@@ -240,7 +227,6 @@ export default function AdminPage() {
         <h1 className="text-3xl font-bold mb-2">Admin Panel</h1>
         <p className="text-gray-400 mb-8">Manage content, approvals, and payouts.</p>
 
-        {/* Stats – ALL REAL DATA */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Total Films</p>
@@ -268,7 +254,6 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Controls */}
         <div className="flex flex-wrap gap-4 items-center mb-6">
           <div className="flex gap-2 flex-wrap">
             {(['all', 'pending', 'approved', 'rejected'] as ContentStatus[]).map((status) => (
@@ -296,7 +281,6 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Content Table */}
         <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden mb-12">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -361,7 +345,6 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Payout Requests */}
         <h2 className="text-2xl font-bold mb-4">Payout Requests</h2>
         <div className="flex gap-3 mb-4">
           {(['all', 'pending', 'processed'] as const).map((status) => (
@@ -428,7 +411,6 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Preview Modal */}
         {isPreviewOpen && previewFilm && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[#1a1a1a] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/10">
