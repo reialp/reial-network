@@ -2,7 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // Create response early
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -36,42 +35,37 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // ✅ Define public routes (exact matches or prefixes)
-  const publicRoutes = [
-    '/',
-    '/auth/login',
-    '/auth/signup',
-    '/explore',
-    '/film/',     // ← Added trailing slash to match /film/anything
-    '/creator/',  // ← Added trailing slash to match /creator/anything
-  ]
-  
-  const isPublic = publicRoutes.some(route => 
-    pathname === route || pathname.startsWith(route)
-  )
+  // ✅ Check if route is public
+  const isPublic =
+    pathname === '/' ||
+    pathname === '/auth/login' ||
+    pathname === '/auth/signup' ||
+    pathname.startsWith('/explore') ||
+    pathname.startsWith('/film/') ||
+    pathname.startsWith('/creator/')
 
-  // ✅ Protected routes (exact matches or prefixes)
-  const protectedRoutes = [
-    '/dashboard',
-    '/upload',
-    '/library',
-    '/profile',
-    '/admin',
-    '/checkout/',
-    '/watch/',
-  ]
-  
-  const isProtected = protectedRoutes.some(route => 
-    pathname === route || pathname.startsWith(route)
-  )
+  // ✅ Check if route is protected
+  const isProtected =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/upload') ||
+    pathname.startsWith('/library') ||
+    pathname.startsWith('/profile') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/checkout/') ||
+    pathname.startsWith('/watch/')
 
-  // If protected and no session, redirect to login
+  // ✅ If protected and no session, redirect to login with redirectTo
   if (isProtected && !session) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    const redirectTo = encodeURIComponent(pathname + request.nextUrl.search)
+    return NextResponse.redirect(new URL(`/auth/login?redirectTo=${redirectTo}`, request.url))
   }
 
-  // If logged in and trying to access auth pages, redirect to dashboard
-  if (session && (pathname.startsWith('/auth/login') || pathname.startsWith('/auth/signup'))) {
+  // ✅ If logged in and on auth pages, redirect
+  if (session && (pathname === '/auth/login' || pathname === '/auth/signup')) {
+    const redirectTo = request.nextUrl.searchParams.get('redirectTo')
+    if (redirectTo) {
+      return NextResponse.redirect(new URL(redirectTo, request.url))
+    }
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
@@ -80,14 +74,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - api (API routes)
-     * - public folder
-     */
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
