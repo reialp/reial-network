@@ -113,7 +113,6 @@ export default function HomePage() {
         const ids = new Set(data.map(p => p.content_id))
         setPurchasedIds(ids)
         
-        // Store tokens keyed by content_id
         const tokens: Record<string, string> = {}
         data.forEach(p => {
           tokens[p.content_id] = p.watch_token
@@ -296,10 +295,14 @@ export default function HomePage() {
                   linkUrl = `/watch/${film.id}`
                 }
                 
+                // Log for debugging
+                console.log(`Slide ${idx}: ${film.title}, URL: ${linkUrl}, Visible: ${idx === carouselIndex}`)
+                
                 return (
                   <Link
                     key={film.id}
                     href={linkUrl}
+                    onClick={() => console.log(`✅ Clicked: ${film.title} → ${linkUrl}`)}
                     className={`absolute inset-0 transition-all duration-700 ease-in-out cursor-pointer group ${
                       idx === carouselIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
                     }`}
@@ -315,11 +318,11 @@ export default function HomePage() {
                       <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-20 bg-[#1a1a1a]">🎬</div>
                     )}
                     
-                    {/* Gradient overlay for better text readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    {/* Gradient overlay - pointer-events-none so it doesn't block clicks */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
                     
-                    {/* Content overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 p-6">
+                    {/* Content overlay - pointer-events-none so clicks pass through to Link */}
+                    <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
                       <h3 className="text-xl font-bold group-hover:text-[#f5c518] transition-colors">
                         {film.title}
                       </h3>
@@ -349,8 +352,8 @@ export default function HomePage() {
                       </div>
                     </div>
                     
-                    {/* Hover play icon overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-black/30">
+                    {/* Hover play icon overlay - pointer-events-none so it doesn't block clicks */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-black/30 pointer-events-none">
                       <div className="w-20 h-20 bg-[#f5c518] rounded-full flex items-center justify-center transform scale-90 group-hover:scale-100 transition-transform duration-300">
                         <svg className="w-10 h-10 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z" />
@@ -358,14 +361,14 @@ export default function HomePage() {
                       </div>
                     </div>
                     
-                    {/* Category badge */}
+                    {/* Category badge - pointer-events-none so it doesn't block clicks */}
                     {film.category && (
-                      <div className="absolute top-4 right-4 bg-[#f5c518]/90 text-black text-xs px-3 py-1 rounded-full font-semibold">
+                      <div className="absolute top-4 right-4 bg-[#f5c518]/90 text-black text-xs px-3 py-1 rounded-full font-semibold pointer-events-none">
                         {film.category}
                       </div>
                     )}
                     
-                    {/* Slide indicator dots */}
+                    {/* Slide indicator dots - these ARE clickable */}
                     <div className="absolute bottom-4 left-4 flex gap-2 z-10">
                       {carouselFilms.map((_, dotIdx) => (
                         <button
@@ -373,6 +376,7 @@ export default function HomePage() {
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
+                            console.log(`🎯 Dot clicked: ${dotIdx}`)
                             setCarouselIndex(dotIdx)
                           }}
                           className={`w-2.5 h-2.5 rounded-full transition ${
