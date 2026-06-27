@@ -35,8 +35,9 @@ export async function middleware(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession()
 
   const pathname = request.nextUrl.pathname
+  const search = request.nextUrl.search
 
-  // ✅ Define public routes (exact matches or prefixes)
+  // ✅ Define public routes
   const publicRoutes = [
     '/',
     '/auth/login',
@@ -50,7 +51,7 @@ export async function middleware(request: NextRequest) {
     pathname === route || pathname.startsWith(route)
   )
 
-  // ✅ Protected routes (exact matches or prefixes)
+  // ✅ Protected routes
   const protectedRoutes = [
     '/dashboard',
     '/upload',
@@ -67,14 +68,21 @@ export async function middleware(request: NextRequest) {
 
   // ✅ If protected and no session, redirect to login with redirectTo
   if (isProtected && !session) {
-    // ✅ PRESERVE the redirect URL!
-    const redirectTo = encodeURIComponent(pathname + request.nextUrl.search)
+    // ✅ PRESERVE the FULL URL including path and search params
+    const fullPath = pathname + search
+    const redirectTo = encodeURIComponent(fullPath)
     console.log('🔀 Middleware redirecting to login with:', redirectTo)
     return NextResponse.redirect(new URL(`/auth/login?redirectTo=${redirectTo}`, request.url))
   }
 
-  // If logged in and trying to access auth pages, redirect to dashboard
+  // If logged in and trying to access auth pages, redirect to the page they wanted
   if (session && (pathname.startsWith('/auth/login') || pathname.startsWith('/auth/signup'))) {
+    // ✅ Check if there's a redirectTo parameter
+    const redirectTo = request.nextUrl.searchParams.get('redirectTo')
+    if (redirectTo) {
+      console.log('🔀 Logged in, redirecting to:', redirectTo)
+      return NextResponse.redirect(new URL(redirectTo, request.url))
+    }
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
