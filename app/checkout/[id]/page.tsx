@@ -59,7 +59,7 @@ export default function CheckoutPage() {
     try {
       console.log('🎬 Starting purchase for:', film.title)
 
-      // Step 1: Create purchase record (status = pending)
+      // ✅ Step 1: Create purchase record (status = pending)
       const purchaseResponse = await fetch('/api/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -98,16 +98,6 @@ export default function CheckoutPage() {
 
       console.log('📡 Payment response status:', paymentResponse.status)
 
-      // ✅ Check if response is JSON
-      const contentType = paymentResponse.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await paymentResponse.text()
-        console.error('❌ Non-JSON response:', text)
-        setError('Payment service returned an error. Please try again.')
-        setLoading(false)
-        return
-      }
-
       const paymentResult = await paymentResponse.json()
       console.log('💰 Payment result:', paymentResult)
 
@@ -117,9 +107,10 @@ export default function CheckoutPage() {
         return
       }
 
-      // ✅ Redirect to Pesapal payment page
+      // ✅ CRITICAL: Redirect to PesaPal payment page
       if (paymentResult.redirect_url) {
         console.log('🔀 Redirecting to PesaPal:', paymentResult.redirect_url)
+        // ✅ THIS is what actually redirects you!
         window.location.href = paymentResult.redirect_url
       } else {
         setError('No redirect URL received from payment provider.')
