@@ -58,7 +58,6 @@ export default async function FilmPage({
   params: Promise<{ slug: string[] }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  // ✅ Get the ID from the slug array – the last segment is the ID
   const slug = (await params).slug
   const id = slug ? slug[slug.length - 1] : null
   
@@ -113,7 +112,6 @@ export default async function FilmPage({
   const embedVideoUrl = getEmbedUrl(film.video_url)
   const embedTrailerUrl = film.trailer_url ? getEmbedUrl(film.trailer_url) : ''
 
-  // ✅ Use the ID from the slug for checkout
   const checkoutId = id
 
   return (
