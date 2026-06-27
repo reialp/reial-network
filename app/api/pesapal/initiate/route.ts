@@ -22,6 +22,8 @@ export async function POST(req: Request) {
     console.log('🔍 Environment:', environment)
     console.log('🔍 Consumer Key exists:', !!consumerKey)
     console.log('🔍 Consumer Secret exists:', !!consumerSecret)
+    console.log('🔍 Consumer Key length:', consumerKey?.length || 0)
+    console.log('🔍 Consumer Secret length:', consumerSecret?.length || 0)
 
     if (!consumerKey || !consumerSecret) {
       console.error('❌ Missing PesaPal credentials')
@@ -31,18 +33,27 @@ export async function POST(req: Request) {
       )
     }
 
-    // ✅ Use the CORRECT base URL
-    const baseUrl = environment === 'sandbox'
-      ? 'https://cybqa.pesapal.com/pesapalv3/api'
-      : 'https://pay.pesapal.com/v3'
+    // ✅ Use the CORRECT base URL for your environment
+    let baseUrl
+    if (environment === 'sandbox') {
+      baseUrl = 'https://cybqa.pesapal.com/pesapalv3/api'
+    } else {
+      baseUrl = 'https://pay.pesapal.com/v3'
+    }
 
     console.log('🔍 Base URL:', baseUrl)
     console.log('🔍 Amount:', amount)
     console.log('🔍 Purchase ID:', purchaseId)
 
-    // ✅ Step 1: Get OAuth token
+    // ✅ Step 1: Get OAuth token with proper error handling
     console.log('📡 Getting auth token...')
     
+    const authPayload = {
+      consumer_key: consumerKey.trim(),
+      consumer_secret: consumerSecret.trim(),
+    }
+    console.log('📦 Auth payload:', { ...authPayload, consumer_secret: '***hidden***' })
+
     let authResponse
     try {
       authResponse = await fetch(`${baseUrl}/Auth/RequestToken`, {
@@ -50,39 +61,40 @@ export async function POST(req: Request) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          consumer_key: consumerKey,
-          consumer_secret: consumerSecret,
-        }),
+        body: JSON.stringify(authPayload),
       })
     } catch (fetchError) {
-      console.error('❌ Network error fetching auth token:', fetchError)
+      console.error('❌ Network error:', fetchError)
       return NextResponse.json(
         { error: 'Network error connecting to PesaPal' },
         { status: 500 }
       )
     }
 
+    console.log('📡 Auth response status:', authResponse.status)
+
     if (!authResponse.ok) {
       const errorText = await authResponse.text()
       console.error('❌ Auth failed:', authResponse.status, errorText)
       return NextResponse.json(
-        { error: `Authentication failed: ${authResponse.status}` },
+        { error: `Authentication failed: ${authResponse.status} - ${errorText}` },
         { status: 500 }
       )
     }
 
-    // ✅ Check if response has content
+    // ✅ Get response text
     const responseText = await authResponse.text()
-    console.log('📦 Auth response text:', responseText)
-
+    console.log('📦 Auth response length:', responseText.length)
+    
     if (!responseText || responseText.trim().length === 0) {
       console.error('❌ Empty response from PesaPal')
       return NextResponse.json(
-        { error: 'Empty response from PesaPal authentication' },
+        { error: 'Empty response from PesaPal - check your credentials' },
         { status: 500 }
       )
     }
+
+    console.log('📦 Auth response preview:', responseText.substring(0, 100))
 
     let authData
     try {
@@ -143,14 +155,16 @@ export async function POST(req: Request) {
       )
     }
 
+    console.log('📡 Payment response status:', paymentResponse.status)
+
     // ✅ Get the response text first
     const paymentResponseText = await paymentResponse.text()
-    console.log('📦 Payment response text:', paymentResponseText)
+    console.log('📦 Payment response length:', paymentResponseText.length)
 
     if (!paymentResponse.ok) {
       console.error('❌ Payment submission failed:', paymentResponse.status, paymentResponseText)
       return NextResponse.json(
-        { error: `Payment submission failed: ${paymentResponse.status}` },
+        { error: `Payment submission failed: ${paymentResponse.status} - ${paymentResponseText}` },
         { status: 500 }
       )
     }
