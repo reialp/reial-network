@@ -11,30 +11,29 @@ function getEmbedUrl(url: string): string {
   return url
 }
 
-async function getFilmBySlug(slug: string, userId?: string, isAdmin?: boolean) {
+async function getFilm(id: string, userId?: string, isAdmin?: boolean) {
   const supabase = await createClient()
-  
-  // ✅ Query by slug instead of ID
   let query = supabase
     .from('content')
     .select(`*, profiles!inner ( full_name, bio, avatar_url )`)
-    .eq('slug', slug)  // ← This is the key change!
+    .eq('id', id)
 
   if (!isAdmin) {
     if (userId) {
       const { data: filmCheck } = await supabase
         .from('content')
         .select('creator_id')
-        .eq('slug', slug)
+        .eq('id', id)
         .single()
-      if (filmCheck && filmCheck.creator_id !== userId) {
+      if (filmCheck && filmCheck.creator_id === userId) {
+        // creator sees own film
+      } else {
         query = query.eq('status', 'approved')
       }
     } else {
       query = query.eq('status', 'approved')
     }
   }
-  
   const { data, error } = await query.single()
   if (error || !data) return null
   return data
@@ -56,18 +55,21 @@ export default async function FilmPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string[] }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const { slug } = await params
-  console.log('🔍 FilmPage - Slug:', slug)
+  // ✅ Get the ID from the slug array – the last segment is the ID
+  const slug = (await params).slug
+  const id = slug ? slug[slug.length - 1] : null
+  
+  console.log('🔍 FilmPage - ID from slug:', id)
 
-  if (!slug) {
+  if (!id || id === 'undefined' || id === 'null') {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-400">Invalid Film</h1>
-          <p className="text-gray-400 mt-2">No film slug provided.</p>
+          <p className="text-gray-400 mt-2">No film ID provided.</p>
           <Link href="/" className="text-[#f5c518] hover:underline mt-4 block">Return Home</Link>
         </div>
       </div>
@@ -91,7 +93,7 @@ export default async function FilmPage({
     isUserAdmin = profile?.is_admin || false
   }
 
-  const film = await getFilmBySlug(slug, userId, isUserAdmin)
+  const film = await getFilm(id, userId, isUserAdmin)
   if (!film) notFound()
 
   const profile = film.profiles as any
@@ -100,7 +102,7 @@ export default async function FilmPage({
 
   let hasPurchased = false
   if (userId) {
-    hasPurchased = await hasUserPurchased(userId, film.id)
+    hasPurchased = await hasUserPurchased(userId, id)
   }
 
   const canWatchFull = (isApproved || isOwnFilm || isUserAdmin) &&
@@ -111,8 +113,8 @@ export default async function FilmPage({
   const embedVideoUrl = getEmbedUrl(film.video_url)
   const embedTrailerUrl = film.trailer_url ? getEmbedUrl(film.trailer_url) : ''
 
-  // ✅ Use the film ID for checkout (UUID)
-  const checkoutId = film.id
+  // ✅ Use the ID from the slug for checkout
+  const checkoutId = id
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
