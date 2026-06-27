@@ -38,7 +38,6 @@ export default function HomePage() {
         setUserId(session.user.id)
       }
 
-      // ✅ Fetch films with creator name using a different approach
       const { data, error } = await supabase
         .from('content')
         .select(`
@@ -57,7 +56,6 @@ export default function HomePage() {
         .order('created_at', { ascending: false })
 
       if (!error && data) {
-        // ✅ Get creator names separately
         const creatorIds = data.map(item => item.creator_id).filter(Boolean)
         let creatorNames: Record<string, string> = {}
         
@@ -75,7 +73,6 @@ export default function HomePage() {
           }
         }
 
-        // ✅ Map data with creator names
         const mappedData = data.map((item: any) => ({
           id: item.id,
           title: item.title,
@@ -154,7 +151,7 @@ export default function HomePage() {
     return (
       <Link
         key={film.id}
-        href={isPurchased ? `/watch/${film.id}` : `/film/${film.id}`}
+        href={isPurchased ? `/library` : `/film/${film.id}`}
         className="group bg-[#1a1a1a] rounded-2xl overflow-hidden hover:scale-[1.03] transition-all duration-500 hover:shadow-2xl hover:shadow-[#f5c518]/10 border border-white/5 hover:border-[#f5c518]/20"
       >
         <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
@@ -211,7 +208,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
-      {/* Hero Section */}
       <section className="relative min-h-screen flex items-center px-6 overflow-hidden bg-grid-pattern">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-[#1a0a0a] to-[#0a0a0a]">
           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#f5c518]/5 rounded-full blur-3xl" />
