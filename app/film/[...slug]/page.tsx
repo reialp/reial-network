@@ -11,18 +11,18 @@ function getEmbedUrl(url: string): string {
   return url
 }
 
-// ✅ UPDATED: Now handles both UUIDs and slugs
-async function getFilm(identifier: string, userId?: string, isAdmin?: boolean) {
+// ✅ Get film by slug OR ID
+async function getFilmByIdentifier(identifier: string, userId?: string, isAdmin?: boolean) {
   const supabase = await createClient()
   
-  // ✅ Check if the identifier is a UUID or a slug
-  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier)
+  // ✅ Check if it's a UUID (has dashes)
+  const isUUID = identifier.includes('-') && identifier.length === 36
   
-  // ✅ Build query based on identifier type
   let query = supabase
     .from('content')
     .select(`*, profiles!inner ( full_name, bio, avatar_url )`)
   
+  // ✅ Query by slug OR id
   if (isUUID) {
     query = query.eq('id', identifier)
   } else {
@@ -31,12 +31,12 @@ async function getFilm(identifier: string, userId?: string, isAdmin?: boolean) {
 
   if (!isAdmin) {
     if (userId) {
-      const { data: filmCheck } = await supabase
+      const filmCheck = await supabase
         .from('content')
         .select('creator_id')
         .eq(isUUID ? 'id' : 'slug', identifier)
         .single()
-      if (filmCheck && filmCheck.creator_id !== userId) {
+      if (filmCheck.data && filmCheck.data.creator_id !== userId) {
         query = query.eq('status', 'approved')
       }
     } else {
@@ -68,7 +68,7 @@ export default async function FilmPage({
   params: Promise<{ slug: string[] }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  // ✅ Get the identifier from the slug array – the last segment
+  // ✅ Get identifier from URL
   const slug = (await params).slug
   const identifier = slug ? slug[slug.length - 1] : null
   
@@ -103,7 +103,8 @@ export default async function FilmPage({
     isUserAdmin = profile?.is_admin || false
   }
 
-  const film = await getFilm(identifier, userId, isUserAdmin)
+  // ✅ Get film by slug OR ID
+  const film = await getFilmByIdentifier(identifier, userId, isUserAdmin)
   if (!film) notFound()
 
   const profile = film.profiles as any
@@ -123,7 +124,7 @@ export default async function FilmPage({
   const embedVideoUrl = getEmbedUrl(film.video_url)
   const embedTrailerUrl = film.trailer_url ? getEmbedUrl(film.trailer_url) : ''
 
-  // ✅ Use the film ID for checkout
+  // ✅ Use film ID for checkout
   const checkoutId = film.id
 
   return (
