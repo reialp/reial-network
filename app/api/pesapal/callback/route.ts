@@ -22,7 +22,6 @@ export async function GET(req: Request) {
 
       if (error || !purchase) {
         console.error('❌ Purchase not found:', error)
-        // Redirect to library as fallback
         return NextResponse.redirect(new URL('/library?payment=success', req.url))
       }
 
@@ -33,7 +32,6 @@ export async function GET(req: Request) {
 
     } catch (error) {
       console.error('❌ Error processing callback:', error)
-      // Redirect to library as fallback
       return NextResponse.redirect(new URL('/library?payment=success', req.url))
     }
   } else {
