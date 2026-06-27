@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -10,7 +10,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams()
   const supabase = createClient()
 
-  // ✅ Get redirect URL from query params
+  // ✅ Get the redirect URL from the query string
   const redirectTo = searchParams.get('redirectTo') || '/dashboard'
 
   const [email, setEmail] = useState('')
@@ -19,11 +19,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [resetMessage, setResetMessage] = useState<string | null>(null)
-
-  // ✅ Log the redirect URL for debugging
-  useEffect(() => {
-    console.log('🔀 Login page - redirectTo:', redirectTo)
-  }, [redirectTo])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,16 +36,9 @@ export default function LoginPage() {
       return
     }
 
-    // ✅ Redirect to the original page they wanted
+    // ✅ Use window.location for reliable redirect
     console.log('🔀 Redirecting to:', redirectTo)
-    
-    // ✅ Use window.location for a full page redirect
-    if (redirectTo && redirectTo !== '/dashboard') {
-      window.location.href = redirectTo
-    } else {
-      router.push(redirectTo)
-    }
-    router.refresh()
+    window.location.href = redirectTo
   }
 
   const handleForgotPassword = async () => {
