@@ -11,6 +11,7 @@ export default function CheckoutPage() {
   const [film, setFilm] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
     const path = window.location.pathname
@@ -22,7 +23,14 @@ export default function CheckoutPage() {
       return
     }
 
-    async function loadFilm() {
+    async function loadData() {
+      // Get user session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setUser(session.user)
+      }
+
+      // Load film
       const { data, error } = await supabase
         .from('content')
         .select('*')
@@ -37,7 +45,7 @@ export default function CheckoutPage() {
       }
       setFilm(data)
     }
-    loadFilm()
+    loadData()
   }, [supabase])
 
   const handlePurchase = async () => {
@@ -83,7 +91,17 @@ export default function CheckoutPage() {
         return
       }
 
-      // ✅ Step 2: Redirect to Pesapal for REAL payment
+      // ✅ Step 2: Get user profile for billing info
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', session.user.id)
+        .single()
+
+      const fullName = profile?.full_name || 'Customer'
+      const email = profile?.email || session.user.email || 'customer@example.com'
+
+      // ✅ Step 3: Initiate PesaPal payment with ALL required fields
       console.log('💳 Initiating PesaPal payment for:', purchaseResult.purchaseId)
 
       const paymentResponse = await fetch('/api/pesapal/initiate', {
@@ -93,6 +111,10 @@ export default function CheckoutPage() {
           amount: film.price,
           purchaseId: purchaseResult.purchaseId,
           description: film.title,
+          email: email,
+          firstName: fullName.split(' ')[0] || 'Customer',
+          lastName: fullName.split(' ').slice(1).join(' ') || 'User',
+          phoneNumber: '', // Optional, but include if you have it
         }),
       })
 
@@ -107,10 +129,9 @@ export default function CheckoutPage() {
         return
       }
 
-      // ✅ CRITICAL: Redirect to PesaPal payment page
+      // ✅ Redirect to PesaPal payment page
       if (paymentResult.redirect_url) {
         console.log('🔀 Redirecting to PesaPal:', paymentResult.redirect_url)
-        // ✅ THIS is what actually redirects you!
         window.location.href = paymentResult.redirect_url
       } else {
         setError('No redirect URL received from payment provider.')
