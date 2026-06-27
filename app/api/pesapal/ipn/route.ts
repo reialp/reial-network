@@ -14,6 +14,7 @@ export async function POST(req: Request) {
     console.log('📦 IPN Parsed:', { orderTrackingId, orderMerchantReference, status })
 
     if (!orderTrackingId || !orderMerchantReference || !status) {
+      console.error('❌ Missing required fields')
       return NextResponse.json({ error: 'Invalid IPN' }, { status: 400 })
     }
 
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
 
     const supabase = await createClient()
 
-    // ✅ Check for duplicate (idempotency)
+    // ✅ Check for duplicate (idempotency) - prevent double processing
     const { data: existing } = await supabase
       .from('purchases')
       .select('id')
@@ -33,11 +34,13 @@ export async function POST(req: Request) {
       .single()
 
     if (existing) {
-      console.log('🔄 Duplicate IPN ignored')
+      console.log('🔄 Duplicate IPN ignored for transaction:', orderTrackingId)
       return NextResponse.json({ message: 'Already processed' }, { status: 200 })
     }
 
-    // ✅ Find the purchase
+    // ✅ Find the purchase using the merchant reference (which is your purchase ID)
+    console.log('🔍 Looking for purchase with ID:', orderMerchantReference)
+    
     const { data: purchase, error: purchaseError } = await supabase
       .from('purchases')
       .select('*')
@@ -46,13 +49,20 @@ export async function POST(req: Request) {
 
     if (purchaseError || !purchase) {
       console.error('❌ Purchase not found:', orderMerchantReference)
+      console.error('❌ Error details:', purchaseError)
       return NextResponse.json({ error: 'Purchase not found' }, { status: 404 })
     }
+
+    console.log('✅ Purchase found:', purchase.id)
 
     // ✅ Update purchase with transaction ID
     const { error: updateError } = await supabase
       .from('purchases')
-      .update({ pesapal_transaction_id: orderTrackingId })
+      .update({ 
+        pesapal_transaction_id: orderTrackingId,
+        status: 'completed',
+        updated_at: new Date().toISOString()
+      })
       .eq('id', purchase.id)
 
     if (updateError) {
@@ -60,11 +70,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
-    // ✅ Increment sales count
-    await supabase.rpc('increment_sales', { content_id: purchase.content_id })
+    // ✅ Increment sales count for the content
+    if (purchase.content_id) {
+      try {
+        await supabase.rpc('increment_sales', { content_id: purchase.content_id })
+        console.log('✅ Sales count incremented for content:', purchase.content_id)
+      } catch (rpcError) {
+        console.error('❌ RPC error (increment_sales):', rpcError)
+        // Don't fail the whole transaction if RPC fails
+      }
+    }
 
-    console.log('✅ IPN processed successfully')
+    console.log('✅ IPN processed successfully for purchase:', purchase.id)
     return NextResponse.json({ success: true })
+    
   } catch (error) {
     console.error('❌ IPN error:', error)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
