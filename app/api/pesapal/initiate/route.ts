@@ -31,7 +31,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // ✅ Use the CORRECT base URL
     const baseUrl = environment === 'sandbox'
       ? 'https://cybqa.pesapal.com/pesapalv3/api'
       : 'https://pay.pesapal.com/v3'
@@ -108,8 +107,8 @@ export async function POST(req: Request) {
       console.error('❌ Payment submission failed:', paymentResponse.status, errorText)
       return NextResponse.json(
         { error: `Payment submission failed: ${paymentResponse.status}` },
-        { status: 500 )
-      }
+        { status: 500 }
+      )
     }
 
     const paymentData = await paymentResponse.json()
