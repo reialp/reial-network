@@ -9,28 +9,39 @@ export default function CheckoutPage() {
   const supabase = createClient()
 
   const [film, setFilm] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    const path = window.location.pathname
-    const segments = path.split('/')
-    const id = segments[segments.length - 1]
-
-    if (!id || id === 'undefined' || id === 'null' || id === 'checkout' || id === '') {
-      setError('Invalid film ID. Please go back and try again.')
-      return
-    }
-
     async function loadData() {
-      // Get user session
+      // ✅ Step 1: Check if user is logged in
       const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        setUser(session.user)
+      
+      if (!session) {
+        // ✅ NOT logged in → redirect to login with return URL
+        const currentPath = window.location.pathname
+        console.log('🔒 Not logged in, redirecting to login with return URL:', currentPath)
+        router.push(`/auth/login?redirectTo=${currentPath}`)
+        return
       }
 
-      // Load film
+      setUser(session.user)
+
+      // ✅ Step 2: Get film ID from URL
+      const path = window.location.pathname
+      const segments = path.split('/')
+      const id = segments[segments.length - 1]
+
+      console.log('🔍 Checkout - ID from URL:', id)
+
+      if (!id || id === 'undefined' || id === 'null' || id === 'checkout' || id === '') {
+        setError('Invalid film ID. Please go back and try again.')
+        setLoading(false)
+        return
+      }
+
+      // ✅ Step 3: Load film
       const { data, error } = await supabase
         .from('content')
         .select('*')
@@ -41,12 +52,14 @@ export default function CheckoutPage() {
       if (error || !data) {
         console.error('Film load error:', error)
         setError('Film not found. It may not be approved yet.')
+        setLoading(false)
         return
       }
       setFilm(data)
+      setLoading(false)
     }
     loadData()
-  }, [supabase])
+  }, [supabase, router])
 
   const handlePurchase = async () => {
     if (!film) {
@@ -67,7 +80,7 @@ export default function CheckoutPage() {
     try {
       console.log('🎬 Starting purchase for:', film.title)
 
-      // ✅ Step 1: Create purchase record (status = pending)
+      // Step 1: Create purchase record (status = pending)
       const purchaseResponse = await fetch('/api/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,7 +104,7 @@ export default function CheckoutPage() {
         return
       }
 
-      // ✅ Step 2: Get user profile for billing info
+      // Step 2: Get user profile for billing info
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name, email')
@@ -101,7 +114,7 @@ export default function CheckoutPage() {
       const fullName = profile?.full_name || 'Customer'
       const email = profile?.email || session.user.email || 'customer@example.com'
 
-      // ✅ Step 3: Initiate PesaPal payment with ALL required fields
+      // Step 3: Initiate PesaPal payment
       console.log('💳 Initiating PesaPal payment for:', purchaseResult.purchaseId)
 
       const paymentResponse = await fetch('/api/pesapal/initiate', {
@@ -114,7 +127,7 @@ export default function CheckoutPage() {
           email: email,
           firstName: fullName.split(' ')[0] || 'Customer',
           lastName: fullName.split(' ').slice(1).join(' ') || 'User',
-          phoneNumber: '', // Optional, but include if you have it
+          phoneNumber: '',
         }),
       })
 
@@ -129,7 +142,7 @@ export default function CheckoutPage() {
         return
       }
 
-      // ✅ Redirect to PesaPal payment page
+      // Redirect to PesaPal payment page
       if (paymentResult.redirect_url) {
         console.log('🔀 Redirecting to PesaPal:', paymentResult.redirect_url)
         window.location.href = paymentResult.redirect_url
@@ -143,6 +156,14 @@ export default function CheckoutPage() {
       setError('Error: ' + err.message)
       setLoading(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    )
   }
 
   if (error) {
