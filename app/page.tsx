@@ -96,12 +96,7 @@ export default function HomePage() {
   // Fetch user's purchases with tokens
   useEffect(() => {
     async function fetchPurchases() {
-      if (!userId) {
-        console.log('No user ID yet')
-        return
-      }
-      
-      console.log('Fetching purchases for user:', userId)
+      if (!userId) return
       
       const { data, error } = await supabase
         .from('purchases')
@@ -114,19 +109,15 @@ export default function HomePage() {
         return
       }
       
-      console.log('Purchase data received:', data)
-      
       if (data) {
         const ids = new Set(data.map(p => p.content_id))
         setPurchasedIds(ids)
-        console.log('Purchased IDs:', ids)
         
         // Store tokens keyed by content_id
         const tokens: Record<string, string> = {}
         data.forEach(p => {
           tokens[p.content_id] = p.watch_token
         })
-        console.log('Purchase tokens:', tokens)
         setPurchaseTokens(tokens)
       }
     }
@@ -172,15 +163,10 @@ export default function HomePage() {
     const isPurchased = purchasedIds.has(film.id)
     const token = purchaseTokens[film.id]
     
-    // Debug log for this film
-    console.log(`Film: ${film.title}, ID: ${film.id}, Purchased: ${isPurchased}, Token: ${token || 'No token'}`)
-    
-    // Build the watch URL
-    let watchUrl = `/film/${film.id}` // Default fallback
+    let watchUrl = `/film/${film.id}`
     if (isPurchased && token) {
       watchUrl = `/watch/${token}`
     } else if (isPurchased && !token) {
-      // If purchased but no token, try using ID (as fallback)
       watchUrl = `/watch/${film.id}`
     }
     
@@ -248,6 +234,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
+      {/* HERO SECTION WITH CLICKABLE CAROUSEL */}
       <section className="relative min-h-screen flex items-center px-6 overflow-hidden bg-grid-pattern">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-[#1a0a0a] to-[#0a0a0a]">
           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#f5c518]/5 rounded-full blur-3xl" />
@@ -256,6 +243,7 @@ export default function HomePage() {
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left Column - Text Content */}
           <div>
             <div className="inline-block px-4 py-1.5 rounded-full bg-[#f5c518]/10 border border-[#f5c518]/20 text-[#f5c518] text-sm font-medium mb-6">
               Premium Content Marketplace
@@ -290,47 +278,112 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Right Column - Clickable Carousel */}
           {carouselFilms.length > 0 && (
             <div
               className="relative aspect-[4/3] max-h-[60vh] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
             >
-              {carouselFilms.map((film, idx) => (
-                <div
-                  key={film.id}
-                  className={`absolute inset-0 transition-all duration-700 ease-in-out ${
-                    idx === carouselIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-                  }`}
-                >
-                  {film.thumbnail_url ? (
-                    <Image
-                      src={film.thumbnail_url}
-                      alt={film.title}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-20 bg-[#1a1a1a]">🎬</div>
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-                    <h3 className="text-lg font-bold">{film.title}</h3>
-                    <p className="text-sm text-gray-300">{film.creator_name || 'Unknown Creator'}</p>
-                    <p className="text-[#f5c518] font-bold">KES {film.price}</p>
-                  </div>
-                </div>
-              ))}
-              <div className="absolute bottom-4 right-4 flex gap-2 z-10">
-                {carouselFilms.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCarouselIndex(idx)}
-                    className={`w-2.5 h-2.5 rounded-full transition ${
-                      idx === carouselIndex ? 'bg-[#f5c518]' : 'bg-white/30'
+              {carouselFilms.map((film, idx) => {
+                const isPurchased = purchasedIds.has(film.id)
+                const token = purchaseTokens[film.id]
+                
+                let linkUrl = `/film/${film.id}`
+                if (isPurchased && token) {
+                  linkUrl = `/watch/${token}`
+                } else if (isPurchased && !token) {
+                  linkUrl = `/watch/${film.id}`
+                }
+                
+                return (
+                  <Link
+                    key={film.id}
+                    href={linkUrl}
+                    className={`absolute inset-0 transition-all duration-700 ease-in-out cursor-pointer group ${
+                      idx === carouselIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
                     }`}
-                  />
-                ))}
-              </div>
+                  >
+                    {film.thumbnail_url ? (
+                      <Image
+                        src={film.thumbnail_url}
+                        alt={film.title}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-20 bg-[#1a1a1a]">🎬</div>
+                    )}
+                    
+                    {/* Gradient overlay for better text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    
+                    {/* Content overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 p-6">
+                      <h3 className="text-xl font-bold group-hover:text-[#f5c518] transition-colors">
+                        {film.title}
+                      </h3>
+                      <p className="text-sm text-gray-300">
+                        {film.creator_name || 'Unknown Creator'}
+                      </p>
+                      <div className="flex items-center gap-4 mt-2">
+                        {isPurchased ? (
+                          <>
+                            <span className="bg-green-500/90 text-white text-xs font-bold px-3 py-1 rounded-full">
+                              ✓ Owned
+                            </span>
+                            <span className="text-white text-sm font-semibold">
+                              ▶ Watch Now
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="bg-[#f5c518] text-black text-sm font-bold px-3 py-1 rounded-full">
+                              KES {film.price}
+                            </span>
+                            <span className="text-gray-300 text-sm group-hover:text-white transition-colors">
+                              View Details →
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Hover play icon overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-black/30">
+                      <div className="w-20 h-20 bg-[#f5c518] rounded-full flex items-center justify-center transform scale-90 group-hover:scale-100 transition-transform duration-300">
+                        <svg className="w-10 h-10 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                    
+                    {/* Category badge */}
+                    {film.category && (
+                      <div className="absolute top-4 right-4 bg-[#f5c518]/90 text-black text-xs px-3 py-1 rounded-full font-semibold">
+                        {film.category}
+                      </div>
+                    )}
+                    
+                    {/* Slide indicator dots */}
+                    <div className="absolute bottom-4 left-4 flex gap-2 z-10">
+                      {carouselFilms.map((_, dotIdx) => (
+                        <button
+                          key={dotIdx}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setCarouselIndex(dotIdx)
+                          }}
+                          className={`w-2.5 h-2.5 rounded-full transition ${
+                            dotIdx === carouselIndex ? 'bg-[#f5c518]' : 'bg-white/30 hover:bg-white/50'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           )}
         </div>
@@ -343,6 +396,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* CATEGORY FILTERS */}
       <div className="max-w-7xl mx-auto px-6 pt-8 pb-4">
         <div className="flex gap-3 flex-wrap">
           {categories.map((category) => (
@@ -361,6 +415,7 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* FEATURED CONTENT GRID */}
       <section className="max-w-7xl mx-auto px-6 py-12">
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -384,6 +439,7 @@ export default function HomePage() {
         )}
       </section>
 
+      {/* FOOTER */}
       <footer className="border-t border-white/5 mt-16 px-6 py-12">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
