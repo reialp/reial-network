@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
     // ✅ Find the purchase using the merchant reference (which is your purchase ID)
     console.log('🔍 Looking for purchase with ID:', orderMerchantReference)
-    
+
     const { data: purchase, error: purchaseError } = await supabase
       .from('purchases')
       .select('*')
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     // ✅ Update purchase with transaction ID
     const { error: updateError } = await supabase
       .from('purchases')
-      .update({ 
+      .update({
         pesapal_transaction_id: orderTrackingId,
         status: 'completed',
         updated_at: new Date().toISOString()
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
 
     console.log('✅ IPN processed successfully for purchase:', purchase.id)
     return NextResponse.json({ success: true })
-    
+
   } catch (error) {
     console.error('❌ IPN error:', error)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
