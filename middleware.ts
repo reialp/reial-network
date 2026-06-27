@@ -35,49 +35,35 @@ export async function middleware(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession()
 
   const pathname = request.nextUrl.pathname
-  const search = request.nextUrl.search
 
-  // ✅ Define public routes
-  const publicRoutes = [
-    '/',
-    '/auth/login',
-    '/auth/signup',
-    '/explore',
-    '/film/',
-    '/creator/',
-  ]
-  
-  const isPublic = publicRoutes.some(route => 
-    pathname === route || pathname.startsWith(route)
-  )
+  // ✅ Public routes (exact matches)
+  const isPublic = 
+    pathname === '/' ||
+    pathname === '/auth/login' ||
+    pathname === '/auth/signup' ||
+    pathname.startsWith('/explore') ||
+    pathname.startsWith('/film/') ||
+    pathname.startsWith('/creator/')
 
   // ✅ Protected routes
-  const protectedRoutes = [
-    '/dashboard',
-    '/upload',
-    '/library',
-    '/profile',
-    '/admin',
-    '/checkout/',
-    '/watch/',
-  ]
-  
-  const isProtected = protectedRoutes.some(route => 
-    pathname === route || pathname.startsWith(route)
-  )
+  const isProtected = 
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/upload') ||
+    pathname.startsWith('/library') ||
+    pathname.startsWith('/profile') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/checkout/') ||
+    pathname.startsWith('/watch/')
 
   // ✅ If protected and no session, redirect to login with redirectTo
   if (isProtected && !session) {
-    // ✅ PRESERVE the FULL URL including path and search params
-    const fullPath = pathname + search
-    const redirectTo = encodeURIComponent(fullPath)
-    console.log('🔀 Middleware redirecting to login with:', redirectTo)
+    const redirectTo = encodeURIComponent(pathname + request.nextUrl.search)
+    console.log('🔀 Redirecting to login with:', redirectTo)
     return NextResponse.redirect(new URL(`/auth/login?redirectTo=${redirectTo}`, request.url))
   }
 
-  // If logged in and trying to access auth pages, redirect to the page they wanted
-  if (session && (pathname.startsWith('/auth/login') || pathname.startsWith('/auth/signup'))) {
-    // ✅ Check if there's a redirectTo parameter
+  // ✅ If logged in and trying to access auth pages, check for redirectTo
+  if (session && (pathname === '/auth/login' || pathname === '/auth/signup')) {
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     if (redirectTo) {
       console.log('🔀 Logged in, redirecting to:', redirectTo)
