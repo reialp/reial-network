@@ -1,13 +1,17 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // ✅ Get redirect URL from query params
+  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -32,7 +36,8 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/dashboard')
+    // ✅ Redirect to the original page they wanted (or dashboard)
+    router.push(redirectTo)
     router.refresh()
   }
 
@@ -66,10 +71,16 @@ export default function LoginPage() {
           </h1>
           <h2 className="mt-6 text-2xl font-semibold text-center">Sign in to your account</h2>
           <p className="mt-2 text-center text-gray-400 text-sm">
-            Or{' '}
-            <Link href="/auth/signup" className="text-[#f5c518] hover:underline">
-              create a new account
-            </Link>
+            {redirectTo !== '/dashboard' ? (
+              <span className="text-[#f5c518]">Complete your purchase by signing in</span>
+            ) : (
+              <>
+                Or{' '}
+                <Link href="/auth/signup" className="text-[#f5c518] hover:underline">
+                  create a new account
+                </Link>
+              </>
+            )}
           </p>
         </div>
 
