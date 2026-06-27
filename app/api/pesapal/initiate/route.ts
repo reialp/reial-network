@@ -15,7 +15,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // ✅ Check environment variables
     const consumerKey = process.env.PESAPAL_CONSUMER_KEY
     const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET
     const environment = process.env.PESAPAL_ENVIRONMENT || 'sandbox'
@@ -26,14 +25,13 @@ export async function POST(req: Request) {
 
     if (!consumerKey || !consumerSecret) {
       console.error('❌ Missing PesaPal credentials')
-      console.error('🔍 PESAPAL_CONSUMER_KEY:', consumerKey ? '✅ Set' : '❌ Missing')
-      console.error('🔍 PESAPAL_CONSUMER_SECRET:', consumerSecret ? '✅ Set' : '❌ Missing')
       return NextResponse.json(
         { error: 'PesaPal credentials not configured' },
         { status: 500 }
       )
     }
 
+    // ✅ Use the CORRECT base URL
     const baseUrl = environment === 'sandbox'
       ? 'https://cybqa.pesapal.com/pesapalv3/api'
       : 'https://pay.pesapal.com/v3'
@@ -44,16 +42,26 @@ export async function POST(req: Request) {
 
     // ✅ Step 1: Get OAuth token
     console.log('📡 Getting auth token...')
-    const authResponse = await fetch(`${baseUrl}/Auth/RequestToken`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        consumer_key: consumerKey,
-        consumer_secret: consumerSecret,
-      }),
-    })
+    
+    let authResponse
+    try {
+      authResponse = await fetch(`${baseUrl}/Auth/RequestToken`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          consumer_key: consumerKey,
+          consumer_secret: consumerSecret,
+        }),
+      })
+    } catch (fetchError) {
+      console.error('❌ Network error fetching auth token:', fetchError)
+      return NextResponse.json(
+        { error: 'Network error connecting to PesaPal' },
+        { status: 500 }
+      )
+    }
 
     if (!authResponse.ok) {
       const errorText = await authResponse.text()
@@ -64,7 +72,29 @@ export async function POST(req: Request) {
       )
     }
 
-    const authData = await authResponse.json()
+    // ✅ Check if response has content
+    const responseText = await authResponse.text()
+    console.log('📦 Auth response text:', responseText)
+
+    if (!responseText || responseText.trim().length === 0) {
+      console.error('❌ Empty response from PesaPal')
+      return NextResponse.json(
+        { error: 'Empty response from PesaPal authentication' },
+        { status: 500 }
+      )
+    }
+
+    let authData
+    try {
+      authData = JSON.parse(responseText)
+    } catch (parseError) {
+      console.error('❌ Failed to parse auth response:', responseText)
+      return NextResponse.json(
+        { error: 'Invalid response from PesaPal' },
+        { status: 500 }
+      )
+    }
+
     console.log('✅ Auth successful')
     const token = authData.token
 
@@ -93,27 +123,57 @@ export async function POST(req: Request) {
       source: 'web',
     }
     
-    console.log('📦 Payment payload:', paymentPayload)
+    console.log('📦 Payment payload:', JSON.stringify(paymentPayload))
 
-    const paymentResponse = await fetch(`${baseUrl}/Transactions/SubmitOrderRequest`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(paymentPayload),
-    })
+    let paymentResponse
+    try {
+      paymentResponse = await fetch(`${baseUrl}/Transactions/SubmitOrderRequest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(paymentPayload),
+      })
+    } catch (fetchError) {
+      console.error('❌ Network error submitting payment:', fetchError)
+      return NextResponse.json(
+        { error: 'Network error submitting payment to PesaPal' },
+        { status: 500 }
+      )
+    }
+
+    // ✅ Get the response text first
+    const paymentResponseText = await paymentResponse.text()
+    console.log('📦 Payment response text:', paymentResponseText)
 
     if (!paymentResponse.ok) {
-      const errorText = await paymentResponse.text()
-      console.error('❌ Payment submission failed:', paymentResponse.status, errorText)
+      console.error('❌ Payment submission failed:', paymentResponse.status, paymentResponseText)
       return NextResponse.json(
         { error: `Payment submission failed: ${paymentResponse.status}` },
         { status: 500 }
       )
     }
 
-    const paymentData = await paymentResponse.json()
+    if (!paymentResponseText || paymentResponseText.trim().length === 0) {
+      console.error('❌ Empty payment response from PesaPal')
+      return NextResponse.json(
+        { error: 'Empty response from PesaPal' },
+        { status: 500 }
+      )
+    }
+
+    let paymentData
+    try {
+      paymentData = JSON.parse(paymentResponseText)
+    } catch (parseError) {
+      console.error('❌ Failed to parse payment response:', paymentResponseText)
+      return NextResponse.json(
+        { error: 'Invalid payment response from PesaPal' },
+        { status: 500 }
+      )
+    }
+
     console.log('✅ Payment response received:', JSON.stringify(paymentData, null, 2))
 
     const redirectUrl = paymentData.redirect_url
