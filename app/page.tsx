@@ -17,6 +17,7 @@ interface Film {
   purchase_count: number
   views: number
   creator_name: string | null
+  slug: string | null // ✅ Added slug field
 }
 
 export default function HomePage() {
@@ -51,8 +52,9 @@ export default function HomePage() {
           created_at,
           purchase_count,
           views,
-          creator_id
-        `)
+          creator_id,
+          slug
+        `) // ✅ Added slug to select
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
 
@@ -84,7 +86,8 @@ export default function HomePage() {
           created_at: item.created_at,
           purchase_count: item.purchase_count || 0,
           views: item.views || 0,
-          creator_name: creatorNames[item.creator_id] || 'Unknown Creator'
+          creator_name: creatorNames[item.creator_id] || 'Unknown Creator',
+          slug: item.slug || null // ✅ Added slug mapping
         }))
         setAllFilms(mappedData)
       }
@@ -162,7 +165,9 @@ export default function HomePage() {
     const isPurchased = purchasedIds.has(film.id)
     const token = purchaseTokens[film.id]
     
-    let watchUrl = `/film/${film.id}`
+    // ✅ Use slug for film URL, fallback to ID if slug is missing
+    const filmSlug = film.slug || film.id
+    let watchUrl = `/film/${filmSlug}`
     if (isPurchased && token) {
       watchUrl = `/watch/${token}`
     } else if (isPurchased && !token) {
@@ -288,7 +293,9 @@ export default function HomePage() {
                 const isPurchased = purchasedIds.has(film.id)
                 const token = purchaseTokens[film.id]
                 
-                let linkUrl = `/film/${film.id}`
+                // ✅ Use slug for film URL, fallback to ID if slug is missing
+                const filmSlug = film.slug || film.id
+                let linkUrl = `/film/${filmSlug}`
                 if (isPurchased && token) {
                   linkUrl = `/watch/${token}`
                 } else if (isPurchased && !token) {
