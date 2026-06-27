@@ -16,9 +16,7 @@ export default function CheckoutPage() {
     const path = window.location.pathname
     const segments = path.split('/')
     const id = segments[segments.length - 1]
-    
-    console.log('🔍 Checkout - ID from URL:', id)
-    
+
     if (!id || id === 'undefined' || id === 'null' || id === 'checkout' || id === '') {
       setError('Invalid film ID. Please go back and try again.')
       return
@@ -59,7 +57,9 @@ export default function CheckoutPage() {
     }
 
     try {
-      // Step 1: Create purchase record
+      console.log('🎬 Starting purchase for:', film.title)
+
+      // Step 1: Create purchase record (status = pending)
       const purchaseResponse = await fetch('/api/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,6 +70,8 @@ export default function CheckoutPage() {
       })
 
       const purchaseResult = await purchaseResponse.json()
+      console.log('📦 Purchase result:', purchaseResult)
+
       if (!purchaseResponse.ok) {
         setError(purchaseResult.error || 'Purchase creation failed.')
         setLoading(false)
@@ -82,7 +84,8 @@ export default function CheckoutPage() {
       }
 
       // ✅ Step 2: Redirect to Pesapal for REAL payment
-      // ✅ FIXED: Changed from /api/pesapal to /api/pesapal/initiate
+      console.log('💳 Initiating PesaPal payment for:', purchaseResult.purchaseId)
+
       const paymentResponse = await fetch('/api/pesapal/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -93,10 +96,22 @@ export default function CheckoutPage() {
         }),
       })
 
+      console.log('📡 Payment response status:', paymentResponse.status)
+
+      // ✅ Check if response is JSON
+      const contentType = paymentResponse.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await paymentResponse.text()
+        console.error('❌ Non-JSON response:', text)
+        setError('Payment service returned an error. Please try again.')
+        setLoading(false)
+        return
+      }
+
       const paymentResult = await paymentResponse.json()
-      
+      console.log('💰 Payment result:', paymentResult)
+
       if (!paymentResponse.ok) {
-        console.error('Payment error:', paymentResult)
         setError(paymentResult.error || 'Payment initiation failed.')
         setLoading(false)
         return
@@ -104,14 +119,15 @@ export default function CheckoutPage() {
 
       // ✅ Redirect to Pesapal payment page
       if (paymentResult.redirect_url) {
+        console.log('🔀 Redirecting to PesaPal:', paymentResult.redirect_url)
         window.location.href = paymentResult.redirect_url
       } else {
         setError('No redirect URL received from payment provider.')
         setLoading(false)
       }
-      
+
     } catch (err: any) {
-      console.error('Checkout error:', err)
+      console.error('❌ Checkout error:', err)
       setError('Error: ' + err.message)
       setLoading(false)
     }
