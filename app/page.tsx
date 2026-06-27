@@ -29,6 +29,7 @@ export default function HomePage() {
   const [isPaused, setIsPaused] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set())
+  const [purchaseTokens, setPurchaseTokens] = useState<Record<string, string>>({}) // NEW
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -92,19 +93,26 @@ export default function HomePage() {
     fetchFilms()
   }, [supabase])
 
-  // Fetch user's purchases
+  // Fetch user's purchases - UPDATED to also get tokens
   useEffect(() => {
     async function fetchPurchases() {
       if (!userId) return
       const { data } = await supabase
         .from('purchases')
-        .select('content_id')
+        .select('content_id, watch_token')
         .eq('buyer_id', userId)
         .is('revoked_at', null)
       
       if (data) {
         const ids = new Set(data.map(p => p.content_id))
         setPurchasedIds(ids)
+        
+        // Store tokens keyed by content_id
+        const tokens: Record<string, string> = {}
+        data.forEach(p => {
+          tokens[p.content_id] = p.watch_token
+        })
+        setPurchaseTokens(tokens)
       }
     }
     fetchPurchases()
@@ -145,13 +153,15 @@ export default function HomePage() {
 
   const carouselFilms = allFilms.slice(0, 5)
 
+  // UPDATED renderFilmCard - uses token for watch link
   const renderFilmCard = (film: Film) => {
     const isPurchased = purchasedIds.has(film.id)
+    const token = purchaseTokens[film.id]
     
     return (
       <Link
         key={film.id}
-        href={isPurchased ? `/library` : `/film/${film.id}`}
+        href={isPurchased && token ? `/watch/${token}` : `/film/${film.id}`}
         className="group bg-[#1a1a1a] rounded-2xl overflow-hidden hover:scale-[1.03] transition-all duration-500 hover:shadow-2xl hover:shadow-[#f5c518]/10 border border-white/5 hover:border-[#f5c518]/20"
       >
         <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
@@ -198,10 +208,14 @@ export default function HomePage() {
     )
   }
 
+  // UPDATED Loading state with spinner
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading premium content...</p>
+        </div>
       </div>
     )
   }
