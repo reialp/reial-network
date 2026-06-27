@@ -2,121 +2,145 @@ import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   try {
-    const { amount, purchaseId, description } = await req.json()
+    const body = await req.json()
+    console.log('🔍 Request body:', body)
     
-    console.log('🔍 Starting payment:', { amount, purchaseId })
+    const { amount, purchaseId, description, email, firstName, lastName, phoneNumber } = body
+
+    if (!amount || !purchaseId) {
+      console.error('❌ Missing required fields:', { amount, purchaseId })
+      return NextResponse.json(
+        { error: 'Missing required fields: amount and purchaseId are mandatory' },
+        { status: 400 }
+      )
+    }
 
     const consumerKey = process.env.PESAPAL_CONSUMER_KEY?.trim()
     const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET?.trim()
+    const notificationId = process.env.PESAPAL_NOTIFICATION_ID?.trim()
     const environment = process.env.PESAPAL_ENVIRONMENT || 'production'
 
-    // ✅ Check credentials
-    if (!consumerKey || !consumerSecret) {
-      console.error('❌ Missing PesaPal credentials')
+    console.log('🔍 Environment:', environment)
+    console.log('🔍 Consumer Key exists:', !!consumerKey)
+    console.log('🔍 Consumer Secret exists:', !!consumerSecret)
+    console.log('🔍 Notification ID exists:', !!notificationId)
+
+    if (!consumerKey || !consumerSecret || !notificationId) {
+      const missing = []
+      if (!consumerKey) missing.push('PESAPAL_CONSUMER_KEY')
+      if (!consumerSecret) missing.push('PESAPAL_CONSUMER_SECRET')
+      if (!notificationId) missing.push('PESAPAL_NOTIFICATION_ID')
+      
+      console.error('❌ Missing PesaPal configuration:', missing.join(', '))
       return NextResponse.json(
-        { error: 'Missing PesaPal credentials' },
+        { error: `PesaPal configuration missing: ${missing.join(', ')}` },
         { status: 500 }
       )
     }
 
-    // ✅ Build API URL
     const baseUrl = environment === 'sandbox'
       ? 'https://cybqa.pesapal.com/pesapalv3/api'
-      : 'https://pay.pesapal.com/v3'
+      : 'https://pay.pesapal.com/v3/api'
 
     console.log('🔍 Base URL:', baseUrl)
 
-    // ✅ Step 1: Get token
+    // ✅ Step 1: Get OAuth token
     console.log('📡 Getting auth token...')
     
-    const authRes = await fetch(`${baseUrl}/Auth/RequestToken`, {
+    const authResponse = await fetch(`${baseUrl}/Auth/RequestToken`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
       body: JSON.stringify({
         consumer_key: consumerKey,
         consumer_secret: consumerSecret,
       }),
     })
 
-    if (!authRes.ok) {
-      const error = await authRes.text()
-      console.error('❌ Auth error:', error)
+    if (!authResponse.ok) {
+      const errorText = await authResponse.text()
+      console.error('❌ Auth failed:', authResponse.status, errorText)
       return NextResponse.json(
-        { error: `Auth failed: ${authRes.status}` },
+        { error: `Authentication failed: ${authResponse.status}` },
         { status: 500 }
       )
     }
 
-    const authData = await authRes.json()
-    console.log('✅ Auth successful')
-    
+    const authData = await authResponse.json()
     const token = authData.token
+
     if (!token) {
-      console.error('❌ No token')
+      console.error('❌ No token in response:', authData)
       return NextResponse.json(
-        { error: 'No token received' },
+        { error: 'No authentication token received' },
         { status: 500 }
       )
     }
 
-    // ✅ Step 2: Submit order
-    console.log('📡 Submitting order...')
+    // ✅ Step 2: Submit order to PesaPal
+    console.log('📡 Submitting order to PesaPal...')
     
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://reial-network.vercel.app'
     
-    const orderPayload = {
+    const paymentPayload = {
       id: purchaseId,
       currency: 'KES',
       amount: Number(amount),
       description: description || 'Reial Network purchase',
-      callback_url: `${appUrl}/api/pesapal/callback`, // ✅ UPDATED: Now uses /callback
-      branch: 'Reial Network',
-      source: 'web',
+      callback_url: `${appUrl}/api/pesapal/callback`, // ✅ Uses /callback
+      notification_id: notificationId,
+      billing_address: {
+        email_address: email || 'customer@example.com',
+        phone_number: phoneNumber || '',
+        first_name: firstName || 'Customer',
+        last_name: lastName || 'User',
+      }
     }
+    
+    console.log('📦 Payment payload:', JSON.stringify(paymentPayload))
 
-    console.log('📦 Order:', JSON.stringify(orderPayload))
-
-    const orderRes = await fetch(`${baseUrl}/Transactions/SubmitOrderRequest`, {
+    const paymentResponse = await fetch(`${baseUrl}/Transactions/SubmitOrderRequest`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(orderPayload),
+      body: JSON.stringify(paymentPayload),
     })
 
-    if (!orderRes.ok) {
-      const error = await orderRes.text()
-      console.error('❌ Order error:', error)
+    if (!paymentResponse.ok) {
+      const errorText = await paymentResponse.text()
+      console.error('❌ Payment submission failed:', paymentResponse.status, errorText)
       return NextResponse.json(
-        { error: `Order failed: ${orderRes.status}` },
+        { error: `Payment submission failed: ${paymentResponse.status}. Details: ${errorText}` },
         { status: 500 }
       )
     }
 
-    const orderData = await orderRes.json()
-    console.log('✅ Order successful')
+    const paymentData = await paymentResponse.json()
+    const redirectUrl = paymentData.redirect_url
 
-    const redirectUrl = orderData.redirect_url
     if (!redirectUrl) {
-      console.error('❌ No redirect URL:', orderData)
+      console.error('❌ No redirect URL:', paymentData)
       return NextResponse.json(
-        { error: 'No redirect URL' },
+        { error: 'No redirect URL received from PesaPal' },
         { status: 500 }
       )
     }
 
-    console.log('✅ Redirect URL:', redirectUrl)
-    
-    return NextResponse.json({
+    console.log('✅ Success! Redirect URL:', redirectUrl)
+    return NextResponse.json({ 
       success: true,
-      redirect_url: redirectUrl,
+      redirect_url: redirectUrl 
     })
 
   } catch (error: any) {
-    console.error('❌ Error:', error)
+    console.error('❌ Pesapal error:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal error' },
+      { error: error.message || 'Internal server error' },
       { status: 500 }
     )
   }
