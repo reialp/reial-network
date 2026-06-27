@@ -10,17 +10,24 @@ export async function POST(req: Request) {
     if (!amount || !purchaseId) {
       console.error('❌ Missing required fields:', { amount, purchaseId })
       return NextResponse.json(
-        { error: 'Missing required fields: amount and purchaseId are required' },
+        { error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
+    // ✅ Check environment variables
     const consumerKey = process.env.PESAPAL_CONSUMER_KEY
     const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET
     const environment = process.env.PESAPAL_ENVIRONMENT || 'sandbox'
 
+    console.log('🔍 Environment:', environment)
+    console.log('🔍 Consumer Key exists:', !!consumerKey)
+    console.log('🔍 Consumer Secret exists:', !!consumerSecret)
+
     if (!consumerKey || !consumerSecret) {
       console.error('❌ Missing PesaPal credentials')
+      console.error('🔍 PESAPAL_CONSUMER_KEY:', consumerKey ? '✅ Set' : '❌ Missing')
+      console.error('🔍 PESAPAL_CONSUMER_SECRET:', consumerSecret ? '✅ Set' : '❌ Missing')
       return NextResponse.json(
         { error: 'PesaPal credentials not configured' },
         { status: 500 }
@@ -31,7 +38,6 @@ export async function POST(req: Request) {
       ? 'https://cybqa.pesapal.com/pesapalv3/api'
       : 'https://pay.pesapal.com/v3'
 
-    console.log('🔍 Environment:', environment)
     console.log('🔍 Base URL:', baseUrl)
     console.log('🔍 Amount:', amount)
     console.log('🔍 Purchase ID:', purchaseId)
@@ -73,7 +79,8 @@ export async function POST(req: Request) {
     // ✅ Step 2: Submit order to PesaPal
     console.log('📡 Submitting order to PesaPal...')
     
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://reial-network.vercel.app'
+    console.log('🔍 App URL:', appUrl)
     
     const paymentPayload = {
       id: purchaseId,
@@ -107,7 +114,7 @@ export async function POST(req: Request) {
     }
 
     const paymentData = await paymentResponse.json()
-    console.log('✅ Payment response received:', paymentData)
+    console.log('✅ Payment response received:', JSON.stringify(paymentData, null, 2))
 
     const redirectUrl = paymentData.redirect_url
 
