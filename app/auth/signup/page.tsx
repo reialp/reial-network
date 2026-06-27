@@ -97,10 +97,16 @@ export default function SignupPage() {
           </h1>
           <h2 className="mt-6 text-2xl font-semibold">Create your account</h2>
           <p className="mt-2 text-gray-400 text-sm">
-            Already have an account?{' '}
-            <Link href={`/auth/login?redirectTo=${redirectTo}`} className="text-[#f5c518] hover:underline">
-              Sign in
-            </Link>
+            {redirectTo !== '/dashboard' ? (
+              <span className="text-[#f5c518]">🔐 Complete your purchase by signing up</span>
+            ) : (
+              <>
+                Already have an account?{' '}
+                <Link href={`/auth/login?redirectTo=${redirectTo}`} className="text-[#f5c518] hover:underline">
+                  Sign in
+                </Link>
+              </>
+            )}
           </p>
         </div>
 
