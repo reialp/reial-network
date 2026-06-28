@@ -73,11 +73,34 @@ export async function POST(req: Request) {
     // ✅ Increment sales count for the content
     if (purchase.content_id) {
       try {
-        await supabase.rpc('increment_sales', { content_id: purchase.content_id })
-        console.log('✅ Sales count incremented for content:', purchase.content_id)
+        // ✅ Check if the function exists by testing it
+        console.log('📊 Calling increment_sales for content:', purchase.content_id)
+        
+        // ✅ First, check if the function exists
+        const { data: funcCheck, error: funcError } = await supabase
+          .rpc('increment_sales', { content_id: purchase.content_id })
+        
+        if (funcError) {
+          console.error('❌ RPC error:', funcError)
+          console.error('❌ This means the increment_sales function does not exist in Supabase!')
+          console.error('❌ Please run the CREATE FUNCTION SQL in Supabase SQL Editor.')
+        } else {
+          console.log('✅ Sales count incremented for content:', purchase.content_id)
+        }
       } catch (rpcError) {
         console.error('❌ RPC error (increment_sales):', rpcError)
-        // Don't fail the whole transaction if RPC fails
+        console.error('❌ The increment_sales function does not exist in Supabase.')
+        console.error('❌ Please run this SQL in Supabase SQL Editor:')
+        console.error(`
+          CREATE OR REPLACE FUNCTION increment_sales(content_id UUID)
+          RETURNS void AS $$
+          BEGIN
+            UPDATE content
+            SET purchase_count = purchase_count + 1
+            WHERE id = content_id;
+          END;
+          $$ LANGUAGE plpgsql;
+        `)
       }
     }
 
