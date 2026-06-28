@@ -8,6 +8,9 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  // ✅ Log all cookies for debugging
+  console.log('🔍 All cookies:', request.cookies.getAll().map(c => c.name))
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,7 +34,13 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { session }, error } = await supabase.auth.getSession()
+  
+  // ✅ Log session status
+  console.log('🔍 Session exists:', !!session)
+  if (error) {
+    console.error('❌ Session error:', error)
+  }
 
   const pathname = request.nextUrl.pathname
 
