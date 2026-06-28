@@ -14,6 +14,8 @@ interface Content {
   purchase_count: number
   status: 'draft' | 'pending' | 'approved' | 'rejected'
   created_at: string
+  slug: string | null
+  category: string | null
 }
 
 export default function DashboardPage() {
@@ -46,6 +48,8 @@ export default function DashboardPage() {
   }, [])
 
   const loadDashboard = async () => {
+    setLoading(true)
+    
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
       router.push('/auth/login')
@@ -53,6 +57,7 @@ export default function DashboardPage() {
     }
     setUserId(session.user.id)
 
+    // ✅ Get profile
     const { data: profile } = await supabase
       .from('profiles')
       .select('full_name, is_creator')
@@ -64,6 +69,7 @@ export default function DashboardPage() {
       setIsCreator(profile.is_creator || false)
     }
 
+    // ✅ Get content with slug and category
     const { data: contentData } = await supabase
       .from('content')
       .select('*')
@@ -72,6 +78,7 @@ export default function DashboardPage() {
 
     setContent(contentData || [])
 
+    // ✅ Calculate stats
     const totalFilms = contentData?.length || 0
     const pendingApprovals = contentData?.filter(c => c.status === 'pending').length || 0
     const totalSales = contentData?.reduce((sum, c) => sum + (c.purchase_count || 0), 0) || 0
@@ -80,6 +87,7 @@ export default function DashboardPage() {
 
     setStats({ totalFilms, pendingApprovals, totalSales, grossRevenue, yourEarnings })
 
+    // ✅ Get payout history
     const { data: payoutData } = await supabase
       .from('payout_requests')
       .select('*')
@@ -111,6 +119,20 @@ export default function DashboardPage() {
       return
     }
 
+    // ✅ Check if there's already a pending payout
+    const { data: pendingPayout } = await supabase
+      .from('payout_requests')
+      .select('id')
+      .eq('creator_id', session.user.id)
+      .eq('status', 'pending')
+      .maybeSingle()
+
+    if (pendingPayout) {
+      setPayoutMessage('You already have a pending payout request. Please wait for it to be processed.')
+      setIsRequesting(false)
+      return
+    }
+
     const { error } = await supabase
       .from('payout_requests')
       .insert({
@@ -126,6 +148,7 @@ export default function DashboardPage() {
       setPayoutMessage('✅ Payout request submitted! Processing time: 1-3 business days.')
       setPayoutAmount('')
       setPhoneNumber('')
+      // ✅ Refresh payout history
       const { data: payoutData } = await supabase
         .from('payout_requests')
         .select('*')
@@ -143,6 +166,16 @@ export default function DashboardPage() {
       alert('Error deleting: ' + error.message)
     } else {
       loadDashboard()
+    }
+  }
+
+  // ✅ Get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved': return 'bg-green-500/20 text-green-400'
+      case 'pending': return 'bg-yellow-500/20 text-yellow-400'
+      case 'rejected': return 'bg-red-500/20 text-red-400'
+      default: return 'bg-gray-500/20 text-gray-400'
     }
   }
 
@@ -182,6 +215,7 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* ✅ Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 hover:border-[#f5c518]/20 transition-all">
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Films Uploaded</p>
@@ -197,15 +231,16 @@ export default function DashboardPage() {
           </div>
           <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 hover:border-green-500/20 transition-all">
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Gross Revenue</p>
-            <p className="text-2xl font-bold mt-1 text-green-400">KES {stats.grossRevenue}</p>
+            <p className="text-2xl font-bold mt-1 text-green-400">KES {stats.grossRevenue.toLocaleString()}</p>
           </div>
           <div className="bg-gradient-to-br from-[#1a1a1a] to-[#2a1a0a] rounded-2xl p-5 border border-[#f5c518]/20 relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-[#f5c518]/10 px-3 py-1 rounded-bl-lg text-xs text-[#f5c518] font-semibold">85%</div>
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Your Earnings</p>
-            <p className="text-2xl font-bold mt-1 text-[#f5c518]">KES {stats.yourEarnings}</p>
+            <p className="text-2xl font-bold mt-1 text-[#f5c518]">KES {stats.yourEarnings.toLocaleString()}</p>
           </div>
         </div>
 
+        {/* ✅ Content Table */}
         <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
           <div className="px-6 py-4 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
@@ -229,6 +264,7 @@ export default function DashboardPage() {
                 <thead className="bg-[#0a0a0a] border-b border-white/5">
                   <tr>
                     <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Title</th>
+                    <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Category</th>
                     <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Price</th>
                     <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Views</th>
                     <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Sales</th>
@@ -240,29 +276,35 @@ export default function DashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {content.map((film: Content) => {
-                    const conversion = film.views > 0 ? ((film.purchase_count / film.views) * 100).toFixed(2) : '0.00'
+                    const conversion = film.views > 0 ? ((film.purchase_count / film.views) * 100).toFixed(1) : '0.0'
                     const revenue = film.price * film.purchase_count
+                    // ✅ Build clean URL with category and slug
+                    const categoryPath = film.category ? film.category.toLowerCase() : 'film'
+                    const slug = film.slug || film.id
+                    const filmUrl = `/${categoryPath}/${slug}`
+                    
                     return (
                       <tr key={film.id} className="hover:bg-white/5 transition">
                         <td className="px-6 py-4 font-medium">{film.title}</td>
+                        <td className="px-6 py-4 text-gray-400 text-xs">
+                          <span className="bg-[#0a0a0a] px-2 py-0.5 rounded-full">
+                            {film.category || 'Film'}
+                          </span>
+                        </td>
                         <td className="px-6 py-4 text-[#f5c518] font-semibold">KES {film.price}</td>
                         <td className="px-6 py-4 text-gray-400">{film.views}</td>
                         <td className="px-6 py-4 text-gray-400">{film.purchase_count}</td>
                         <td className="px-6 py-4 text-gray-400">{conversion}%</td>
-                        <td className="px-6 py-4 text-green-400">KES {revenue}</td>
+                        <td className="px-6 py-4 text-green-400">KES {revenue.toLocaleString()}</td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
-                            ${film.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                              film.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                              film.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                              'bg-gray-500/20 text-gray-400'}`}>
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(film.status)}`}>
                             {film.status}
                           </span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex gap-3">
                             <button
-                              onClick={() => window.open(`/film/${film.id}?preview=true`, '_blank')}
+                              onClick={() => window.open(filmUrl + '?preview=true', '_blank')}
                               className="text-gray-500 hover:text-[#f5c518] text-xs transition"
                             >
                               Preview
@@ -281,7 +323,7 @@ export default function DashboardPage() {
                             </button>
                             <button
                               onClick={() => {
-                                const url = `${window.location.origin}/film/${film.id}`
+                                const url = `${window.location.origin}${filmUrl}`
                                 if (navigator.clipboard) {
                                   navigator.clipboard.writeText(url).then(() => {
                                     alert('🔗 Link copied to clipboard!')
@@ -315,6 +357,7 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* ✅ Payout Section */}
         <div className="mt-12 bg-[#1a1a1a] rounded-2xl border border-white/5 p-6">
           <h2 className="text-xl font-bold mb-2">Request Payout</h2>
           <p className="text-gray-400 text-sm mb-4">
