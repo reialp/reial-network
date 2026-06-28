@@ -30,6 +30,7 @@ interface Content {
   views: number
   purchase_count: number
   created_at: string
+  slug: string | null  // ✅ Added
   profiles: {
     full_name: string
   }
@@ -176,7 +177,7 @@ export default function AdminPage() {
 
     setPayouts(payoutData as PayoutRequest[])
 
-    // ✅ NEW: Fetch ALL transactions with buyer info
+    // ✅ Fetch ALL transactions with buyer info
     const { data: transactionsData } = await supabase
       .from('purchases')
       .select(`
@@ -443,7 +444,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* ✅ NEW: Transactions Section */}
+        {/* Transactions Section */}
         <h2 className="text-2xl font-bold mb-4">Transaction History</h2>
         <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
           <div className="overflow-x-auto">
