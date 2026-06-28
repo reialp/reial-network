@@ -43,8 +43,42 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState('')
   const [isCreator, setIsCreator] = useState(false)
 
+  // ✅ Load data on mount and set up real-time subscription
   useEffect(() => {
     loadDashboard()
+
+    // ✅ Subscribe to real-time changes
+    const channel = supabase
+      .channel('dashboard-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'purchases',
+        },
+        () => {
+          console.log('🔄 Purchase detected, refreshing dashboard...')
+          loadDashboard()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'content',
+        },
+        () => {
+          console.log('🔄 Content updated, refreshing dashboard...')
+          loadDashboard()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const loadDashboard = async () => {
@@ -179,6 +213,11 @@ export default function DashboardPage() {
     }
   }
 
+  // ✅ Format currency
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString()
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -197,14 +236,25 @@ export default function DashboardPage() {
             </h1>
             <p className="text-gray-400 text-sm mt-1">Here's an overview of your creator performance.</p>
           </div>
-          {isCreator && (
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setIsOnboardingOpen(true)}
+              onClick={loadDashboard}
               className="text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
             >
-              <span>📖</span> How it works
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
             </button>
-          )}
+            {isCreator && (
+              <button
+                onClick={() => setIsOnboardingOpen(true)}
+                className="text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
+              >
+                <span>📖</span> How it works
+              </button>
+            )}
+          </div>
         </div>
 
         {!isCreator && (
@@ -231,12 +281,12 @@ export default function DashboardPage() {
           </div>
           <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 hover:border-green-500/20 transition-all">
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Gross Revenue</p>
-            <p className="text-2xl font-bold mt-1 text-green-400">KES {stats.grossRevenue.toLocaleString()}</p>
+            <p className="text-2xl font-bold mt-1 text-green-400">KES {formatCurrency(stats.grossRevenue)}</p>
           </div>
           <div className="bg-gradient-to-br from-[#1a1a1a] to-[#2a1a0a] rounded-2xl p-5 border border-[#f5c518]/20 relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-[#f5c518]/10 px-3 py-1 rounded-bl-lg text-xs text-[#f5c518] font-semibold">85%</div>
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Your Earnings</p>
-            <p className="text-2xl font-bold mt-1 text-[#f5c518]">KES {stats.yourEarnings.toLocaleString()}</p>
+            <p className="text-2xl font-bold mt-1 text-[#f5c518]">KES {formatCurrency(stats.yourEarnings)}</p>
           </div>
         </div>
 
@@ -278,7 +328,6 @@ export default function DashboardPage() {
                   {content.map((film: Content) => {
                     const conversion = film.views > 0 ? ((film.purchase_count / film.views) * 100).toFixed(1) : '0.0'
                     const revenue = film.price * film.purchase_count
-                    // ✅ Build clean URL with category and slug
                     const categoryPath = film.category ? film.category.toLowerCase() : 'film'
                     const slug = film.slug || film.id
                     const filmUrl = `/${categoryPath}/${slug}`
@@ -295,7 +344,7 @@ export default function DashboardPage() {
                         <td className="px-6 py-4 text-gray-400">{film.views}</td>
                         <td className="px-6 py-4 text-gray-400">{film.purchase_count}</td>
                         <td className="px-6 py-4 text-gray-400">{conversion}%</td>
-                        <td className="px-6 py-4 text-green-400">KES {revenue.toLocaleString()}</td>
+                        <td className="px-6 py-4 text-green-400">KES {formatCurrency(revenue)}</td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(film.status)}`}>
                             {film.status}
