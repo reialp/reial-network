@@ -29,6 +29,7 @@ export default function DashboardPage() {
     totalSales: 0,
     grossRevenue: 0,
     yourEarnings: 0,
+    availableBalance: 0, // ✅ New: Available balance after pending payouts
   })
   const [displayName, setDisplayName] = useState('Creator')
   const [loading, setLoading] = useState(true)
@@ -47,7 +48,6 @@ export default function DashboardPage() {
   useEffect(() => {
     loadDashboard()
 
-    // ✅ Subscribe to real-time changes
     const channel = supabase
       .channel('dashboard-updates')
       .on(
@@ -65,12 +65,12 @@ export default function DashboardPage() {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
-          table: 'content',
+          table: 'payout_requests',
         },
         () => {
-          console.log('🔄 Content updated, refreshing dashboard...')
+          console.log('🔄 Payout detected, refreshing dashboard...')
           loadDashboard()
         }
       )
@@ -119,22 +119,48 @@ export default function DashboardPage() {
     const grossRevenue = contentData?.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0) || 0
     const yourEarnings = Math.round(grossRevenue * 0.85)
 
-    setStats({ totalFilms, pendingApprovals, totalSales, grossRevenue, yourEarnings })
+    // ✅ Calculate available balance (total earnings - pending payouts - processed payouts)
+    const { data: payoutData } = await supabase
+      .from('payout_requests')
+      .select('amount, status')
+      .eq('creator_id', session.user.id)
+
+    const totalPendingPayouts = payoutData?.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0) || 0
+    const totalProcessedPayouts = payoutData?.filter(p => p.status === 'processed').reduce((sum, p) => sum + p.amount, 0) || 0
+    const availableBalance = yourEarnings - totalPendingPayouts - totalProcessedPayouts
+
+    setStats({ 
+      totalFilms, 
+      pendingApprovals, 
+      totalSales, 
+      grossRevenue, 
+      yourEarnings,
+      availableBalance,
+    })
 
     // ✅ Get payout history
-    const { data: payoutData } = await supabase
+    const { data: historyData } = await supabase
       .from('payout_requests')
       .select('*')
       .eq('creator_id', session.user.id)
       .order('requested_at', { ascending: false })
 
-    setPayoutHistory(payoutData || [])
+    setPayoutHistory(historyData || [])
     setLoading(false)
   }
 
   const handlePayoutRequest = async () => {
-    if (!payoutAmount || parseInt(payoutAmount) < 500) {
+    const amount = parseInt(payoutAmount)
+    
+    // ✅ Validate amount
+    if (!payoutAmount || amount < 500) {
       setPayoutMessage('Minimum payout is KES 500')
+      return
+    }
+
+    // ✅ Check if amount exceeds available balance
+    if (amount > stats.availableBalance) {
+      setPayoutMessage(`You can only request up to KES ${stats.availableBalance.toLocaleString()}. Your available balance is KES ${stats.availableBalance.toLocaleString()}.`)
       return
     }
 
@@ -171,7 +197,7 @@ export default function DashboardPage() {
       .from('payout_requests')
       .insert({
         creator_id: session.user.id,
-        amount: parseInt(payoutAmount),
+        amount: amount,
         phone: phoneNumber,
         status: 'pending'
       })
@@ -179,16 +205,11 @@ export default function DashboardPage() {
     if (error) {
       setPayoutMessage('Error requesting payout: ' + error.message)
     } else {
-      setPayoutMessage('✅ Payout request submitted! Processing time: 1-3 business days.')
+      setPayoutMessage(`✅ Payout request of KES ${amount.toLocaleString()} submitted! Processing time: 1-3 business days.`)
       setPayoutAmount('')
       setPhoneNumber('')
-      // ✅ Refresh payout history
-      const { data: payoutData } = await supabase
-        .from('payout_requests')
-        .select('*')
-        .eq('creator_id', session.user.id)
-        .order('requested_at', { ascending: false })
-      setPayoutHistory(payoutData || [])
+      // ✅ Refresh dashboard
+      loadDashboard()
     }
     setIsRequesting(false)
   }
@@ -265,8 +286,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ✅ Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        {/* ✅ Stats Cards - Now includes Available Balance */}
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
           <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 hover:border-[#f5c518]/20 transition-all">
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Films Uploaded</p>
             <p className="text-2xl font-bold mt-1">{stats.totalFilms}</p>
@@ -285,8 +306,13 @@ export default function DashboardPage() {
           </div>
           <div className="bg-gradient-to-br from-[#1a1a1a] to-[#2a1a0a] rounded-2xl p-5 border border-[#f5c518]/20 relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-[#f5c518]/10 px-3 py-1 rounded-bl-lg text-xs text-[#f5c518] font-semibold">85%</div>
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Your Earnings</p>
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Total Earnings</p>
             <p className="text-2xl font-bold mt-1 text-[#f5c518]">KES {formatCurrency(stats.yourEarnings)}</p>
+          </div>
+          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0a2a1a] rounded-2xl p-5 border border-green-500/20 relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-green-500/10 px-3 py-1 rounded-bl-lg text-xs text-green-400 font-semibold">Available</div>
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Available Balance</p>
+            <p className="text-2xl font-bold mt-1 text-green-400">KES {formatCurrency(stats.availableBalance)}</p>
           </div>
         </div>
 
@@ -409,8 +435,11 @@ export default function DashboardPage() {
         {/* ✅ Payout Section */}
         <div className="mt-12 bg-[#1a1a1a] rounded-2xl border border-white/5 p-6">
           <h2 className="text-xl font-bold mb-2">Request Payout</h2>
-          <p className="text-gray-400 text-sm mb-4">
+          <p className="text-gray-400 text-sm mb-1">
             Minimum payout: KES 500 • Processing time: 1-3 business days
+          </p>
+          <p className="text-green-400 text-sm mb-4">
+            Available balance: <span className="font-bold">KES {formatCurrency(stats.availableBalance)}</span>
           </p>
 
           {payoutMessage && (
@@ -428,10 +457,14 @@ export default function DashboardPage() {
                 type="number"
                 value={payoutAmount}
                 onChange={(e) => setPayoutAmount(e.target.value)}
-                placeholder="e.g. 500"
+                placeholder={`Max: ${stats.availableBalance}`}
                 min="500"
+                max={stats.availableBalance}
                 className="w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Max: KES {formatCurrency(stats.availableBalance)}
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">M-Pesa Phone Number</label>
@@ -447,10 +480,14 @@ export default function DashboardPage() {
 
           <button
             onClick={handlePayoutRequest}
-            disabled={isRequesting}
-            className="mt-4 bg-[#f5c518] text-black px-6 py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50"
+            disabled={isRequesting || stats.availableBalance < 500}
+            className={`mt-4 px-6 py-2 rounded-lg font-semibold transition ${
+              stats.availableBalance < 500 
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                : 'bg-[#f5c518] text-black hover:bg-[#e0b010]'
+            }`}
           >
-            {isRequesting ? 'Submitting...' : 'Request Payout'}
+            {isRequesting ? 'Submitting...' : stats.availableBalance < 500 ? 'Insufficient Balance' : 'Request Payout'}
           </button>
 
           {payoutHistory.length > 0 && (
