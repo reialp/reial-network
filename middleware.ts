@@ -57,6 +57,7 @@ export async function middleware(request: NextRequest) {
   // ✅ If protected and no session, redirect to login with redirectTo
   if (isProtected && !session) {
     const redirectTo = encodeURIComponent(pathname + request.nextUrl.search)
+    console.log('🔀 Middleware: Redirecting to login with:', redirectTo)
     return NextResponse.redirect(new URL(`/auth/login?redirectTo=${redirectTo}`, request.url))
   }
 
@@ -64,6 +65,7 @@ export async function middleware(request: NextRequest) {
   if (session && (pathname === '/auth/login' || pathname === '/auth/signup')) {
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     if (redirectTo) {
+      console.log('🔀 Middleware: Logged in, redirecting to:', redirectTo)
       return NextResponse.redirect(new URL(redirectTo, request.url))
     }
     return NextResponse.redirect(new URL('/dashboard', request.url))
