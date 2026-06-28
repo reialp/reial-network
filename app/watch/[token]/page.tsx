@@ -23,6 +23,8 @@ type WatchData = {
     title: string
     thumbnail_url: string
     price: number
+    slug: string | null
+    category: string | null
   }[]
   recommendations: {
     id: string
@@ -30,6 +32,8 @@ type WatchData = {
     thumbnail_url: string
     price: number
     creator_name: string
+    slug: string | null
+    category: string | null
   }[]
 }
 
@@ -54,6 +58,7 @@ async function getVideoAndFilm(token: string): Promise<WatchData | null> {
         release_year,
         language,
         subtitles,
+        slug,
         creator_id,
         profiles:creator_id (
           id,
@@ -86,7 +91,7 @@ async function getVideoAndFilm(token: string): Promise<WatchData | null> {
   // Other films by same creator
   const { data: otherFilms } = await supabase
     .from('content')
-    .select('id, title, thumbnail_url, price')
+    .select('id, title, thumbnail_url, price, slug, category')
     .eq('creator_id', content.creator_id)
     .eq('status', 'approved')
     .neq('id', content.id)
@@ -96,7 +101,7 @@ async function getVideoAndFilm(token: string): Promise<WatchData | null> {
   // Recommendations: other approved films in same category
   const { data: recs } = await supabase
     .from('content')
-    .select('id, title, thumbnail_url, price, profiles(full_name)')
+    .select('id, title, thumbnail_url, price, slug, category, profiles(full_name)')
     .eq('status', 'approved')
     .eq('category', content.category)
     .neq('id', content.id)
@@ -110,6 +115,8 @@ async function getVideoAndFilm(token: string): Promise<WatchData | null> {
     thumbnail_url: r.thumbnail_url,
     price: r.price,
     creator_name: r.profiles?.full_name || 'Unknown',
+    slug: r.slug || null,
+    category: r.category || null,
   }))
 
   return {
@@ -126,7 +133,14 @@ async function getVideoAndFilm(token: string): Promise<WatchData | null> {
       bio: creator?.bio || '',
       avatar_url: creator?.avatar_url || '',
     },
-    otherFilms: otherFilms || [],
+    otherFilms: (otherFilms || []).map((f: any) => ({
+      id: f.id,
+      title: f.title,
+      thumbnail_url: f.thumbnail_url,
+      price: f.price,
+      slug: f.slug || null,
+      category: f.category || null,
+    })),
     recommendations: recommendations || [],
   }
 }
@@ -252,33 +266,40 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
               <div className="bg-[#1a1a1a] rounded-xl p-6 border border-white/5">
                 <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">More from this creator</h3>
                 <div className="space-y-4">
-                  {data.otherFilms.map((film) => (
-                    <Link
-                      key={film.id}
-                      href={`/film/${film.id}`}
-                      className="flex items-center gap-3 hover:bg-white/5 p-2 rounded-lg transition group"
-                    >
-                      <div className="w-16 h-16 rounded-lg bg-[#2a2a2a] overflow-hidden flex-shrink-0">
-                        {film.thumbnail_url ? (
-                          <Image
-                            src={film.thumbnail_url}
-                            alt={film.title}
-                            width={64}
-                            height={64}
-                            className="object-cover w-full h-full group-hover:scale-105 transition"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-2xl opacity-20">🎬</div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium truncate group-hover:text-[#f5c518] transition">
-                          {film.title}
-                        </h4>
-                        <p className="text-[#f5c518] text-sm font-semibold">KES {film.price}</p>
-                      </div>
-                    </Link>
-                  ))}
+                  {data.otherFilms.map((film) => {
+                    // ✅ Build category-based URL
+                    const categoryPath = film.category ? film.category.toLowerCase() : 'film'
+                    const slug = film.slug || film.id
+                    const filmUrl = `/${categoryPath}/${slug}`
+                    
+                    return (
+                      <Link
+                        key={film.id}
+                        href={filmUrl}
+                        className="flex items-center gap-3 hover:bg-white/5 p-2 rounded-lg transition group"
+                      >
+                        <div className="w-16 h-16 rounded-lg bg-[#2a2a2a] overflow-hidden flex-shrink-0">
+                          {film.thumbnail_url ? (
+                            <Image
+                              src={film.thumbnail_url}
+                              alt={film.title}
+                              width={64}
+                              height={64}
+                              className="object-cover w-full h-full group-hover:scale-105 transition"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-2xl opacity-20">🎬</div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium truncate group-hover:text-[#f5c518] transition">
+                            {film.title}
+                          </h4>
+                          <p className="text-[#f5c518] text-sm font-semibold">KES {film.price}</p>
+                        </div>
+                      </Link>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -290,33 +311,40 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
           <div className="mt-12 border-t border-white/5 pt-8">
             <h2 className="text-xl font-bold mb-6">You might also like</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {data.recommendations.map((film) => (
-                <Link
-                  key={film.id}
-                  href={`/film/${film.id}`}
-                  className="group bg-[#1a1a1a] rounded-xl overflow-hidden hover:scale-[1.02] transition border border-white/5 hover:border-[#f5c518]/20"
-                >
-                  <div className="aspect-[2/3] bg-[#2a2a2a] relative">
-                    {film.thumbnail_url ? (
-                      <Image
-                        src={film.thumbnail_url}
-                        alt={film.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition duration-500"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-20">🎬</div>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <h3 className="text-sm font-semibold line-clamp-1 group-hover:text-[#f5c518] transition">
-                      {film.title}
-                    </h3>
-                    <p className="text-gray-400 text-xs">{film.creator_name}</p>
-                    <p className="text-[#f5c518] font-bold text-sm mt-1">KES {film.price}</p>
-                  </div>
-                </Link>
-              ))}
+              {data.recommendations.map((film) => {
+                // ✅ Build category-based URL
+                const categoryPath = film.category ? film.category.toLowerCase() : 'film'
+                const slug = film.slug || film.id
+                const filmUrl = `/${categoryPath}/${slug}`
+                
+                return (
+                  <Link
+                    key={film.id}
+                    href={filmUrl}
+                    className="group bg-[#1a1a1a] rounded-xl overflow-hidden hover:scale-[1.02] transition border border-white/5 hover:border-[#f5c518]/20"
+                  >
+                    <div className="aspect-[2/3] bg-[#2a2a2a] relative">
+                      {film.thumbnail_url ? (
+                        <Image
+                          src={film.thumbnail_url}
+                          alt={film.title}
+                          fill
+                          className="object-cover group-hover:scale-105 transition duration-500"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-20">🎬</div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <h3 className="text-sm font-semibold line-clamp-1 group-hover:text-[#f5c518] transition">
+                        {film.title}
+                      </h3>
+                      <p className="text-gray-400 text-xs">{film.creator_name}</p>
+                      <p className="text-[#f5c518] font-bold text-sm mt-1">KES {film.price}</p>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           </div>
         )}
