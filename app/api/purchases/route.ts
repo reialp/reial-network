@@ -42,14 +42,16 @@ export async function POST(req: Request) {
     }
 
     const amount = content.price
-    const platformFee = Math.round(amount * 0.15)
-    const creatorEarnings = Math.round(amount * 0.85)
+
+    // ✅ FIXED: Calculate fees correctly
+    // Platform fee is 15% of the amount, rounded up to the nearest whole number
+    const platformFee = Math.max(Math.ceil(amount * 0.15), 1) // Minimum 1 KES
+    const creatorEarnings = amount - platformFee
 
     // Generate watch token
     const watchToken = crypto.randomBytes(32).toString('hex')
 
-    // ✅ CRITICAL: Create purchase with status 'pending'
-    // ⚠️ DO NOT mark as completed here - only IPN should do that!
+    // ✅ Create purchase with status 'pending'
     const { data: purchase, error: purchaseError } = await supabase
       .from('purchases')
       .insert({
@@ -59,7 +61,7 @@ export async function POST(req: Request) {
         platform_fee: platformFee,
         creator_earnings: creatorEarnings,
         watch_token: watchToken,
-        status: 'pending', // ← CRITICAL: Always start as pending!
+        status: 'pending',
         created_at: new Date().toISOString(),
       })
       .select()
