@@ -11,6 +11,17 @@ function getEmbedUrl(url: string): string {
   return url
 }
 
+// ✅ Function to increment views
+async function incrementViews(contentId: string) {
+  try {
+    const supabase = await createClient()
+    await supabase.rpc('increment_views', { content_id: contentId })
+    console.log('✅ View incremented for content:', contentId)
+  } catch (error) {
+    console.error('❌ Error incrementing views:', error)
+  }
+}
+
 // ✅ Get content by slug (works for all categories)
 async function getContentByIdentifier(identifier: string, userId?: string, isAdmin?: boolean) {
   const supabase = await createClient()
@@ -103,6 +114,9 @@ export default async function ContentPage({
 
   const content = await getContentByIdentifier(identifier, userId, isUserAdmin)
   if (!content) notFound()
+
+  // ✅ Increment views (don't await - do it in the background)
+  incrementViews(content.id).catch(err => console.error('View increment error:', err))
 
   const profile = content.profiles as any
   const isOwnContent = userId && content.creator_id === userId
