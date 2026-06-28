@@ -18,6 +18,8 @@ async function getPurchasedFilms(userId: string) {
         thumbnail_url,
         price,
         creator_id,
+        slug,
+        category,
         profiles (
           full_name
         )
@@ -44,11 +46,14 @@ async function getPurchasedFilms(userId: string) {
   const uniquePurchases = Array.from(uniqueMap.values())
 
   return uniquePurchases.map((purchase: any) => {
-    // ✅ Extract creator name from profiles array
     const content = purchase.content
     const creatorName = content?.profiles && content.profiles.length > 0 
       ? content.profiles[0].full_name 
       : 'Unknown Creator'
+    
+    // ✅ Build the watch URL with category and slug
+    const categoryPath = content?.category ? content.category.toLowerCase() : 'film'
+    const slug = content?.slug || content?.id
     
     return {
       token: purchase.watch_token,
@@ -57,6 +62,8 @@ async function getPurchasedFilms(userId: string) {
         title: content?.title || 'Untitled',
         thumbnail_url: content?.thumbnail_url,
         price: content?.price || 0,
+        slug: slug,
+        category: categoryPath,
       },
       creator_name: creatorName,
     }
@@ -107,8 +114,9 @@ export default async function LibraryPage() {
                 <div className="p-4">
                   <h3 className="font-semibold text-sm line-clamp-1">{purchase.film?.title}</h3>
                   <p className="text-gray-400 text-xs mt-1">{purchase.creator_name || 'Unknown Creator'}</p>
+                  {/* ✅ Updated watch link with category and slug */}
                   <Link
-                    href={`/watch/${purchase.token}`}
+                    href={`/watch/${purchase.film.category}/${purchase.film.slug}`}
                     className="mt-3 block w-full text-center bg-[#f5c518] text-black py-2 rounded-lg text-sm font-semibold hover:bg-[#e0b010] transition"
                   >
                     Watch Now
