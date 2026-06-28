@@ -85,7 +85,7 @@ export default function UploadPage() {
         <div className="bg-[#1a1a1a] rounded-2xl p-8 max-w-md w-full text-center border border-white/10">
           <div className="text-6xl mb-4">✅</div>
           <h2 className="text-2xl font-bold">Upload Successful!</h2>
-          <p className="text-gray-400 mt-2">Your film has been saved.</p>
+          <p className="text-gray-400 mt-2">Your project has been submitted for approval.</p>
           <button
             onClick={() => router.push('/dashboard')}
             className="mt-6 bg-[#f5c518] text-black px-6 py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition"
@@ -101,7 +101,7 @@ export default function UploadPage() {
     <div className="min-h-screen bg-[#0a0a0a] text-white px-4 py-8 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold">Upload New Film</h1>
+          <h1 className="text-3xl font-bold">Upload New Project</h1>
           <p className="text-gray-400 text-sm mt-1">Share your story with the world.</p>
         </div>
 
@@ -112,10 +112,10 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* Film Details */}
+          {/* Project Details */}
           <section className="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="text-[#f5c518]">📝</span> Film Details
+              <span className="text-[#f5c518]">📝</span> Project Details
             </h2>
             <div className="space-y-4">
               <div>
@@ -137,7 +137,7 @@ export default function UploadPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
                   className="mt-1 block w-full px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 resize-none transition"
-                  placeholder="Tell viewers what your film is about..."
+                  placeholder="Tell viewers what your project is about..."
                 />
               </div>
             </div>
@@ -220,7 +220,7 @@ export default function UploadPage() {
               <div className="mt-2 text-xs text-gray-400">
                 <p className="text-gray-500">
                   Upload a trailer to YouTube, Vimeo, or Google Drive and paste the share link here.
-                  This will appear on your film page.
+                  This will appear on your project page.
                 </p>
               </div>
             </div>
@@ -335,6 +335,9 @@ export default function UploadPage() {
               {loading ? 'Submitting...' : 'Submit for Approval'}
             </button>
           </div>
+          <p className="text-xs text-gray-500 text-center mt-2">
+            📤 Submitting for approval will notify the admin to review your project.
+          </p>
         </form>
       </div>
     </div>
