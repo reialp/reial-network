@@ -29,7 +29,7 @@ export default function DashboardPage() {
     totalSales: 0,
     grossRevenue: 0,
     yourEarnings: 0,
-    availableBalance: 0, // ✅ New: Available balance after pending payouts
+    availableBalance: 0,
   })
   const [displayName, setDisplayName] = useState('Creator')
   const [loading, setLoading] = useState(true)
@@ -44,7 +44,6 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState('')
   const [isCreator, setIsCreator] = useState(false)
 
-  // ✅ Load data on mount and set up real-time subscription
   useEffect(() => {
     loadDashboard()
 
@@ -91,7 +90,6 @@ export default function DashboardPage() {
     }
     setUserId(session.user.id)
 
-    // ✅ Get profile
     const { data: profile } = await supabase
       .from('profiles')
       .select('full_name, is_creator')
@@ -103,7 +101,6 @@ export default function DashboardPage() {
       setIsCreator(profile.is_creator || false)
     }
 
-    // ✅ Get content with slug and category
     const { data: contentData } = await supabase
       .from('content')
       .select('*')
@@ -112,14 +109,20 @@ export default function DashboardPage() {
 
     setContent(contentData || [])
 
-    // ✅ Calculate stats
     const totalFilms = contentData?.length || 0
     const pendingApprovals = contentData?.filter(c => c.status === 'pending').length || 0
     const totalSales = contentData?.reduce((sum, c) => sum + (c.purchase_count || 0), 0) || 0
     const grossRevenue = contentData?.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0) || 0
     const yourEarnings = Math.round(grossRevenue * 0.85)
 
-    // ✅ Calculate available balance (total earnings - pending payouts - processed payouts)
+    // ✅ Calculate available balance from ACTUAL earnings
+    const { data: purchasesData } = await supabase
+      .from('purchases')
+      .select('creator_earnings')
+      .eq('status', 'completed')
+
+    const totalEarningsFromPurchases = purchasesData?.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) || 0
+
     const { data: payoutData } = await supabase
       .from('payout_requests')
       .select('amount, status')
@@ -127,7 +130,7 @@ export default function DashboardPage() {
 
     const totalPendingPayouts = payoutData?.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0) || 0
     const totalProcessedPayouts = payoutData?.filter(p => p.status === 'processed').reduce((sum, p) => sum + p.amount, 0) || 0
-    const availableBalance = yourEarnings - totalPendingPayouts - totalProcessedPayouts
+    const availableBalance = totalEarningsFromPurchases - totalPendingPayouts - totalProcessedPayouts
 
     setStats({ 
       totalFilms, 
@@ -138,7 +141,6 @@ export default function DashboardPage() {
       availableBalance,
     })
 
-    // ✅ Get payout history
     const { data: historyData } = await supabase
       .from('payout_requests')
       .select('*')
@@ -152,13 +154,11 @@ export default function DashboardPage() {
   const handlePayoutRequest = async () => {
     const amount = parseInt(payoutAmount)
     
-    // ✅ Validate amount
     if (!payoutAmount || amount < 500) {
       setPayoutMessage('Minimum payout is KES 500')
       return
     }
 
-    // ✅ Check if amount exceeds available balance
     if (amount > stats.availableBalance) {
       setPayoutMessage(`You can only request up to KES ${stats.availableBalance.toLocaleString()}. Your available balance is KES ${stats.availableBalance.toLocaleString()}.`)
       return
@@ -179,7 +179,6 @@ export default function DashboardPage() {
       return
     }
 
-    // ✅ Check if there's already a pending payout
     const { data: pendingPayout } = await supabase
       .from('payout_requests')
       .select('id')
@@ -208,7 +207,6 @@ export default function DashboardPage() {
       setPayoutMessage(`✅ Payout request of KES ${amount.toLocaleString()} submitted! Processing time: 1-3 business days.`)
       setPayoutAmount('')
       setPhoneNumber('')
-      // ✅ Refresh dashboard
       loadDashboard()
     }
     setIsRequesting(false)
@@ -224,7 +222,6 @@ export default function DashboardPage() {
     }
   }
 
-  // ✅ Get status color
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved': return 'bg-green-500/20 text-green-400'
@@ -234,7 +231,6 @@ export default function DashboardPage() {
     }
   }
 
-  // ✅ Format currency
   const formatCurrency = (amount: number) => {
     return amount.toLocaleString()
   }
@@ -286,7 +282,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ✅ Stats Cards - Now includes Available Balance */}
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
           <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 hover:border-[#f5c518]/20 transition-all">
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Films Uploaded</p>
@@ -316,7 +311,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ✅ Content Table */}
         <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
           <div className="px-6 py-4 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
@@ -432,7 +426,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* ✅ Payout Section */}
         <div className="mt-12 bg-[#1a1a1a] rounded-2xl border border-white/5 p-6">
           <h2 className="text-xl font-bold mb-2">Request Payout</h2>
           <p className="text-gray-400 text-sm mb-1">
