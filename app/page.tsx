@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useSearch } from '@/context/SearchContext'
 
-interface Content {
+interface Film {
   id: string
   title: string
   description: string | null
@@ -24,7 +24,7 @@ export default function HomePage() {
   const supabase = createClient()
   const { searchTerm, selectedCategory, setSelectedCategory } = useSearch()
 
-  const [allContent, setAllContent] = useState<Content[]>([])
+  const [allFilms, setAllFilms] = useState<Film[]>([])
   const [loading, setLoading] = useState(true)
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
@@ -34,7 +34,7 @@ export default function HomePage() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    async function fetchContent() {
+    async function fetchFilms() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         setUserId(session.user.id)
@@ -89,11 +89,11 @@ export default function HomePage() {
           creator_name: creatorNames[item.creator_id] || 'Unknown Creator',
           slug: item.slug || null
         }))
-        setAllContent(mappedData)
+        setAllFilms(mappedData)
       }
       setLoading(false)
     }
-    fetchContent()
+    fetchFilms()
   }, [supabase])
 
   // Fetch user's purchases with tokens
@@ -127,21 +127,21 @@ export default function HomePage() {
   }, [userId, supabase])
 
   useEffect(() => {
-    if (allContent.length === 0) return
+    if (allFilms.length === 0) return
     intervalRef.current = setInterval(() => {
       if (!isPaused) {
-        setCarouselIndex((prev) => (prev + 1) % allContent.length)
+        setCarouselIndex((prev) => (prev + 1) % allFilms.length)
       }
     }, 6000)
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [allContent, isPaused])
+  }, [allFilms, isPaused])
 
-  const categories = ['All', ...new Set(allContent.map(f => f.category).filter((c): c is string => c !== null))]
+  const categories = ['All', ...new Set(allFilms.map(f => f.category).filter((c): c is string => c !== null))]
 
-  const filteredContent = useMemo(() => {
-    let result = allContent
+  const filteredFilms = useMemo(() => {
+    let result = allFilms
     if (selectedCategory !== 'All') {
       result = result.filter(f => f.category === selectedCategory)
     }
@@ -153,68 +153,70 @@ export default function HomePage() {
       )
     }
     return result
-  }, [allContent, selectedCategory, searchTerm])
+  }, [allFilms, selectedCategory, searchTerm])
 
-  const totalContent = allContent.length
-  const totalSales = allContent.reduce((sum, f) => sum + (f.purchase_count || 0), 0)
-  const totalRevenue = allContent.reduce((sum, f) => sum + (f.price * (f.purchase_count || 0)), 0)
+  const totalFilms = allFilms.length
+  const totalSales = allFilms.reduce((sum, f) => sum + (f.purchase_count || 0), 0)
+  const totalRevenue = allFilms.reduce((sum, f) => sum + (f.price * (f.purchase_count || 0)), 0)
 
-  const carouselContent = allContent.slice(0, 5)
+  const carouselFilms = allFilms.slice(0, 5)
 
-  const renderContentCard = (content: Content) => {
-    const isPurchased = purchasedIds.has(content.id)
-    const token = purchaseTokens[content.id]
+  const renderFilmCard = (film: Film) => {
+    const isPurchased = purchasedIds.has(film.id)
+    const token = purchaseTokens[film.id]
     
-    const contentSlug = content.slug || content.id
-    let watchUrl = `/film/${contentSlug}`
+    // ✅ Build URL with category and slug
+    const contentSlug = film.slug || film.id
+    const categoryPath = film.category ? film.category.toLowerCase() : 'film'
+    let watchUrl = `/${categoryPath}/${contentSlug}`
     if (isPurchased && token) {
       watchUrl = `/watch/${token}`
     } else if (isPurchased && !token) {
-      watchUrl = `/watch/${content.id}`
+      watchUrl = `/watch/${film.id}`
     }
     
     return (
       <Link
-        key={content.id}
+        key={film.id}
         href={watchUrl}
         className="group bg-[#1a1a1a] rounded-2xl overflow-hidden hover:scale-[1.03] transition-all duration-500 hover:shadow-2xl hover:shadow-[#f5c518]/10 border border-white/5 hover:border-[#f5c518]/20"
       >
         <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
-          {content.thumbnail_url ? (
+          {film.thumbnail_url ? (
             <Image
-              src={content.thumbnail_url}
-              alt={content.title}
+              src={film.thumbnail_url}
+              alt={film.title}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-110"
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-20">🎬</div>
           )}
-          {content.category && (
+          {film.category && (
             <div className="absolute top-3 right-3 bg-[#f5c518]/90 text-black text-xs px-3 py-1 rounded-full font-semibold">
-              {content.category}
+              {film.category}
             </div>
           )}
           <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
             {isPurchased ? (
               <span className="bg-green-500/90 text-white text-sm font-bold px-3 py-1 rounded-full">✓ Owned</span>
             ) : (
-              <span className="bg-black/80 text-[#f5c518] text-sm font-bold px-3 py-1 rounded-full">KES {content.price}</span>
+              <span className="bg-black/80 text-[#f5c518] text-sm font-bold px-3 py-1 rounded-full">KES {film.price}</span>
             )}
           </div>
         </div>
         <div className="p-4">
           <h3 className="font-semibold text-sm group-hover:text-[#f5c518] transition-colors line-clamp-1">
-            {content.title}
+            {film.title}
           </h3>
           <p className="text-gray-500 text-xs mt-1">
-            {content.creator_name || 'Unknown Creator'}
+            {film.creator_name || 'Unknown Creator'}
           </p>
           <div className="flex items-center justify-between mt-3">
             {isPurchased ? (
               <span className="text-green-400 font-bold text-sm">✓ Purchased</span>
             ) : (
-              <span className="text-[#f5c518] font-bold text-sm">KES {content.price}</span>
+              <span className="text-[#f5c518] font-bold text-sm">KES {film.price}</span>
             )}
             <span className="text-gray-600 text-xs">{isPurchased ? '▶ Watch' : '🎬 Watch'}</span>
           </div>
@@ -282,37 +284,39 @@ export default function HomePage() {
           </div>
 
           {/* Right Column - Clickable Carousel */}
-          {carouselContent.length > 0 && (
+          {carouselFilms.length > 0 && (
             <div
               className="relative aspect-[4/3] max-h-[60vh] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
             >
-              {carouselContent.map((content, idx) => {
-                const isPurchased = purchasedIds.has(content.id)
-                const token = purchaseTokens[content.id]
+              {carouselFilms.map((film, idx) => {
+                const isPurchased = purchasedIds.has(film.id)
+                const token = purchaseTokens[film.id]
                 
-                const contentSlug = content.slug || content.id
-                let linkUrl = `/film/${contentSlug}`
+                // ✅ Build URL with category and slug
+                const contentSlug = film.slug || film.id
+                const categoryPath = film.category ? film.category.toLowerCase() : 'film'
+                let linkUrl = `/${categoryPath}/${contentSlug}`
                 if (isPurchased && token) {
                   linkUrl = `/watch/${token}`
                 } else if (isPurchased && !token) {
-                  linkUrl = `/watch/${content.id}`
+                  linkUrl = `/watch/${film.id}`
                 }
                 
                 return (
                   <Link
-                    key={content.id}
+                    key={film.id}
                     href={linkUrl}
-                    onClick={() => console.log(`✅ Clicked: ${content.title} → ${linkUrl}`)}
+                    onClick={() => console.log(`✅ Clicked: ${film.title} → ${linkUrl}`)}
                     className={`absolute inset-0 transition-all duration-700 ease-in-out cursor-pointer group ${
                       idx === carouselIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
                     }`}
                   >
-                    {content.thumbnail_url ? (
+                    {film.thumbnail_url ? (
                       <Image
-                        src={content.thumbnail_url}
-                        alt={content.title}
+                        src={film.thumbnail_url}
+                        alt={film.title}
                         fill
                         className="object-cover transition-transform duration-700 group-hover:scale-110"
                       />
@@ -324,10 +328,10 @@ export default function HomePage() {
                     
                     <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
                       <h3 className="text-xl font-bold group-hover:text-[#f5c518] transition-colors">
-                        {content.title}
+                        {film.title}
                       </h3>
                       <p className="text-sm text-gray-300">
-                        {content.creator_name || 'Unknown Creator'}
+                        {film.creator_name || 'Unknown Creator'}
                       </p>
                       <div className="flex items-center gap-4 mt-2">
                         {isPurchased ? (
@@ -342,7 +346,7 @@ export default function HomePage() {
                         ) : (
                           <>
                             <span className="bg-[#f5c518] text-black text-sm font-bold px-3 py-1 rounded-full">
-                              KES {content.price}
+                              KES {film.price}
                             </span>
                             <span className="text-gray-300 text-sm group-hover:text-white transition-colors">
                               View Details →
@@ -360,14 +364,14 @@ export default function HomePage() {
                       </div>
                     </div>
                     
-                    {content.category && (
+                    {film.category && (
                       <div className="absolute top-4 right-4 bg-[#f5c518]/90 text-black text-xs px-3 py-1 rounded-full font-semibold pointer-events-none">
-                        {content.category}
+                        {film.category}
                       </div>
                     )}
                     
                     <div className="absolute bottom-4 left-4 flex gap-2 z-10">
-                      {carouselContent.map((_, dotIdx) => (
+                      {carouselFilms.map((_, dotIdx) => (
                         <button
                           key={dotIdx}
                           onClick={(e) => {
@@ -421,12 +425,12 @@ export default function HomePage() {
           <div>
             <h2 className="text-3xl md:text-4xl font-bold">Featured Content</h2>
             <p className="text-gray-500 text-sm mt-1">
-              {filteredContent.length} {filteredContent.length === 1 ? 'item' : 'items'} available
+              {filteredFilms.length} {filteredFilms.length === 1 ? 'item' : 'items'} available
             </p>
           </div>
         </div>
 
-        {filteredContent.length === 0 ? (
+        {filteredFilms.length === 0 ? (
           <div className="bg-[#1a1a1a] rounded-2xl p-16 text-center border border-white/5">
             <div className="text-6xl mb-4">🎬</div>
             <p className="text-xl text-gray-400">No content found.</p>
@@ -434,7 +438,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredContent.map((content) => renderContentCard(content))}
+            {filteredFilms.map((film) => renderFilmCard(film))}
           </div>
         )}
       </section>
@@ -448,7 +452,7 @@ export default function HomePage() {
           </div>
           <div className="flex gap-8">
             <div className="text-center">
-              <p className="text-2xl font-bold text-[#f5c518]">{totalContent}</p>
+              <p className="text-2xl font-bold text-[#f5c518]">{totalFilms}</p>
               <p className="text-gray-500 text-xs uppercase tracking-wider">Items</p>
             </div>
             <div className="text-center">
