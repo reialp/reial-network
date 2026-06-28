@@ -37,13 +37,8 @@ type WatchData = {
   }[]
 }
 
-async function getVideoAndFilm(token: string): Promise<WatchData | null> {
+async function getVideoAndFilm(token: string, userId: string): Promise<WatchData | null> {
   const supabase = await createClient()
-
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    redirect('/auth/login')
-  }
 
   const { data, error } = await supabase
     .from('purchases')
@@ -77,7 +72,9 @@ async function getVideoAndFilm(token: string): Promise<WatchData | null> {
     return null
   }
 
-  if (data.buyer_id !== user.id) {
+  // ✅ Check if the purchase belongs to the logged-in user
+  if (data.buyer_id !== userId) {
+    console.error('❌ Purchase does not belong to user:', data.buyer_id, userId)
     return null
   }
 
@@ -166,9 +163,26 @@ function getEmbedUrl(url: string): string {
 
 export default async function WatchPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const data = await getVideoAndFilm(token)
+  
+  console.log('🔍 WatchPage - Token:', token)
+
+  const supabase = await createClient()
+  
+  // ✅ Use getSession() instead of getUser()
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  
+  if (sessionError || !session) {
+    console.log('🔒 No session, redirecting to login')
+    const currentPath = `/watch/${token}`
+    redirect(`/auth/login?redirectTo=${currentPath}`)
+  }
+
+  console.log('✅ User is logged in:', session.user.email)
+
+  const data = await getVideoAndFilm(token, session.user.id)
 
   if (!data) {
+    console.error('❌ No data found for token:', token)
     notFound()
   }
 
@@ -267,7 +281,6 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
                 <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">More from this creator</h3>
                 <div className="space-y-4">
                   {data.otherFilms.map((film) => {
-                    // ✅ Build category-based URL
                     const categoryPath = film.category ? film.category.toLowerCase() : 'film'
                     const slug = film.slug || film.id
                     const filmUrl = `/${categoryPath}/${slug}`
@@ -312,7 +325,6 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
             <h2 className="text-xl font-bold mb-6">You might also like</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {data.recommendations.map((film) => {
-                // ✅ Build category-based URL
                 const categoryPath = film.category ? film.category.toLowerCase() : 'film'
                 const slug = film.slug || film.id
                 const filmUrl = `/${categoryPath}/${slug}`
