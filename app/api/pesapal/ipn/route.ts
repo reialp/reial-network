@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
     const supabase = await createClient()
 
-    // ✅ Check for duplicate (idempotency) - prevent double processing
+    // ✅ Check for duplicate
     const { data: existing } = await supabase
       .from('purchases')
       .select('id')
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Already processed' }, { status: 200 })
     }
 
-    // ✅ Find the purchase using the merchant reference (which is your purchase ID)
+    // ✅ Find the purchase
     console.log('🔍 Looking for purchase with ID:', orderMerchantReference)
 
     const { data: purchase, error: purchaseError } = await supabase
@@ -54,6 +54,8 @@ export async function POST(req: Request) {
     }
 
     console.log('✅ Purchase found:', purchase.id)
+    console.log('📊 Content ID:', purchase.content_id)
+    console.log('📊 Amount:', purchase.amount_paid)
 
     // ✅ Update purchase with transaction ID
     const { error: updateError } = await supabase
@@ -70,38 +72,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
-    // ✅ Increment sales count for the content
+    console.log('✅ Purchase updated to completed')
+
+    // ✅ Increment sales count
     if (purchase.content_id) {
+      console.log('📊 Attempting to increment sales for content:', purchase.content_id)
+      
       try {
-        // ✅ Check if the function exists by testing it
-        console.log('📊 Calling increment_sales for content:', purchase.content_id)
-        
-        // ✅ First, check if the function exists
-        const { data: funcCheck, error: funcError } = await supabase
+        // ✅ Try calling the function
+        const { data: rpcResult, error: rpcError } = await supabase
           .rpc('increment_sales', { content_id: purchase.content_id })
         
-        if (funcError) {
-          console.error('❌ RPC error:', funcError)
-          console.error('❌ This means the increment_sales function does not exist in Supabase!')
-          console.error('❌ Please run the CREATE FUNCTION SQL in Supabase SQL Editor.')
+        if (rpcError) {
+          console.error('❌ RPC error:', rpcError)
+          console.error('❌ Function may not exist. Please run CREATE FUNCTION in Supabase.')
         } else {
-          console.log('✅ Sales count incremented for content:', purchase.content_id)
+          console.log('✅ Sales count incremented successfully for content:', purchase.content_id)
+          console.log('📊 RPC result:', rpcResult)
         }
-      } catch (rpcError) {
-        console.error('❌ RPC error (increment_sales):', rpcError)
-        console.error('❌ The increment_sales function does not exist in Supabase.')
-        console.error('❌ Please run this SQL in Supabase SQL Editor:')
-        console.error(`
-          CREATE OR REPLACE FUNCTION increment_sales(content_id UUID)
-          RETURNS void AS $$
-          BEGIN
-            UPDATE content
-            SET purchase_count = purchase_count + 1
-            WHERE id = content_id;
-          END;
-          $$ LANGUAGE plpgsql;
-        `)
+      } catch (error) {
+        console.error('❌ Error calling increment_sales:', error)
       }
+      
+      // ✅ Verify the update worked
+      const { data: updatedContent } = await supabase
+        .from('content')
+        .select('id, title, purchase_count')
+        .eq('id', purchase.content_id)
+        .single()
+      
+      console.log('📊 Updated content:', updatedContent)
+    } else {
+      console.error('❌ No content_id found in purchase!')
     }
 
     console.log('✅ IPN processed successfully for purchase:', purchase.id)
