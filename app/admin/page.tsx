@@ -89,7 +89,6 @@ export default function AdminPage() {
   const [previewFilm, setPreviewFilm] = useState<Content | null>(null)
   const [payoutFilter, setPayoutFilter] = useState<'all' | 'pending' | 'processed'>('all')
 
-  // ✅ Confirmation Code Modal
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const [confirmationCode, setConfirmationCode] = useState('')
@@ -119,30 +118,46 @@ export default function AdminPage() {
     setLoading(true)
 
     const { data: { session } } = await supabase.auth.getSession()
+    console.log('🔍 Admin - Session user:', session?.user?.email)
+
     if (!session) {
       router.push('/auth/login')
       return
     }
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('is_admin')
+      .select('is_admin, full_name')
       .eq('id', session.user.id)
       .single()
 
+    console.log('🔍 Admin - Profile:', profile)
+    console.log('🔍 Admin - Profile error:', profileError)
+
     if (!profile?.is_admin) {
+      console.log('❌ User is NOT admin, redirecting to dashboard...')
       router.push('/dashboard')
       return
     }
 
-    // ✅ Fetch ALL content from ALL creators (no filter - everyone's submissions)
-    const { data: contentData } = await supabase
+    console.log('✅ User IS admin, fetching content...')
+
+    // ✅ Fetch ALL content from ALL creators - NO FILTERS!
+    const { data: contentData, error: contentError } = await supabase
       .from('content')
       .select(`
         *,
         profiles ( full_name )
       `)
       .order('created_at', { ascending: false })
+
+    if (contentError) {
+      console.error('❌ Admin - Error fetching content:', contentError)
+    }
+
+    console.log('📊 Admin - Total content fetched:', contentData?.length || 0)
+    console.log('📊 Admin - Pending content:', contentData?.filter(c => c.status === 'pending').length || 0)
+    console.log('📊 Admin - All statuses:', contentData?.map(c => ({ title: c.title, status: c.status })))
 
     const allContent = contentData || []
     const totalFilms = allContent.length
@@ -283,7 +298,6 @@ export default function AdminPage() {
     setPreviewFilm(null)
   }
 
-  // ✅ Open confirmation modal
   const openConfirmModal = (transaction: Transaction) => {
     setSelectedTransaction(transaction)
     setConfirmationCode('')
@@ -310,7 +324,7 @@ export default function AdminPage() {
         <h1 className="text-3xl font-bold mb-2">Admin Panel</h1>
         <p className="text-gray-400 mb-8">Manage content, approvals, and payouts.</p>
 
-        {/* ✅ Stats - Now includes Pending Submissions */}
+        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Total Films</p>
@@ -336,14 +350,12 @@ export default function AdminPage() {
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Pending Payouts</p>
             <p className="text-2xl font-bold mt-1 text-orange-400">KES {stats.pendingPayouts}</p>
           </div>
-          {/* ✅ NEW: Pending Submissions Card */}
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-yellow-500/20 bg-yellow-500/5">
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Pending Submissions</p>
             <p className="text-2xl font-bold mt-1 text-yellow-400">{stats.pendingSubmissions}</p>
           </div>
         </div>
 
-        {/* ✅ Notification for pending submissions */}
         {stats.pendingSubmissions > 0 && (
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
             <p className="text-yellow-400 text-sm">
@@ -353,7 +365,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Content Table */}
         <div className="flex flex-wrap gap-4 items-center mb-6">
           <div className="flex gap-2 flex-wrap">
             {(['all', 'pending', 'approved', 'rejected'] as ContentStatus[]).map((status) => (
