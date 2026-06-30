@@ -118,31 +118,24 @@ export default function AdminPage() {
     setLoading(true)
 
     const { data: { session } } = await supabase.auth.getSession()
-    console.log('🔍 Admin - Session user:', session?.user?.email)
-
     if (!session) {
       router.push('/auth/login')
       return
     }
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
-      .select('is_admin, full_name')
+      .select('is_admin')
       .eq('id', session.user.id)
       .single()
 
-    console.log('🔍 Admin - Profile:', profile)
-    console.log('🔍 Admin - Profile error:', profileError)
-
     if (!profile?.is_admin) {
-      console.log('❌ User is NOT admin, redirecting to dashboard...')
       router.push('/dashboard')
       return
     }
 
-    console.log('✅ User IS admin, fetching ALL content from ALL creators...')
-
-    // ✅ IMPORTANT: NO filter on creator_id - fetch ALL content from ALL creators!
+    // ✅ SIMPLE QUERY: Get ALL content from ALL creators
+    // NO filters, NO conditions, just ALL content
     const { data: contentData, error: contentError } = await supabase
       .from('content')
       .select(`
@@ -152,18 +145,21 @@ export default function AdminPage() {
       .order('created_at', { ascending: false })
 
     if (contentError) {
-      console.error('❌ Admin - Error fetching content:', contentError)
+      console.error('Error fetching content:', contentError)
     }
 
-    console.log('📊 Admin - Total content fetched:', contentData?.length || 0)
-    console.log('📊 Admin - Pending content:', contentData?.filter(c => c.status === 'pending').length || 0)
-    console.log('📊 Admin - All statuses:', contentData?.map(c => ({ title: c.title, status: c.status, creator_id: c.creator_id })))
-
     const allContent = contentData || []
+
+    // ✅ Calculate stats
     const totalFilms = allContent.length
     const totalSales = allContent.reduce((sum, c) => sum + (c.purchase_count || 0), 0)
     const totalRevenue = allContent.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0)
     const pendingSubmissions = allContent.filter(c => c.status === 'pending').length
+
+    // ✅ Log for debugging
+    console.log('📊 Total content:', totalFilms)
+    console.log('📊 Pending submissions:', pendingSubmissions)
+    console.log('📊 All statuses:', allContent.map(c => ({ title: c.title, status: c.status, creator: c.creator_id })))
 
     const { data: purchases } = await supabase
       .from('purchases')
