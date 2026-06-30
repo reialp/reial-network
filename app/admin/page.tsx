@@ -140,9 +140,9 @@ export default function AdminPage() {
       return
     }
 
-    console.log('✅ User IS admin, fetching content...')
+    console.log('✅ User IS admin, fetching ALL content from ALL creators...')
 
-    // ✅ Fetch ALL content from ALL creators - NO FILTERS!
+    // ✅ IMPORTANT: NO filter on creator_id - fetch ALL content from ALL creators!
     const { data: contentData, error: contentError } = await supabase
       .from('content')
       .select(`
@@ -157,7 +157,7 @@ export default function AdminPage() {
 
     console.log('📊 Admin - Total content fetched:', contentData?.length || 0)
     console.log('📊 Admin - Pending content:', contentData?.filter(c => c.status === 'pending').length || 0)
-    console.log('📊 Admin - All statuses:', contentData?.map(c => ({ title: c.title, status: c.status })))
+    console.log('📊 Admin - All statuses:', contentData?.map(c => ({ title: c.title, status: c.status, creator_id: c.creator_id })))
 
     const allContent = contentData || []
     const totalFilms = allContent.length
