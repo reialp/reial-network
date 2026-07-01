@@ -685,4 +685,75 @@ export default function AdminPage() {
                   {previewFilm.status === 'approved' && (
                     <button onClick={() => { handleRevokeApproval(previewFilm.id); closePreview(); }} className="flex-1 bg-yellow-500 text-black py-2 rounded-lg font-semibold hover:bg-yellow-600 transition">Revoke Approval</button>
                   )}
-                  <button onClick={closePreview} className="flex-1 border border-white/20 py-2 rounded-lg font-semibold hover:bg-white/
+                  <button onClick={closePreview} className="flex-1 border border-white/20 py-2 rounded-lg font-semibold hover:bg-white/5 transition">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Confirmation Code Modal */}
+        {isConfirmModalOpen && selectedTransaction && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-[#1a1a1a] rounded-2xl max-w-md w-full border border-white/10 p-6">
+              <h2 className="text-xl font-bold mb-4">Confirm Transaction</h2>
+              <p className="text-gray-400 text-sm mb-4">
+                Enter the confirmation code from PesaPal for this transaction.
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Film</label>
+                  <p className="text-white">{selectedTransaction.content?.title || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Amount</label>
+                  <p className="text-[#f5c518] font-bold">KES {selectedTransaction.amount_paid}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Confirmation Code</label>
+                  <input
+                    type="text"
+                    value={confirmationCode}
+                    onChange={(e) => setConfirmationCode(e.target.value)}
+                    placeholder="e.g. UFSJB94EZQ"
+                    className="w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white"
+                  />
+                </div>
+                
+                {confirmMessage && (
+                  <div className={`p-3 rounded-lg text-sm ${
+                    confirmMessage.includes('✅') ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                  }`}>
+                    {confirmMessage}
+                  </div>
+                )}
+                
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => {
+                      setIsConfirmModalOpen(false)
+                      setConfirmationCode('')
+                      setSelectedTransaction(null)
+                      setConfirmMessage('')
+                    }}
+                    className="flex-1 border border-white/20 py-2 rounded-lg font-semibold hover:bg-white/5 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmTransaction}
+                    disabled={confirmLoading}
+                    className="flex-1 bg-[#f5c518] text-black py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50"
+                  >
+                    {confirmLoading ? 'Confirming...' : 'Confirm'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
