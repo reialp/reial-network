@@ -1,65 +1,78 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function TermsPage() {
-  const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [userId, setUserId] = useState<string | null>(null)
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/auth/login')
-        return
-      }
-      setUserId(session.user.id)
-    }
-    getUser()
-  }, [supabase, router])
 
   const acceptTerms = async () => {
-    if (!userId) {
-      setError('Please log in first.')
-      return
-    }
-
     setLoading(true)
     setError(null)
 
     try {
-      // ✅ Update profile
-      const { data, error } = await supabase
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setError('Please log in first.')
+        setLoading(false)
+        return
+      }
+
+      // ✅ Get current profile to check if it exists
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', session.user.id)
+        .single()
+
+      // ✅ If profile doesn't exist, create it first
+      if (fetchError && fetchError.code === 'PGRST116') {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: session.user.id,
+            full_name: session.user.user_metadata?.full_name || '',
+            is_creator: true,
+            terms_accepted: true,
+            terms_accepted_at: new Date().toISOString()
+          })
+
+        if (insertError) {
+          setError('Failed to create profile: ' + insertError.message)
+          setLoading(false)
+          return
+        }
+
+        // ✅ Redirect to upload
+        window.location.href = '/upload'
+        return
+      }
+
+      // ✅ Update existing profile
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({
           terms_accepted: true,
           terms_accepted_at: new Date().toISOString(),
           is_creator: true
         })
-        .eq('id', userId)
-        .select()
+        .eq('id', session.user.id)
 
-      if (error) {
-        console.error('Update error:', error)
-        setError('Failed to accept terms: ' + error.message)
+      if (updateError) {
+        setError('Failed to accept terms: ' + updateError.message)
         setLoading(false)
         return
       }
 
-      console.log('✅ Profile updated:', data)
-
       // ✅ Redirect to upload
       window.location.href = '/upload'
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error:', err)
-      setError('An unexpected error occurred.')
+      setError('An unexpected error occurred. Please try again.')
       setLoading(false)
     }
   }
@@ -72,6 +85,12 @@ export default function TermsPage() {
           <p className="text-gray-400 text-center mb-8">
             Please read these terms carefully before uploading content to Reial Network.
           </p>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm mb-4">
+              {error}
+            </div>
+          )}
 
           <div className="space-y-6 text-gray-300 text-sm leading-relaxed">
             <div className="bg-[#0a0a0a] rounded-xl p-6 border border-white/5">
@@ -98,8 +117,7 @@ export default function TermsPage() {
               <h2 className="text-lg font-semibold text-[#f5c518] mb-3">3. Revenue Share</h2>
               <p>
                 You will earn <span className="text-[#f5c518] font-bold">85%</span> of all sales revenue generated from your content.
-                Reial Network retains <span className="text-yellow-400 font-bold">15%</span> as a platform fee for hosting,
-                payment processing, and distribution services.
+                Reial Network retains <span className="text-yellow-400 font-bold">15%</span> as a platform fee.
               </p>
             </div>
 
@@ -110,7 +128,6 @@ export default function TermsPage() {
                 <li>Content must comply with all applicable laws</li>
                 <li>Content must not contain hate speech, harassment, or discrimination</li>
                 <li>Content must not contain graphic violence or explicit material</li>
-                <li>AI-generated content must be clearly labeled</li>
               </ul>
             </div>
 
@@ -118,9 +135,8 @@ export default function TermsPage() {
               <h2 className="text-lg font-semibold text-[#f5c518] mb-3">5. Monetization Terms</h2>
               <ul className="list-disc list-inside mt-2 space-y-2 ml-4">
                 <li>All sales are final and non-refundable</li>
-                <li>Reial Network handles all payment processing</li>
-                <li>Payouts are processed once you reach the minimum threshold of KES 500</li>
-                <li>Payouts are processed within 1-3 business days of request</li>
+                <li>Payouts are processed once you reach KES 500</li>
+                <li>Payouts are processed within 1-3 business days</li>
               </ul>
             </div>
 
@@ -128,7 +144,7 @@ export default function TermsPage() {
               <h2 className="text-lg font-semibold text-[#f5c518] mb-3">6. Termination</h2>
               <p>
                 Reial Network reserves the right to remove any content that violates these terms.
-                You may request to remove your content at any time, subject to any existing sales.
+                You may request to remove your content at any time.
               </p>
             </div>
 
@@ -136,16 +152,10 @@ export default function TermsPage() {
               <h2 className="text-lg font-semibold text-[#f5c518] mb-3">7. Liability</h2>
               <p>
                 You agree to hold Reial Network harmless from any claims arising from your content.
-                You are solely responsible for the content you upload and its legality.
+                You are solely responsible for the content you upload.
               </p>
             </div>
           </div>
-
-          {error && (
-            <div className="mt-6 bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
 
           <div className="mt-8 flex flex-col sm:flex-row gap-4">
             <button
@@ -162,9 +172,6 @@ export default function TermsPage() {
               Cancel
             </Link>
           </div>
-          <p className="text-xs text-gray-500 text-center mt-4">
-            By clicking "I Agree", you accept all terms and conditions stated above.
-          </p>
         </div>
       </div>
     </div>
