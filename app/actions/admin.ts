@@ -9,7 +9,7 @@ const createAdminClient = () => {
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Missing Supabase Admin environment variables (NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY)')
+    throw new Error('Missing Supabase Admin environment variables')
   }
 
   return createSupabaseClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -63,7 +63,7 @@ export async function getAllContent() {
 
     return { content: allContent, error: null }
   } catch (error: any) {
-    return { error: error.message || String(error), content: [] }
+    return { error: error.message || JSON.stringify(error), content: [] }
   }
 }
 
@@ -72,14 +72,14 @@ export async function approveContent(contentId: string) {
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
       .from('content')
-      .update({ status: 'approved', is_reviewed: true })
+      .update({ status: 'approved' })
       .eq('id', contentId)
 
     if (error) throw new Error(error.message)
     revalidatePath('/admin')
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || String(error) }
+    return { error: error.message || JSON.stringify(error) }
   }
 }
 
@@ -88,14 +88,14 @@ export async function rejectContent(contentId: string) {
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
       .from('content')
-      .update({ status: 'rejected', is_reviewed: true })
+      .update({ status: 'rejected' })
       .eq('id', contentId)
 
     if (error) throw new Error(error.message)
     revalidatePath('/admin')
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || String(error) }
+    return { error: error.message || JSON.stringify(error) }
   }
 }
 
@@ -104,14 +104,14 @@ export async function revokeApproval(contentId: string) {
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
       .from('content')
-      .update({ status: 'pending', is_reviewed: false })
+      .update({ status: 'pending' })
       .eq('id', contentId)
 
     if (error) throw new Error(error.message)
     revalidatePath('/admin')
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || String(error) }
+    return { error: error.message || JSON.stringify(error) }
   }
 }
 
@@ -127,41 +127,27 @@ export async function deleteContent(contentId: string) {
     revalidatePath('/admin')
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || String(error) }
+    return { error: error.message || JSON.stringify(error) }
   }
 }
 
 export async function confirmTransaction(transactionId: string, confirmationCode: string) {
   try {
     const adminSupabase = createAdminClient()
-    
-    // Get purchase to find content_id for incrementing sales
-    const { data: purchase } = await adminSupabase
-      .from('purchases')
-      .select('content_id')
-      .eq('id', transactionId)
-      .single()
-
     const { error } = await adminSupabase
       .from('purchases')
       .update({ 
         status: 'completed', 
-        pesapal_transaction_id: confirmationCode,
+        pesapal_transaction_id: confirmationCode.trim(),
         updated_at: new Date().toISOString()
       })
       .eq('id', transactionId)
 
     if (error) throw new Error(error.message)
-
-    // Increment sales count
-    if (purchase?.content_id) {
-      await adminSupabase.rpc('increment_sales', { content_id: purchase.content_id })
-    }
-
     revalidatePath('/admin')
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || String(error) }
+    return { error: error.message || JSON.stringify(error) }
   }
 }
 
@@ -180,6 +166,6 @@ export async function processPayout(payoutId: string) {
     revalidatePath('/admin')
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || String(error) }
+    return { error: error.message || JSON.stringify(error) }
   }
 }
