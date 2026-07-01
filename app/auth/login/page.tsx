@@ -52,7 +52,7 @@ export default function LoginPage() {
     if (error) {
       setError(error.message)
     } else {
-      setResetMessage('✅ Password reset email sent! Check your inbox.')
+      setResetMessage('📧 Password reset email sent! Please check your inbox or spam/junk folder.')
       setEmail('')
     }
     setLoading(false)
