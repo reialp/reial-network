@@ -15,6 +15,7 @@ export default function Navbar() {
   const [user, setUser] = useState<any>(null)
   const [isCreator, setIsCreator] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
 
   useEffect(() => {
     // ✅ Get initial session
@@ -24,12 +25,13 @@ export default function Navbar() {
         setUser(session.user)
         const { data: profile } = await supabase
           .from('profiles')
-          .select('is_creator, is_admin')
+          .select('is_creator, is_admin, terms_accepted')
           .eq('id', session.user.id)
           .single()
         if (profile) {
           setIsCreator(profile.is_creator || false)
           setIsAdmin(profile.is_admin || false)
+          setHasAcceptedTerms(profile.terms_accepted || false)
         }
       }
     }
@@ -42,18 +44,20 @@ export default function Navbar() {
           setUser(session.user)
           const { data: profile } = await supabase
             .from('profiles')
-            .select('is_creator, is_admin')
+            .select('is_creator, is_admin, terms_accepted')
             .eq('id', session.user.id)
             .single()
           if (profile) {
             setIsCreator(profile.is_creator || false)
             setIsAdmin(profile.is_admin || false)
+            setHasAcceptedTerms(profile.terms_accepted || false)
           }
           router.refresh()
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
           setIsCreator(false)
           setIsAdmin(false)
+          setHasAcceptedTerms(false)
           router.refresh()
         }
       }
@@ -70,11 +74,28 @@ export default function Navbar() {
     router.refresh()
   }
 
+  // ✅ Handle upload click with terms check
+  const handleUploadClick = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault()
+      router.push('/auth/login')
+      return
+    }
+
+    if (!hasAcceptedTerms) {
+      e.preventDefault()
+      router.push('/terms')
+      return
+    }
+
+    router.push('/upload')
+  }
+
   const navLinks = [
     { href: '/', label: 'Home' },
     ...(user ? [
       { href: '/dashboard', label: 'Dashboard' },
-      { href: '/upload', label: 'Upload' },
+      { href: '#', label: 'Upload', onClick: handleUploadClick },
       { href: '/library', label: 'Library' },
       { href: '/profile', label: 'Profile' },
       ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
@@ -110,15 +131,27 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-6 flex-shrink-0">
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`text-sm transition-colors hover:text-[#f5c518] ${
-                  pathname === link.href ? 'text-[#f5c518] font-semibold' : 'text-gray-300'
-                }`}
-              >
-                {link.label}
-              </Link>
+              link.onClick ? (
+                <button
+                  key={link.href}
+                  onClick={link.onClick}
+                  className={`text-sm transition-colors hover:text-[#f5c518] ${
+                    pathname === '/upload' ? 'text-[#f5c518] font-semibold' : 'text-gray-300'
+                  }`}
+                >
+                  Upload
+                </button>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm transition-colors hover:text-[#f5c518] ${
+                    pathname === link.href ? 'text-[#f5c518] font-semibold' : 'text-gray-300'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              )
             ))}
             {user && (
               <button
@@ -158,19 +191,33 @@ export default function Navbar() {
         <div id="mobile-menu" className="hidden md:hidden pb-4">
           <div className="flex flex-col gap-2">
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`px-3 py-2 rounded-md text-sm transition-colors hover:bg-white/5 ${
-                  pathname === link.href ? 'text-[#f5c518] bg-white/5' : 'text-gray-300'
-                }`}
-                onClick={() => {
-                  const menu = document.getElementById('mobile-menu')
-                  if (menu) menu.classList.add('hidden')
-                }}
-              >
-                {link.label}
-              </Link>
+              link.onClick ? (
+                <button
+                  key={link.href}
+                  onClick={(e) => {
+                    link.onClick(e)
+                    const menu = document.getElementById('mobile-menu')
+                    if (menu) menu.classList.add('hidden')
+                  }}
+                  className="px-3 py-2 rounded-md text-sm transition-colors hover:bg-white/5 text-gray-300 text-left"
+                >
+                  Upload
+                </button>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`px-3 py-2 rounded-md text-sm transition-colors hover:bg-white/5 ${
+                    pathname === link.href ? 'text-[#f5c518] bg-white/5' : 'text-gray-300'
+                  }`}
+                  onClick={() => {
+                    const menu = document.getElementById('mobile-menu')
+                    if (menu) menu.classList.add('hidden')
+                  }}
+                >
+                  {link.label}
+                </Link>
+              )
             ))}
             {user && (
               <button
