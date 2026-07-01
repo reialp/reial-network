@@ -1,26 +1,21 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
 
-  // ✅ Get intent and redirectTo parameters
   const intent = searchParams.get('intent')
   const redirectTo = searchParams.get('redirectTo')
 
-  // ✅ Determine final redirect destination
   const getFinalRedirect = () => {
-    // Priority 1: If they have a redirectTo, use it
     if (redirectTo) return redirectTo
-    // Priority 2: If they clicked "Become a Creator", go to profile/creator setup
     if (intent === 'creator') return '/profile'
-    // Priority 3: Default to dashboard
     return '/dashboard'
   }
 
@@ -49,7 +44,6 @@ export default function LoginPage() {
       return
     }
 
-    // ✅ Redirect to the original page they wanted
     router.push(finalRedirect)
     router.refresh()
   }
@@ -180,5 +174,17 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }
