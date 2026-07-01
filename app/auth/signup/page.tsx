@@ -11,8 +11,8 @@ function SignupForm() {
   const supabase = createClient()
 
   // ✅ Get intent and redirectTo parameters
-  const intent = searchParams.get('intent') // 'creator' or null
-  const redirectTo = searchParams.get('redirectTo')
+  const intent = searchParams?.get('intent') // 'creator' or null
+  const redirectTo = searchParams?.get('redirectTo')
 
   // ✅ Determine final redirect destination
   const getFinalRedirect = () => {
