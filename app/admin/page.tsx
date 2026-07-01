@@ -145,7 +145,7 @@ export default function AdminPage() {
 
       const allContent = data.content || []
       
-      console.log('===== ADMIN API DEBUG =====')
+      console.log('===== ADMIN PAGE DEBUG =====')
       console.log('Total content:', allContent.length)
       console.log('Pending content:', allContent.filter((c: any) => c.status === 'pending').length)
       console.log('All content:', allContent.map((c: any) => ({ 
