@@ -11,6 +11,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+  const intent = searchParams?.get('intent')
+
   const [profile, setProfile] = useState({
     full_name: '',
     bio: '',
@@ -139,14 +142,18 @@ export default function ProfilePage() {
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className={`flex items-center gap-3 p-4 rounded-lg border ${intent === 'creator' ? 'bg-[#f5c518]/10 border-[#f5c518]' : 'bg-[#1a1a1a] border-white/10'}`}>
             <input
               type="checkbox"
+              id="is_creator"
               checked={profile.is_creator}
               onChange={(e) => setProfile({ ...profile, is_creator: e.target.checked })}
               className="w-5 h-5 accent-[#f5c518]"
             />
-            <label className="text-sm text-gray-300">Become a Creator (upload and sell content)</label>
+            <label htmlFor="is_creator" className="text-sm font-medium text-gray-300 cursor-pointer">
+              Become a Creator (upload and sell content)
+              {intent === 'creator' && <span className="block text-xs text-[#f5c518] mt-1">Check this to enable uploads</span>}
+            </label>
           </div>
 
           <button
