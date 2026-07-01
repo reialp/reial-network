@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession()
   const pathname = request.nextUrl.pathname
 
-  // ✅ Public routes (no login required)
+  // ✅ Public routes
   const isPublic =
     pathname === '/' ||
     pathname === '/auth/login' ||
@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/film/') ||
     pathname.startsWith('/creator/')
 
-  // ✅ Protected routes (login required)
+  // ✅ Protected routes
   const isProtected =
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/library') ||
@@ -49,17 +49,17 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/checkout/') ||
     pathname.startsWith('/watch/')
 
-  // ✅ Creator-only routes (login + terms + creator status required)
+  // ✅ Creator-only routes
   const isCreatorRoute =
     pathname.startsWith('/upload')
 
-  // ✅ If protected and no session, redirect to login with redirectTo
+  // If protected and no session
   if (isProtected && !session) {
     const redirectTo = encodeURIComponent(pathname + request.nextUrl.search)
     return NextResponse.redirect(new URL(`/auth/login?redirectTo=${redirectTo}`, request.url))
   }
 
-  // ✅ If logged in and on auth pages, redirect
+  // If logged in and on auth pages
   if (session && (pathname === '/auth/login' || pathname === '/auth/signup')) {
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     if (redirectTo) {
@@ -68,25 +68,26 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // ✅ ONLY check terms for upload route
+  // ✅ Check terms for upload route
   if (session && isCreatorRoute) {
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error } = await supabase
       .from('profiles')
       .select('terms_accepted, is_creator')
       .eq('id', session.user.id)
       .single()
 
-    if (profileError) {
-      console.error('❌ Profile error:', profileError)
-      return response
-    }
-
-    // ✅ If trying to upload but not a creator, redirect to profile
-    if (!profile?.is_creator) {
+    if (error) {
+      console.error('❌ Profile error:', error)
+      // If profile doesn't exist, redirect to profile to create it
       return NextResponse.redirect(new URL('/profile', request.url))
     }
 
-    // ✅ If creator but hasn't accepted terms, redirect to terms
+    // If not a creator, redirect to profile
+    if (!profile?.is_creator) {
+      return NextResponse.redirect(new URL('/profile?intent=creator', request.url))
+    }
+
+    // If creator but hasn't accepted terms, redirect to terms
     if (!profile?.terms_accepted) {
       return NextResponse.redirect(new URL('/terms', request.url))
     }
