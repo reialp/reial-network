@@ -21,32 +21,32 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }: 
     },
     {
       title: 'Upload Your Video',
-      description: 'First, upload your video to YouTube, Vimeo, or Google Drive. Then copy the share link and paste it into the upload form on Reial Network.',
+      description: 'Upload your video to YouTube or Vimeo. Copy the share link and paste it into the upload form on Reial Network.',
       details: [
         'YouTube: Set your video to "Unlisted" (not Public or Private)',
         'YouTube: Make sure it is NOT age-restricted (age-restricted videos will not play)',
         'Vimeo: Recommended for premium content with domain-level privacy',
-        'Google Drive: Upload your video, share it with anyone with the link, then copy the share link',
-        'After uploading, copy the share link and paste it here',
+        'After uploading, copy the share link and paste it in the "Video Link" field',
       ],
     },
     {
       title: 'Add a Trailer',
-      description: 'If you have a trailer, upload it to YouTube, Vimeo, or Google Drive and copy the share link. Paste it in the "Trailer Link" field on the upload form.',
+      description: 'If you have a trailer, upload it to YouTube or Vimeo. Copy the share link and paste it in the "Trailer Link" field on the upload form.',
     },
     {
-      title: 'Add a Thumbnail',
-      description: 'Upload your thumbnail image to Google Drive or any free image hosting service. Copy the image link and paste it in the "Thumbnail Link" field.',
+      title: 'Add a Poster',
+      description: 'Upload your poster image directly on Reial Network. You can upload a JPEG, PNG, GIF, or WebP file up to 5MB.',
       details: [
-        'Google Drive: Upload your image, share it with anyone with the link, then copy the share link',
-        'You can also use: Imgur, Postimages, or any image hosting service',
-        'Make sure the image link ends with .jpg, .png, or .webp',
-        'The thumbnail should be clear and professional',
+        'Click the "Poster Image" upload area on the upload form',
+        'Select your image file from your computer',
+        'You can change your poster at any time by uploading a new one',
+        'The poster should be clear and professional',
+        'For best results, use a high-quality image',
       ],
     },
     {
       title: 'Submit for Approval',
-      description: 'Once you have filled in all the details, submit your film for approval. Our admin team will review it and approve it if it meets our guidelines.',
+      description: 'Once you have filled in all the details, submit your project for approval. Our admin team will review it and approve it if it meets our guidelines.',
     },
     {
       title: 'Earn 85% of Every Sale',
