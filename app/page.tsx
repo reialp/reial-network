@@ -156,16 +156,12 @@ export default function HomePage() {
   }, [allFilms, selectedCategory, searchTerm])
 
   const totalFilms = allFilms.length
-  const totalSales = allFilms.reduce((sum, f) => sum + (f.purchase_count || 0), 0)
-  const totalRevenue = allFilms.reduce((sum, f) => sum + (f.price * (f.purchase_count || 0)), 0)
-
   const carouselFilms = allFilms.slice(0, 5)
 
   const renderFilmCard = (film: Film) => {
     const isPurchased = purchasedIds.has(film.id)
     const token = purchaseTokens[film.id]
     
-    // ✅ Build URL with category and slug
     const contentSlug = film.slug || film.id
     const categoryPath = film.category ? film.category.toLowerCase() : 'film'
     let watchUrl = `/${categoryPath}/${contentSlug}`
@@ -225,7 +221,6 @@ export default function HomePage() {
     )
   }
 
-  // Loading state with spinner
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -239,7 +234,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
-      {/* HERO SECTION WITH CLICKABLE CAROUSEL */}
+      {/* HERO SECTION */}
       <section className="relative min-h-screen flex items-center px-6 overflow-hidden bg-grid-pattern">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-[#1a0a0a] to-[#0a0a0a]">
           <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#f5c518]/5 rounded-full blur-3xl" />
@@ -248,7 +243,6 @@ export default function HomePage() {
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left Column - Text Content */}
           <div>
             <div className="inline-block px-4 py-1.5 rounded-full bg-[#f5c518]/10 border border-[#f5c518]/20 text-[#f5c518] text-sm font-medium mb-6">
               Premium Content Marketplace
@@ -283,7 +277,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right Column - Clickable Carousel */}
           {carouselFilms.length > 0 && (
             <div
               className="relative aspect-[4/3] max-h-[60vh] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
@@ -294,7 +287,6 @@ export default function HomePage() {
                 const isPurchased = purchasedIds.has(film.id)
                 const token = purchaseTokens[film.id]
                 
-                // ✅ Build URL with category and slug
                 const contentSlug = film.slug || film.id
                 const categoryPath = film.category ? film.category.toLowerCase() : 'film'
                 let linkUrl = `/${categoryPath}/${contentSlug}`
@@ -449,20 +441,6 @@ export default function HomePage() {
           <div className="flex items-center gap-3">
             <span className="text-2xl font-bold">Reial<span className="text-[#f5c518]">.</span></span>
             <span className="text-gray-600 text-sm">Premium Stories</span>
-          </div>
-          <div className="flex gap-8">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-[#f5c518]">{totalFilms}</p>
-              <p className="text-gray-500 text-xs uppercase tracking-wider">Items</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-[#f5c518]">{totalSales}</p>
-              <p className="text-gray-500 text-xs uppercase tracking-wider">Sales</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-[#f5c518]">KES {totalRevenue.toLocaleString()}</p>
-              <p className="text-gray-500 text-xs uppercase tracking-wider">Total Sales</p>
-            </div>
           </div>
           <div className="text-gray-500 text-sm">© 2026 Reial Network. All rights reserved.</div>
         </div>
