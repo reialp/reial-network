@@ -70,26 +70,30 @@ export async function middleware(request: NextRequest) {
 
   // ✅ Check terms for upload route
   if (session && isCreatorRoute) {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('terms_accepted, is_creator')
-      .eq('id', session.user.id)
-      .single()
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('terms_accepted, is_creator')
+        .eq('id', session.user.id)
+        .single()
 
-    if (error) {
-      console.error('❌ Profile error:', error)
-      // If profile doesn't exist, redirect to profile to create it
+      if (error) {
+        console.error('❌ Profile error:', error)
+        return NextResponse.redirect(new URL('/profile', request.url))
+      }
+
+      // If not a creator, redirect to profile
+      if (!profile?.is_creator) {
+        return NextResponse.redirect(new URL('/profile?intent=creator', request.url))
+      }
+
+      // If creator but hasn't accepted terms
+      if (!profile?.terms_accepted) {
+        return NextResponse.redirect(new URL('/terms', request.url))
+      }
+    } catch (err) {
+      console.error('❌ Error checking profile:', err)
       return NextResponse.redirect(new URL('/profile', request.url))
-    }
-
-    // If not a creator, redirect to profile
-    if (!profile?.is_creator) {
-      return NextResponse.redirect(new URL('/profile?intent=creator', request.url))
-    }
-
-    // If creator but hasn't accepted terms, redirect to terms
-    if (!profile?.terms_accepted) {
-      return NextResponse.redirect(new URL('/terms', request.url))
     }
   }
 
