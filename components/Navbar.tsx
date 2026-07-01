@@ -18,7 +18,6 @@ export default function Navbar() {
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
 
   useEffect(() => {
-    // ✅ Get initial session
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
@@ -37,7 +36,6 @@ export default function Navbar() {
     }
     getUser()
 
-    // ✅ Listen for auth changes (login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
@@ -74,16 +72,30 @@ export default function Navbar() {
     router.refresh()
   }
 
-  // ✅ Handle upload click with terms check
-  const handleUploadClick = (e: React.MouseEvent) => {
-    if (!user) {
-      e.preventDefault()
-      router.push('/auth/login')
+  // ✅ Handle upload click with terms and creator checks
+  const handleUploadClick = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      router.push('/auth/login?redirectTo=/upload')
       return
     }
 
-    if (!hasAcceptedTerms) {
-      e.preventDefault()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('terms_accepted, is_creator')
+      .eq('id', session.user.id)
+      .single()
+
+    // ✅ If not a creator, redirect to profile
+    if (!profile?.is_creator) {
+      router.push('/profile')
+      return
+    }
+
+    // ✅ If creator but hasn't accepted terms
+    if (!profile?.terms_accepted) {
       router.push('/terms')
       return
     }
