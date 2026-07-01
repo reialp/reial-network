@@ -1,0 +1,22 @@
+// ✅ Add this check at the top of your upload page
+useEffect(() => {
+  const checkTerms = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      router.push('/auth/login')
+      return
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('terms_accepted')
+      .eq('id', session.user.id)
+      .single()
+
+    if (!profile?.terms_accepted) {
+      router.push('/terms')
+      return
+    }
+  }
+  checkTerms()
+}, [router, supabase])
