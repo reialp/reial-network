@@ -37,7 +37,8 @@ export default function TermsPage() {
       .from('profiles')
       .update({ 
         terms_accepted: true,
-        terms_accepted_at: new Date().toISOString()
+        terms_accepted_at: new Date().toISOString(),
+        is_creator: true
       })
       .eq('id', userId)
 
@@ -47,8 +48,8 @@ export default function TermsPage() {
       return
     }
 
-    // ✅ Redirect to dashboard after accepting
-    router.push('/dashboard')
+    // ✅ Redirect to upload after accepting
+    router.push('/upload')
     router.refresh()
   }
 
