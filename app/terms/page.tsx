@@ -34,10 +34,10 @@ export default function TermsPage() {
     setError(null)
 
     try {
-      // ✅ Update profile - set terms_accepted and ensure is_creator is true
+      // ✅ Update profile
       const { data, error } = await supabase
         .from('profiles')
-        .update({ 
+        .update({
           terms_accepted: true,
           terms_accepted_at: new Date().toISOString(),
           is_creator: true
@@ -53,15 +53,6 @@ export default function TermsPage() {
       }
 
       console.log('✅ Profile updated:', data)
-
-      // ✅ Verify the update
-      const { data: verifyData } = await supabase
-        .from('profiles')
-        .select('terms_accepted, is_creator')
-        .eq('id', userId)
-        .single()
-
-      console.log('🔍 Verification:', verifyData)
 
       // ✅ Redirect to upload
       window.location.href = '/upload'
@@ -86,8 +77,8 @@ export default function TermsPage() {
             <div className="bg-[#0a0a0a] rounded-xl p-6 border border-white/5">
               <h2 className="text-lg font-semibold text-[#f5c518] mb-3">1. Ownership of Content</h2>
               <p>
-                You retain full ownership of all content you upload to Reial Network. 
-                By uploading, you grant Reial Network a non-exclusive license to host, 
+                You retain full ownership of all content you upload to Reial Network.
+                By uploading, you grant Reial Network a non-exclusive license to host,
                 display, and distribute your content on our platform.
               </p>
             </div>
@@ -106,8 +97,8 @@ export default function TermsPage() {
             <div className="bg-[#0a0a0a] rounded-xl p-6 border border-white/5">
               <h2 className="text-lg font-semibold text-[#f5c518] mb-3">3. Revenue Share</h2>
               <p>
-                You will earn <span className="text-[#f5c518] font-bold">85%</span> of all sales revenue generated from your content. 
-                Reial Network retains <span className="text-yellow-400 font-bold">15%</span> as a platform fee for hosting, 
+                You will earn <span className="text-[#f5c518] font-bold">85%</span> of all sales revenue generated from your content.
+                Reial Network retains <span className="text-yellow-400 font-bold">15%</span> as a platform fee for hosting,
                 payment processing, and distribution services.
               </p>
             </div>
@@ -136,7 +127,7 @@ export default function TermsPage() {
             <div className="bg-[#0a0a0a] rounded-xl p-6 border border-white/5">
               <h2 className="text-lg font-semibold text-[#f5c518] mb-3">6. Termination</h2>
               <p>
-                Reial Network reserves the right to remove any content that violates these terms. 
+                Reial Network reserves the right to remove any content that violates these terms.
                 You may request to remove your content at any time, subject to any existing sales.
               </p>
             </div>
@@ -144,7 +135,7 @@ export default function TermsPage() {
             <div className="bg-[#0a0a0a] rounded-xl p-6 border border-white/5">
               <h2 className="text-lg font-semibold text-[#f5c518] mb-3">7. Liability</h2>
               <p>
-                You agree to hold Reial Network harmless from any claims arising from your content. 
+                You agree to hold Reial Network harmless from any claims arising from your content.
                 You are solely responsible for the content you upload and its legality.
               </p>
             </div>
