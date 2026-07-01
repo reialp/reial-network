@@ -32,9 +32,7 @@ interface Content {
   created_at: string
   slug: string | null
   creator_id: string
-  profiles: {
-    full_name: string
-  } | null
+  creator_name: string | null
 }
 
 interface PayoutRequest {
@@ -110,7 +108,7 @@ export default function AdminPage() {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(c =>
         c.title.toLowerCase().includes(term) ||
-        (c.profiles?.full_name?.toLowerCase() || '').includes(term)
+        (c.creator_name?.toLowerCase() || '').includes(term)
       )
     }
     setFilteredContent(filtered)
@@ -131,7 +129,6 @@ export default function AdminPage() {
 
       setDebugInfo(`✅ Session: ${session.user.email}`)
 
-      // ✅ Check if user is admin
       const { data: profile } = await supabase
         .from('profiles')
         .select('is_admin, full_name')
@@ -146,15 +143,12 @@ export default function AdminPage() {
 
       setDebugInfo(`✅ Admin: ${profile.full_name}`)
 
-      // ✅ IMPORTANT: Fetch ALL content from ALL creators - NO FILTERS!
+      // ✅ STEP 1: Fetch ALL content from ALL creators (no filters!)
       setDebugInfo('🔄 Fetching ALL content from ALL creators...')
       
       const { data: contentData, error: contentError } = await supabase
         .from('content')
-        .select(`
-          *,
-          profiles ( full_name )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
 
       if (contentError) {
@@ -162,20 +156,42 @@ export default function AdminPage() {
         console.error('Error:', contentError)
       }
 
-      const allContent = contentData || []
-      
-      // ✅ Debug info
+      // ✅ STEP 2: Get all unique creator IDs
+      const creatorIds = [...new Set((contentData || []).map(c => c.creator_id).filter(Boolean))]
+
+      // ✅ STEP 3: Fetch creator names separately
+      let creatorNames: Record<string, string> = {}
+      if (creatorIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', creatorIds)
+        
+        if (profilesData) {
+          creatorNames = profilesData.reduce((acc, p) => {
+            acc[p.id] = p.full_name || 'Unknown Creator'
+            return acc
+          }, {} as Record<string, string>)
+        }
+      }
+
+      // ✅ STEP 4: Map content with creator names
+      const allContent = (contentData || []).map((item: any) => ({
+        ...item,
+        creator_name: creatorNames[item.creator_id] || 'Unknown Creator'
+      }))
+
       const pendingCount = allContent.filter(c => c.status === 'pending').length
       setDebugInfo(`📊 Total: ${allContent.length} | Pending: ${pendingCount}`)
       
       console.log('===== ADMIN DEBUG =====')
       console.log('Total content:', allContent.length)
       console.log('Pending content:', pendingCount)
-      console.log('All content:', allContent.map(c => ({ 
+      console.log('All content:', allContent.map((c: any) => ({ 
         title: c.title, 
         status: c.status, 
         creator_id: c.creator_id,
-        creator_name: c.profiles?.full_name || 'Unknown'
+        creator_name: c.creator_name
       })))
 
       const totalFilms = allContent.length
@@ -452,7 +468,7 @@ export default function AdminPage() {
                       <tr key={film.id} className="hover:bg-white/5 transition">
                         <td className="px-4 sm:px-6 py-3 font-medium">{film.title}</td>
                         <td className="px-4 sm:px-6 py-3 text-gray-400">
-                          {film.profiles?.full_name || 'Unknown Creator'}
+                          {film.creator_name || 'Unknown Creator'}
                         </td>
                         <td className="px-4 sm:px-6 py-3 text-[#f5c518] font-semibold">KES {film.price}</td>
                         <td className="px-4 sm:px-6 py-3 text-gray-400">{film.views}</td>
@@ -647,7 +663,7 @@ export default function AdminPage() {
                     <p className="mt-1">{previewFilm.description || 'No description.'}</p>
                   </div>
                   <div className="space-y-2">
-                    <div><span className="text-sm text-gray-400">Creator:</span> <span className="ml-2">{previewFilm.profiles?.full_name || 'Unknown'}</span></div>
+                    <div><span className="text-sm text-gray-400">Creator:</span> <span className="ml-2">{previewFilm.creator_name || 'Unknown'}</span></div>
                     <div><span className="text-sm text-gray-400">Price:</span> <span className="ml-2 text-[#f5c518] font-bold">KES {previewFilm.price}</span></div>
                     <div><span className="text-sm text-gray-400">Category:</span> <span className="ml-2">{previewFilm.category || 'N/A'}</span></div>
                     <div><span className="text-sm text-gray-400">Views:</span> <span className="ml-2">{previewFilm.views}</span></div>
