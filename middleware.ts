@@ -8,9 +8,6 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // ✅ Log all cookies for debugging
-  console.log('🔍 All cookies:', request.cookies.getAll().map(c => c.name))
-
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -28,14 +25,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { session }, error } = await supabase.auth.getSession()
-
-  // ✅ Log session status
-  console.log('🔍 Session exists:', !!session)
-  if (error) {
-    console.error('❌ Session error:', error)
-  }
-
+  const { data: { session } } = await supabase.auth.getSession()
   const pathname = request.nextUrl.pathname
 
   // ✅ Public routes (no login required)
@@ -45,6 +35,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/auth/signup' ||
     pathname === '/auth/callback' ||
     pathname === '/auth/reset-password' ||
+    pathname === '/terms' ||
     pathname.startsWith('/explore') ||
     pathname.startsWith('/film/') ||
     pathname.startsWith('/creator/')
@@ -65,7 +56,6 @@ export async function middleware(request: NextRequest) {
   // ✅ If protected and no session, redirect to login with redirectTo
   if (isProtected && !session) {
     const redirectTo = encodeURIComponent(pathname + request.nextUrl.search)
-    console.log('🔀 Middleware: Redirecting to login with:', redirectTo)
     return NextResponse.redirect(new URL(`/auth/login?redirectTo=${redirectTo}`, request.url))
   }
 
@@ -73,13 +63,8 @@ export async function middleware(request: NextRequest) {
   if (session && (pathname === '/auth/login' || pathname === '/auth/signup')) {
     const redirectTo = request.nextUrl.searchParams.get('redirectTo')
     if (redirectTo) {
-      console.log('🔀 Middleware: Logged in, redirecting to:', redirectTo)
       return NextResponse.redirect(new URL(redirectTo, request.url))
     }
-    // ✅ Changed: default to home instead of dashboard.
-    // Dashboard should only happen via explicit intent=creator flows,
-    // which are handled upstream in login/signup pages via the `intent` param.
-    console.log('🔀 Middleware: Logged in, no redirectTo — defaulting to home')
     return NextResponse.redirect(new URL('/', request.url))
   }
 
@@ -98,13 +83,11 @@ export async function middleware(request: NextRequest) {
 
     // ✅ If trying to upload but not a creator, redirect to profile
     if (!profile?.is_creator) {
-      console.log('🔀 Not a creator, redirecting to profile')
       return NextResponse.redirect(new URL('/profile', request.url))
     }
 
     // ✅ If creator but hasn't accepted terms, redirect to terms
     if (!profile?.terms_accepted) {
-      console.log('🔀 Terms not accepted, redirecting to terms')
       return NextResponse.redirect(new URL('/terms', request.url))
     }
   }
