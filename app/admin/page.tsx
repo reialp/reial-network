@@ -27,7 +27,7 @@ interface Content {
   release_year: number
   language: string
   subtitles: string
-  status: 'pending' | 'approved' | 'rejected' | 'draft'
+  status: string
   views: number
   purchase_count: number
   created_at: string
@@ -41,7 +41,7 @@ interface PayoutRequest {
   creator_id: string
   amount: number
   phone: string
-  status: 'pending' | 'processed'
+  status: string
   requested_at: string
   processed_at: string | null
   profiles: {
@@ -102,11 +102,11 @@ export default function AdminPage() {
   useMemo(() => {
     let filtered = [...content]
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(c => c.status === statusFilter)
+      filtered = filtered.filter((c) => c.status === statusFilter)
     }
     if (searchTerm) {
       const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(c =>
+      filtered = filtered.filter((c) =>
         c.title.toLowerCase().includes(term) ||
         (c.creator_name?.toLowerCase() || '').includes(term)
       )
@@ -184,8 +184,8 @@ export default function AdminPage() {
         pendingSubmissions,
       })
 
-      setContent(allContent)
-      setFilteredContent(allContent)
+      setContent(allContent as Content[])
+      setFilteredContent(allContent as Content[])
 
       const { data: payoutData } = await supabase
         .from('payout_requests')
@@ -215,7 +215,6 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-  // ✅ Handle confirmation code submission
   const handleConfirmTransaction = async () => {
     if (!selectedTransaction || !confirmationCode.trim()) {
       setConfirmMessage('Please enter a confirmation code')
@@ -312,7 +311,7 @@ export default function AdminPage() {
     )
   }
 
-  const filteredPayouts = payouts.filter(p => {
+  const filteredPayouts = payouts.filter((p) => {
     if (payoutFilter === 'all') return true
     return p.status === payoutFilter
   })
@@ -323,7 +322,6 @@ export default function AdminPage() {
         <h1 className="text-3xl font-bold mb-2">Admin Panel</h1>
         <p className="text-gray-400 mb-8">Manage content, approvals, and payouts.</p>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Total Films</p>
@@ -460,7 +458,6 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Payout Requests */}
         <h2 className="text-2xl font-bold mb-4">Payout Requests</h2>
         <div className="flex gap-3 mb-4">
           {(['all', 'pending', 'processed'] as const).map((status) => (
@@ -527,7 +524,6 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Transactions Section with Confirm Button */}
         <h2 className="text-2xl font-bold mb-4">Transaction History</h2>
         <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
           <div className="overflow-x-auto">
