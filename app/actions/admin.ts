@@ -1,17 +1,30 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+
+// Helper to create admin client inside the action
+const createAdminClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error('Missing Supabase Admin environment variables')
+  }
+
+  return createSupabaseClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  })
+}
 
 export async function getAllContent() {
   try {
     const supabase = await createClient()
 
-    // ✅ Check if user is admin
+    // 1. Verify the requester is actually an admin
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      return { error: 'Unauthorized', content: [] }
-    }
+    if (!session) return { error: 'Unauthorized', content: [] }
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -19,26 +32,24 @@ export async function getAllContent() {
       .eq('id', session.user.id)
       .single()
 
-    if (!profile?.is_admin) {
-      return { error: 'Forbidden', content: [] }
-    }
+    if (!profile?.is_admin) return { error: 'Forbidden', content: [] }
 
-    // ✅ Fetch ALL content from ALL creators
-    const { data: content, error: contentError } = await supabase
+    // 2. Use Admin Client to bypass RLS and fetch ALL content
+    const adminSupabase = createAdminClient()
+    
+    const { data: content, error: contentError } = await adminSupabase
       .from('content')
       .select('*')
       .order('created_at', { ascending: false })
 
-    if (contentError) {
-      return { error: contentError.message, content: [] }
-    }
+    if (contentError) return { error: contentError.message, content: [] }
 
-    // ✅ Get creator names
+    // 3. Get creator names
     const creatorIds = [...new Set((content || []).map(c => c.creator_id).filter(Boolean))]
     let creatorNames: Record<string, string> = {}
     
     if (creatorIds.length > 0) {
-      const { data: profiles } = await supabase
+      const { data: profiles } = await adminSupabase
         .from('profiles')
         .select('id, full_name')
         .in('id', creatorIds)
@@ -59,5 +70,37 @@ export async function getAllContent() {
     return { content: allContent, error: null }
   } catch (error) {
     return { error: String(error), content: [] }
+  }
+}
+
+export async function approveContent(contentId: string) {
+  try {
+    const adminSupabase = createAdminClient()
+    const { error } = await adminSupabase
+      .from('content')
+      .update({ status: 'approved', is_reviewed: true })
+      .eq('id', contentId)
+
+    if (error) throw error
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (error) {
+    return { error: String(error) }
+  }
+}
+
+export async function rejectContent(contentId: string) {
+  try {
+    const adminSupabase = createAdminClient()
+    const { error } = await adminSupabase
+      .from('content')
+      .update({ status: 'rejected', is_reviewed: true })
+      .eq('id', contentId)
+
+    if (error) throw error
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (error) {
+    return { error: String(error) }
   }
 }
