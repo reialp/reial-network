@@ -47,7 +47,9 @@ export default function TermsPage() {
       return
     }
 
+    // ✅ Redirect to dashboard after accepting
     router.push('/dashboard')
+    router.refresh()
   }
 
   return (
