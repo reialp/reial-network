@@ -31,9 +31,10 @@ interface Content {
   purchase_count: number
   created_at: string
   slug: string | null
+  creator_id: string
   profiles: {
     full_name: string
-  }
+  } | null
 }
 
 interface PayoutRequest {
@@ -109,7 +110,7 @@ export default function AdminPage() {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(c =>
         c.title.toLowerCase().includes(term) ||
-        c.profiles?.full_name?.toLowerCase().includes(term)
+        (c.profiles?.full_name?.toLowerCase() || '').includes(term)
       )
     }
     setFilteredContent(filtered)
@@ -130,6 +131,7 @@ export default function AdminPage() {
 
       setDebugInfo(`✅ Session: ${session.user.email}`)
 
+      // ✅ Check if user is admin
       const { data: profile } = await supabase
         .from('profiles')
         .select('is_admin, full_name')
@@ -144,8 +146,8 @@ export default function AdminPage() {
 
       setDebugInfo(`✅ Admin: ${profile.full_name}`)
 
-      // ✅ TEST: Get ALL content with NO filters
-      setDebugInfo('🔄 Fetching ALL content...')
+      // ✅ Get ALL content from ALL creators - NO FILTERS!
+      setDebugInfo('🔄 Fetching ALL content from ALL creators...')
       
       const { data: contentData, error: contentError } = await supabase
         .from('content')
@@ -163,18 +165,24 @@ export default function AdminPage() {
       const allContent = contentData || []
       
       // ✅ Debug info
-      setDebugInfo(`📊 Total: ${allContent.length} | Pending: ${allContent.filter(c => c.status === 'pending').length}`)
+      const pendingCount = allContent.filter(c => c.status === 'pending').length
+      setDebugInfo(`📊 Total: ${allContent.length} | Pending: ${pendingCount}`)
       
       console.log('===== ADMIN DEBUG =====')
       console.log('Total content:', allContent.length)
-      console.log('Pending content:', allContent.filter(c => c.status === 'pending').length)
-      console.log('All statuses:', allContent.map(c => ({ title: c.title, status: c.status, creator: c.creator_id })))
+      console.log('Pending content:', pendingCount)
+      console.log('All statuses:', allContent.map(c => ({ 
+        title: c.title, 
+        status: c.status, 
+        creator: c.creator_id,
+        creator_name: c.profiles?.full_name || 'Unknown'
+      })))
       console.log('Raw content:', allContent)
 
       const totalFilms = allContent.length
       const totalSales = allContent.reduce((sum, c) => sum + (c.purchase_count || 0), 0)
       const totalRevenue = allContent.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0)
-      const pendingSubmissions = allContent.filter(c => c.status === 'pending').length
+      const pendingSubmissions = pendingCount
 
       const { data: purchases } = await supabase
         .from('purchases')
@@ -444,7 +452,10 @@ export default function AdminPage() {
                     return (
                       <tr key={film.id} className="hover:bg-white/5 transition">
                         <td className="px-4 sm:px-6 py-3 font-medium">{film.title}</td>
-                        <td className="px-4 sm:px-6 py-3 text-gray-400">{film.profiles?.full_name || 'Unknown'}</td>
+                        <td className="px-4 sm:px-6 py-3 text-gray-400">
+                          {film.profiles?.full_name || 'Unknown'}
+                          {!film.profiles && <span className="text-yellow-400 text-xs ml-1">(no profile)</span>}
+                        </td>
                         <td className="px-4 sm:px-6 py-3 text-[#f5c518] font-semibold">KES {film.price}</td>
                         <td className="px-4 sm:px-6 py-3 text-gray-400">{film.views}</td>
                         <td className="px-4 sm:px-6 py-3 text-gray-400">{film.purchase_count}</td>
