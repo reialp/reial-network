@@ -44,24 +44,29 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // ✅ Check if route is public
+  // ✅ Public routes (no login required)
   const isPublic =
     pathname === '/' ||
     pathname === '/auth/login' ||
     pathname === '/auth/signup' ||
+    pathname === '/auth/callback' ||
+    pathname === '/auth/reset-password' ||
     pathname.startsWith('/explore') ||
     pathname.startsWith('/film/') ||
     pathname.startsWith('/creator/')
 
-  // ✅ Check if route is protected
+  // ✅ Protected routes (login required)
   const isProtected =
     pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/upload') ||
     pathname.startsWith('/library') ||
     pathname.startsWith('/profile') ||
     pathname.startsWith('/admin') ||
     pathname.startsWith('/checkout/') ||
     pathname.startsWith('/watch/')
+
+  // ✅ Creator-only routes (login + terms + creator status required)
+  const isCreatorRoute =
+    pathname.startsWith('/upload')
 
   // ✅ If protected and no session, redirect to login with redirectTo
   if (isProtected && !session) {
@@ -78,6 +83,32 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL(redirectTo, request.url))
     }
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // ✅ ONLY check terms for upload route
+  if (session && isCreatorRoute) {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('terms_accepted, is_creator')
+      .eq('id', session.user.id)
+      .single()
+
+    if (profileError) {
+      console.error('❌ Profile error:', profileError)
+      return response
+    }
+
+    // ✅ If trying to upload but not a creator, redirect to profile
+    if (!profile?.is_creator) {
+      console.log('🔀 Not a creator, redirecting to profile')
+      return NextResponse.redirect(new URL('/profile', request.url))
+    }
+
+    // ✅ If creator but hasn't accepted terms, redirect to terms
+    if (!profile?.terms_accepted) {
+      console.log('🔀 Terms not accepted, redirecting to terms')
+      return NextResponse.redirect(new URL('/terms', request.url))
+    }
   }
 
   return response
