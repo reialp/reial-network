@@ -18,6 +18,7 @@ export default function UploadPage() {
   const [description, setDescription] = useState('')
   const [posterFile, setPosterFile] = useState<File | null>(null)
   const [posterPreview, setPosterPreview] = useState<string>('')
+  const [existingPosterUrl, setExistingPosterUrl] = useState<string>('')
   const [videoUrl, setVideoUrl] = useState('')
   const [trailerUrl, setTrailerUrl] = useState('')
   const [category, setCategory] = useState('')
@@ -27,7 +28,7 @@ export default function UploadPage() {
   const [subtitles, setSubtitles] = useState('')
   const [rightsConfirmed, setRightsConfirmed] = useState(false)
 
-  // ✅ Upload poster to Supabase Storage
+  // Upload poster to Supabase Storage
   const uploadPoster = async (file: File): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop()
@@ -46,7 +47,6 @@ export default function UploadPage() {
         return null
       }
 
-      // ✅ Get the public URL
       const { data: { publicUrl } } = supabase.storage
         .from('content')
         .getPublicUrl(filePath)
@@ -58,18 +58,24 @@ export default function UploadPage() {
     }
   }
 
-  // ✅ Handle poster file selection
+  // Handle poster file selection
   const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       setPosterFile(file)
-      // Create preview
       const reader = new FileReader()
       reader.onloadend = () => {
         setPosterPreview(reader.result as string)
       }
       reader.readAsDataURL(file)
     }
+  }
+
+  // Remove selected poster
+  const handleRemovePoster = () => {
+    setPosterFile(null)
+    setPosterPreview('')
+    setExistingPosterUrl('')
   }
 
   const handleSubmit = async (status: 'draft' | 'pending') => {
@@ -95,9 +101,9 @@ export default function UploadPage() {
     }
 
     try {
-      // ✅ Upload poster if selected
       setUploadProgress(30)
-      let posterUrl = ''
+      let posterUrl = existingPosterUrl
+      
       if (posterFile) {
         const url = await uploadPoster(posterFile)
         if (url) {
@@ -114,7 +120,7 @@ export default function UploadPage() {
       const payload = {
         title,
         description: description || null,
-        thumbnail_url: posterUrl || null, // This is the poster image
+        thumbnail_url: posterUrl || null,
         video_url: videoUrl,
         trailer_url: trailerUrl || null,
         category,
@@ -187,9 +193,7 @@ export default function UploadPage() {
 
           {/* Project Details */}
           <section className="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="text-[#f5c518]">📝</span> Project Details
-            </h2>
+            <h2 className="text-lg font-semibold mb-4">Project Details</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300">
@@ -218,15 +222,33 @@ export default function UploadPage() {
 
           {/* Media */}
           <section className="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="text-[#f5c518]">🎬</span> Media
-            </h2>
+            <h2 className="text-lg font-semibold mb-4">Media</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Poster Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-300">
                   Poster Image <span className="text-red-400">*</span>
                 </label>
+                
+                {(posterPreview || existingPosterUrl) && (
+                  <div className="mt-2 relative">
+                    <img 
+                      src={posterPreview || existingPosterUrl} 
+                      alt="Poster preview" 
+                      className="w-full h-auto max-h-48 object-cover rounded-lg border border-white/10" 
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemovePoster}
+                      className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1 rounded-full transition"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
                 <div className="mt-1 flex items-center justify-center w-full">
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/10 border-dashed rounded-lg cursor-pointer bg-[#0a0a0a] hover:bg-[#1a1a1a] transition">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -246,23 +268,13 @@ export default function UploadPage() {
                     />
                   </label>
                 </div>
-                {posterPreview && (
-                  <div className="mt-2">
-                    <img src={posterPreview} alt="Poster preview" className="w-full h-auto max-h-48 object-cover rounded-lg border border-white/10" />
-                  </div>
-                )}
-                <div className="mt-2 text-xs text-gray-400 space-y-1">
+                
+                <div className="mt-2 text-xs text-gray-400">
                   <p className="text-gray-500">
-                    📸 Upload a poster image for your project.
+                    Upload a poster image for your project. This will be the main image people see when browsing.
                   </p>
-                  <p className="text-gray-500">
-                    This will be the main image people see when browsing.
-                  </p>
-                  <p className="text-gray-500">
-                    Use a clear, eye-catching image that represents your project.
-                  </p>
-                  <p className="text-yellow-400/80 text-xs">
-                    ✅ Your poster will be stored securely on our platform.
+                  <p className="text-gray-500 mt-1">
+                    You can change your poster at any time by uploading a new one.
                   </p>
                 </div>
               </div>
@@ -279,24 +291,18 @@ export default function UploadPage() {
                   className="mt-1 block w-full px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 transition"
                   placeholder="Paste your YouTube or Vimeo link"
                 />
-                <div className="mt-2 text-xs text-gray-400 space-y-1">
+                <div className="mt-2 text-xs text-gray-400">
                   <p className="text-gray-500">
-                    🎬 <strong>Recommended:</strong> Upload to <span className="text-[#f5c518] font-medium">YouTube</span>
-                  </p>
-                  <p className="text-gray-500">
-                    1. Upload your video to YouTube (set to <strong>"Unlisted"</strong>)
+                    1. Upload your video to YouTube or Vimeo
                   </p>
                   <p className="text-gray-500">
-                    2. Click <strong>"Share"</strong> and copy the link
+                    2. Set it to "Unlisted" so only people with the link can watch
                   </p>
-                  <p className="text-yellow-400/80 text-xs">
-                    ✅ YouTube videos work best because viewers don't need to sign in!
+                  <p className="text-gray-500">
+                    3. Copy the share link and paste it here
                   </p>
-                  <p className="text-red-400/80 text-xs">
-                    ⚠️ Make sure your video is <strong>not age-restricted</strong> – it won't play!
-                  </p>
-                  <p className="text-gray-500 text-xs mt-1">
-                    📌 You can also use Vimeo or other video hosting services.
+                  <p className="text-red-400/80 text-xs mt-1">
+                    Important: YouTube videos must NOT be age-restricted – they won't play.
                   </p>
                 </div>
               </div>
@@ -314,10 +320,8 @@ export default function UploadPage() {
               />
               <div className="mt-2 text-xs text-gray-400">
                 <p className="text-gray-500">
-                  🎬 Add a trailer to give viewers a preview of your project.
-                </p>
-                <p className="text-gray-500">
-                  Upload to YouTube or Vimeo and paste the link here.
+                  Upload a trailer to YouTube or Vimeo and paste the share link here.
+                  This will appear on your project page.
                 </p>
               </div>
             </div>
@@ -325,9 +329,7 @@ export default function UploadPage() {
 
           {/* Pricing & Metadata */}
           <section className="bg-[#1a1a1a] rounded-2xl p-6 border border-white/5">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="text-[#f5c518]">💰</span> Pricing & Metadata
-            </h2>
+            <h2 className="text-lg font-semibold mb-4">Pricing & Metadata</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300">
@@ -433,7 +435,7 @@ export default function UploadPage() {
             </button>
           </div>
           <p className="text-xs text-gray-500 text-center mt-2">
-            📤 Submitting for approval will notify the admin to review your project.
+            Submitting for approval will notify the admin to review your project.
           </p>
         </form>
       </div>
