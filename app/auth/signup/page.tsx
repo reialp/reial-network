@@ -65,13 +65,18 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
           <div className="text-6xl mb-4">📧</div>
           <h2 className="text-2xl font-bold">Check your email</h2>
           <p className="text-gray-400 mt-2">
             We sent a confirmation link to <strong className="text-white">{email}</strong>.
-            Please verify your email address to continue.
+          </p>
+          <p className="text-yellow-400/80 text-sm mt-3 bg-[#1a1a1a] p-3 rounded-lg border border-yellow-500/20">
+            📌 Please check your <strong>inbox</strong> or <strong>spam/junk</strong> folder.
+          </p>
+          <p className="text-gray-500 text-sm mt-2">
+            If you don't see it within a few minutes, you can request a new link.
           </p>
           <Link
             href="/auth/login"
