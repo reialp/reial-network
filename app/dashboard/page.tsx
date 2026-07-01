@@ -30,6 +30,7 @@ export default function DashboardPage() {
     grossRevenue: 0,
     yourEarnings: 0,
     availableBalance: 0,
+    platformFees: 0, // ✅ Added platform fees
   })
   const [displayName, setDisplayName] = useState('Creator')
   const [loading, setLoading] = useState(true)
@@ -114,6 +115,7 @@ export default function DashboardPage() {
     const totalSales = contentData?.reduce((sum, c) => sum + (c.purchase_count || 0), 0) || 0
     const grossRevenue = contentData?.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0) || 0
     const yourEarnings = Math.round(grossRevenue * 0.85)
+    const platformFees = Math.round(grossRevenue * 0.15)
 
     // ✅ Calculate available balance from ACTUAL earnings
     const { data: purchasesData } = await supabase
@@ -139,6 +141,7 @@ export default function DashboardPage() {
       grossRevenue, 
       yourEarnings,
       availableBalance,
+      platformFees,
     })
 
     const { data: historyData } = await supabase
@@ -281,6 +284,25 @@ export default function DashboardPage() {
             </p>
           </div>
         )}
+
+        {/* ✅ Revenue Breakdown Banner */}
+        <div className="bg-gradient-to-r from-[#1a1a1a] to-[#2a1a0a] rounded-2xl p-6 border border-[#f5c518]/20 mb-8">
+          <h3 className="text-lg font-bold mb-3 text-[#f5c518]">Revenue Breakdown</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
+              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Total Sales</p>
+              <p className="text-2xl font-bold text-blue-400">{stats.totalSales}</p>
+            </div>
+            <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
+              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">You Earn (85%)</p>
+              <p className="text-2xl font-bold text-[#f5c518]">KES {formatCurrency(stats.yourEarnings)}</p>
+            </div>
+            <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
+              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Platform Fee (15%)</p>
+              <p className="text-2xl font-bold text-yellow-400">KES {formatCurrency(stats.platformFees)}</p>
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
           <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 hover:border-[#f5c518]/20 transition-all">
