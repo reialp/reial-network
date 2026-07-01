@@ -269,7 +269,7 @@ export default function HomePage() {
                 </svg>
               </Link>
               <Link
-                href="/auth/signup"
+                href="/auth/signup?intent=creator"
                 className="px-8 py-4 border border-white/20 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 text-center"
               >
                 Become a Creator
