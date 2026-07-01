@@ -163,7 +163,6 @@ export default function AdminPage() {
         .order('created_at', { ascending: false })
       setTransactions(transactionsData || [])
 
-      // Calculate Stats
       const totalFilms = result.content?.length || 0
       const totalSales = result.content?.reduce((sum, c) => sum + (c.purchase_count || 0), 0) || 0
       const totalRevenue = result.content?.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0) || 0
@@ -199,7 +198,7 @@ export default function AdminPage() {
         alert('✅ Content approved successfully!')
         loadAdminData()
       } else {
-        alert('❌ Error: ' + (result.error || 'Unknown error'))
+        alert('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
       }
     } catch (err) {
       alert('❌ Failed to approve content')
@@ -213,7 +212,7 @@ export default function AdminPage() {
         alert('✅ Content rejected.')
         loadAdminData()
       } else {
-        alert('❌ Error: ' + (result.error || 'Unknown error'))
+        alert('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
       }
     } catch (err) {
       alert('❌ Failed to reject content')
@@ -228,7 +227,7 @@ export default function AdminPage() {
         alert('✅ Approval revoked.')
         loadAdminData()
       } else {
-        alert('❌ Error: ' + (result.error || 'Unknown error'))
+        alert('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
       }
     } catch (err) {
       alert('❌ Failed to revoke approval')
@@ -243,7 +242,7 @@ export default function AdminPage() {
         alert('✅ Content deleted.')
         loadAdminData()
       } else {
-        alert('❌ Error: ' + (result.error || 'Unknown error'))
+        alert('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
       }
     } catch (err) {
       alert('❌ Failed to delete content')
@@ -258,7 +257,7 @@ export default function AdminPage() {
         alert('✅ Payout marked as processed.')
         loadAdminData()
       } else {
-        alert('❌ Error: ' + (result.error || 'Unknown error'))
+        alert('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
       }
     } catch (err) {
       alert('❌ Failed to process payout')
@@ -283,7 +282,7 @@ export default function AdminPage() {
           loadAdminData()
         }, 1500)
       } else {
-        setConfirmMessage('❌ Error: ' + (result.error || 'Unknown error'))
+        setConfirmMessage('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
       }
     } catch (err) {
       setConfirmMessage('❌ Failed to confirm')
