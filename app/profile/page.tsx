@@ -45,6 +45,23 @@ export default function ProfilePage() {
         .eq('id', session.user.id)
         .single()
 
+      // ✅ If profile doesn't exist, create one
+      if (error && error.code === 'PGRST116') {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: session.user.id,
+            full_name: session.user.user_metadata?.full_name || '',
+            is_creator: false,
+            terms_accepted: false,
+          })
+
+        if (!insertError) {
+          loadProfile() // Reload after creating
+          return
+        }
+      }
+
       if (data) {
         setProfile({
           full_name: data.full_name || '',
@@ -72,17 +89,15 @@ export default function ProfilePage() {
       return
     }
 
-    const updateData = {
-      full_name: profile.full_name,
-      bio: profile.bio,
-      avatar_url: profile.avatar_url,
-      is_creator: profile.is_creator,
-      payout_phone: profile.payout_phone,
-    }
-
     const { error: updateError } = await supabase
       .from('profiles')
-      .update(updateData)
+      .update({
+        full_name: profile.full_name,
+        bio: profile.bio,
+        avatar_url: profile.avatar_url,
+        is_creator: profile.is_creator,
+        payout_phone: profile.payout_phone,
+      })
       .eq('id', session.user.id)
 
     if (updateError) {
@@ -94,15 +109,8 @@ export default function ProfilePage() {
     setSuccess(true)
     setSaving(false)
 
-    // ✅ If they came from creator intent and checked is_creator, redirect to upload
     if (intent === 'creator' && profile.is_creator) {
-      setTimeout(() => {
-        router.push('/upload')
-      }, 1500)
-    } else if (intent === 'creator' && !profile.is_creator) {
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 1500)
+      setTimeout(() => router.push('/upload'), 1500)
     } else {
       setTimeout(() => setSuccess(false), 3000)
     }
@@ -124,7 +132,7 @@ export default function ProfilePage() {
         {intent === 'creator' && (
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
             <p className="text-yellow-400 text-sm">
-              🚀 To become a creator, check the "Become a Creator" box below and save your profile.
+              🚀 To become a creator, check the box below and save your profile.
               {profile.is_creator && <span className="block text-green-400 mt-1">✅ You are already a creator!</span>}
             </p>
           </div>
@@ -138,7 +146,7 @@ export default function ProfilePage() {
           )}
           {success && (
             <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg text-sm">
-              ✅ Profile updated successfully! {intent === 'creator' && profile.is_creator && 'Redirecting to upload...'}
+              ✅ Profile updated! {intent === 'creator' && profile.is_creator && 'Redirecting...'}
             </div>
           )}
 
@@ -174,13 +182,13 @@ export default function ProfilePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300">M-Pesa Phone (for payouts)</label>
+            <label className="block text-sm font-medium text-gray-300">M-Pesa Phone</label>
             <input
               type="text"
               value={profile.payout_phone}
               onChange={(e) => setProfile({ ...profile, payout_phone: e.target.value })}
               className="mt-1 block w-full px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white"
-              placeholder="e.g. 0712345678"
+              placeholder="0712345678"
             />
           </div>
 
@@ -194,11 +202,6 @@ export default function ProfilePage() {
             />
             <label htmlFor="is_creator" className="text-sm font-medium text-gray-300 cursor-pointer">
               Become a Creator (upload and sell content)
-              {intent === 'creator' && (
-                <span className="block text-xs text-[#f5c518] mt-1">
-                  {profile.is_creator ? '✅ You are a creator!' : 'Check this to enable uploads'}
-                </span>
-              )}
             </label>
           </div>
 
