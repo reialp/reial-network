@@ -10,8 +10,21 @@ export default function SignupPage() {
   const searchParams = useSearchParams()
   const supabase = createClient()
 
-  // ✅ Get where to redirect after signup
-  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
+  // ✅ Get intent and redirectTo parameters
+  const intent = searchParams.get('intent') // 'creator' or null
+  const redirectTo = searchParams.get('redirectTo')
+
+  // ✅ Determine final redirect destination
+  const getFinalRedirect = () => {
+    // Priority 1: If they came from a purchase flow, go back to checkout
+    if (redirectTo) return redirectTo
+    // Priority 2: If they clicked "Become a Creator", go to profile/creator setup
+    if (intent === 'creator') return '/profile'
+    // Priority 3: Default to home
+    return '/'
+  }
+
+  const finalRedirect = getFinalRedirect()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -27,12 +40,18 @@ export default function SignupPage() {
     setError(null)
 
     try {
+      const callbackUrl = new URL(`${window.location.origin}/auth/callback`)
+      callbackUrl.searchParams.set('redirectTo', finalRedirect)
+      if (intent) {
+        callbackUrl.searchParams.set('intent', intent)
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { full_name: fullName },
-          emailRedirectTo: `${window.location.origin}/auth/callback?redirectTo=${redirectTo}`,
+          emailRedirectTo: callbackUrl.toString(),
         },
       })
 
@@ -80,7 +99,7 @@ export default function SignupPage() {
             📌 Please check your <strong>inbox</strong> or <strong>spam/junk</strong> folder.
           </p>
           <Link
-            href={`/auth/login?redirectTo=${redirectTo}`}
+            href={`/auth/login?redirectTo=${encodeURIComponent(finalRedirect)}${intent ? `&intent=${intent}` : ''}`}
             className="mt-6 inline-block text-[#f5c518] hover:underline"
           >
             Back to sign in
@@ -99,12 +118,14 @@ export default function SignupPage() {
           </h1>
           <h2 className="mt-6 text-2xl font-semibold">Create your account</h2>
           <p className="mt-2 text-gray-400 text-sm">
-            {redirectTo !== '/dashboard' ? (
+            {redirectTo ? (
               <span className="text-[#f5c518]">🔐 Complete your purchase by signing up</span>
+            ) : intent === 'creator' ? (
+              <span className="text-[#f5c518]">🎬 Create your creator account</span>
             ) : (
               <>
                 Already have an account?{' '}
-                <Link href={`/auth/login?redirectTo=${redirectTo}`} className="text-[#f5c518] hover:underline">
+                <Link href={`/auth/login?redirectTo=${encodeURIComponent(finalRedirect)}${intent ? `&intent=${intent}` : ''}`} className="text-[#f5c518] hover:underline">
                   Sign in
                 </Link>
               </>
