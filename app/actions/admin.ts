@@ -17,11 +17,43 @@ const createAdminClient = () => {
   })
 }
 
-export async function getAllContent() {
+// ✅ Types
+interface ContentItem {
+  id: string
+  title: string
+  description: string
+  thumbnail_url: string
+  video_url: string
+  trailer_url: string
+  category: string
+  price: number
+  release_year: number
+  language: string
+  subtitles: string
+  status: string
+  views: number
+  purchase_count: number
+  created_at: string
+  slug: string | null
+  creator_id: string
+  creator_name?: string
+}
+
+interface ApiResponse<T = any> {
+  content?: T[]
+  error?: string | null
+  success?: boolean
+}
+
+// ✅ Get all content
+export async function getAllContent(): Promise<ApiResponse<ContentItem>> {
   try {
     const supabase = await createClient()
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return { error: 'Not authenticated', content: [] }
+    
+    if (!session) {
+      return { error: 'Not authenticated', content: [] }
+    }
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -29,7 +61,9 @@ export async function getAllContent() {
       .eq('id', session.user.id)
       .single()
 
-    if (!profile?.is_admin) return { error: 'Access denied: Admin only', content: [] }
+    if (!profile?.is_admin) {
+      return { error: 'Access denied: Admin only', content: [] }
+    }
 
     const adminSupabase = createAdminClient()
     const { data: content, error: contentError } = await adminSupabase
@@ -37,9 +71,12 @@ export async function getAllContent() {
       .select('*')
       .order('created_at', { ascending: false })
 
-    if (contentError) return { error: contentError.message, content: [] }
+    if (contentError) {
+      return { error: contentError.message, content: [] }
+    }
 
-    const creatorIds = [...new Set((content || []).map(c => c.creator_id).filter(Boolean))]
+    // ✅ Get creator names
+    const creatorIds = [...new Set((content || []).map((c: ContentItem) => c.creator_id).filter(Boolean))]
     let creatorNames: Record<string, string> = {}
     
     if (creatorIds.length > 0) {
@@ -49,25 +86,27 @@ export async function getAllContent() {
         .in('id', creatorIds)
       
       if (profiles) {
-        creatorNames = profiles.reduce((acc, p) => {
+        creatorNames = profiles.reduce((acc: Record<string, string>, p: any) => {
           acc[p.id] = p.full_name || 'Unknown Creator'
           return acc
-        }, {} as Record<string, string>)
+        }, {})
       }
     }
 
-    const allContent = (content || []).map((item: any) => ({
+    const allContent: ContentItem[] = (content || []).map((item: any) => ({
       ...item,
       creator_name: creatorNames[item.creator_id] || 'Unknown Creator'
     }))
 
     return { content: allContent, error: null }
   } catch (error: any) {
-    return { error: error.message || JSON.stringify(error), content: [] }
+    console.error('getAllContent error:', error)
+    return { error: error.message || 'Internal error', content: [] }
   }
 }
 
-export async function approveContent(contentId: string) {
+// ✅ Approve content
+export async function approveContent(contentId: string): Promise<ApiResponse> {
   try {
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
@@ -75,15 +114,20 @@ export async function approveContent(contentId: string) {
       .update({ status: 'approved' })
       .eq('id', contentId)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      return { error: error.message, success: false }
+    }
+    
     revalidatePath('/admin')
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || JSON.stringify(error) }
+    console.error('approveContent error:', error)
+    return { error: error.message || 'Failed to approve content', success: false }
   }
 }
 
-export async function rejectContent(contentId: string) {
+// ✅ Reject content
+export async function rejectContent(contentId: string): Promise<ApiResponse> {
   try {
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
@@ -91,15 +135,20 @@ export async function rejectContent(contentId: string) {
       .update({ status: 'rejected' })
       .eq('id', contentId)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      return { error: error.message, success: false }
+    }
+    
     revalidatePath('/admin')
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || JSON.stringify(error) }
+    console.error('rejectContent error:', error)
+    return { error: error.message || 'Failed to reject content', success: false }
   }
 }
 
-export async function revokeApproval(contentId: string) {
+// ✅ Revoke approval
+export async function revokeApproval(contentId: string): Promise<ApiResponse> {
   try {
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
@@ -107,15 +156,20 @@ export async function revokeApproval(contentId: string) {
       .update({ status: 'pending' })
       .eq('id', contentId)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      return { error: error.message, success: false }
+    }
+    
     revalidatePath('/admin')
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || JSON.stringify(error) }
+    console.error('revokeApproval error:', error)
+    return { error: error.message || 'Failed to revoke approval', success: false }
   }
 }
 
-export async function deleteContent(contentId: string) {
+// ✅ Delete content
+export async function deleteContent(contentId: string): Promise<ApiResponse> {
   try {
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
@@ -123,15 +177,23 @@ export async function deleteContent(contentId: string) {
       .delete()
       .eq('id', contentId)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      return { error: error.message, success: false }
+    }
+    
     revalidatePath('/admin')
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || JSON.stringify(error) }
+    console.error('deleteContent error:', error)
+    return { error: error.message || 'Failed to delete content', success: false }
   }
 }
 
-export async function confirmTransaction(transactionId: string, confirmationCode: string) {
+// ✅ Confirm transaction
+export async function confirmTransaction(
+  transactionId: string, 
+  confirmationCode: string
+): Promise<ApiResponse> {
   try {
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
@@ -143,15 +205,34 @@ export async function confirmTransaction(transactionId: string, confirmationCode
       })
       .eq('id', transactionId)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      return { error: error.message, success: false }
+    }
+    
     revalidatePath('/admin')
+    
+    // ✅ Also increment sales count
+    if (transactionId) {
+      const { data: purchase } = await adminSupabase
+        .from('purchases')
+        .select('content_id')
+        .eq('id', transactionId)
+        .single()
+      
+      if (purchase?.content_id) {
+        await adminSupabase.rpc('increment_sales', { content_id: purchase.content_id })
+      }
+    }
+    
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || JSON.stringify(error) }
+    console.error('confirmTransaction error:', error)
+    return { error: error.message || 'Failed to confirm transaction', success: false }
   }
 }
 
-export async function processPayout(payoutId: string) {
+// ✅ Process payout
+export async function processPayout(payoutId: string): Promise<ApiResponse> {
   try {
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
@@ -162,10 +243,14 @@ export async function processPayout(payoutId: string) {
       })
       .eq('id', payoutId)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      return { error: error.message, success: false }
+    }
+    
     revalidatePath('/admin')
     return { success: true }
   } catch (error: any) {
-    return { error: error.message || JSON.stringify(error) }
+    console.error('processPayout error:', error)
+    return { error: error.message || 'Failed to process payout', success: false }
   }
 }
