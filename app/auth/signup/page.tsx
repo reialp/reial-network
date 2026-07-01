@@ -1,13 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // ✅ Get where to redirect after signup
+  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -28,7 +32,7 @@ export default function SignupPage() {
         password,
         options: {
           data: { full_name: fullName },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback?redirectTo=${redirectTo}`,
         },
       })
 
@@ -75,11 +79,8 @@ export default function SignupPage() {
           <p className="text-yellow-400/80 text-sm mt-3 bg-[#1a1a1a] p-3 rounded-lg border border-yellow-500/20">
             📌 Please check your <strong>inbox</strong> or <strong>spam/junk</strong> folder.
           </p>
-          <p className="text-gray-500 text-sm mt-2">
-            If you don't see it within a few minutes, you can request a new link.
-          </p>
           <Link
-            href="/auth/login"
+            href={`/auth/login?redirectTo=${redirectTo}`}
             className="mt-6 inline-block text-[#f5c518] hover:underline"
           >
             Back to sign in
@@ -98,10 +99,16 @@ export default function SignupPage() {
           </h1>
           <h2 className="mt-6 text-2xl font-semibold">Create your account</h2>
           <p className="mt-2 text-gray-400 text-sm">
-            Already have an account?{' '}
-            <Link href="/auth/login" className="text-[#f5c518] hover:underline">
-              Sign in
-            </Link>
+            {redirectTo !== '/dashboard' ? (
+              <span className="text-[#f5c518]">🔐 Complete your purchase by signing up</span>
+            ) : (
+              <>
+                Already have an account?{' '}
+                <Link href={`/auth/login?redirectTo=${redirectTo}`} className="text-[#f5c518] hover:underline">
+                  Sign in
+                </Link>
+              </>
+            )}
           </p>
         </div>
 
