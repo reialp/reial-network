@@ -18,11 +18,12 @@ const createAdminClient = () => {
   })
 }
 
+/**
+ * ✅ Fetch ALL content from ALL creators
+ */
 export async function getAllContent() {
   try {
     const supabase = await createClient()
-
-    // 1. Verify the requester is actually an admin
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return { error: 'Unauthorized', content: [] }
 
@@ -34,9 +35,7 @@ export async function getAllContent() {
 
     if (!profile?.is_admin) return { error: 'Forbidden', content: [] }
 
-    // 2. Use Admin Client to bypass RLS and fetch ALL content
     const adminSupabase = createAdminClient()
-    
     const { data: content, error: contentError } = await adminSupabase
       .from('content')
       .select('*')
@@ -44,7 +43,6 @@ export async function getAllContent() {
 
     if (contentError) return { error: contentError.message, content: [] }
 
-    // 3. Get creator names
     const creatorIds = [...new Set((content || []).map(c => c.creator_id).filter(Boolean))]
     let creatorNames: Record<string, string> = {}
     
@@ -73,6 +71,9 @@ export async function getAllContent() {
   }
 }
 
+/**
+ * ✅ Approve content submission
+ */
 export async function approveContent(contentId: string) {
   try {
     const adminSupabase = createAdminClient()
@@ -89,6 +90,9 @@ export async function approveContent(contentId: string) {
   }
 }
 
+/**
+ * ✅ Reject content submission
+ */
 export async function rejectContent(contentId: string) {
   try {
     const adminSupabase = createAdminClient()
@@ -96,6 +100,70 @@ export async function rejectContent(contentId: string) {
       .from('content')
       .update({ status: 'rejected', is_reviewed: true })
       .eq('id', contentId)
+
+    if (error) throw error
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (error) {
+    return { error: String(error) }
+  }
+}
+
+/**
+ * ✅ Revoke approval
+ */
+export async function revokeApproval(contentId: string) {
+  try {
+    const adminSupabase = createAdminClient()
+    const { error } = await adminSupabase
+      .from('content')
+      .update({ status: 'pending', is_reviewed: false })
+      .eq('id', contentId)
+
+    if (error) throw error
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (error) {
+    return { error: String(error) }
+  }
+}
+
+/**
+ * ✅ Confirm a transaction with a code
+ */
+export async function confirmTransaction(transactionId: string, confirmationCode: string) {
+  try {
+    const adminSupabase = createAdminClient()
+    const { error } = await adminSupabase
+      .from('purchases')
+      .update({ 
+        status: 'completed', 
+        confirmation_code: confirmationCode,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', transactionId)
+
+    if (error) throw error
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (error) {
+    return { error: String(error) }
+  }
+}
+
+/**
+ * ✅ Process a payout request
+ */
+export async function processPayout(payoutId: string) {
+  try {
+    const adminSupabase = createAdminClient()
+    const { error } = await adminSupabase
+      .from('payout_requests')
+      .update({ 
+        status: 'processed', 
+        processed_at: new Date().toISOString() 
+      })
+      .eq('id', payoutId)
 
     if (error) throw error
     revalidatePath('/admin')
