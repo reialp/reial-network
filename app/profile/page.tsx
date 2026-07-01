@@ -4,6 +4,14 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
+interface Profile {
+  full_name: string
+  bio: string
+  avatar_url: string
+  is_creator: boolean
+  payout_phone: string
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -15,7 +23,7 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<Profile>({
     full_name: '',
     bio: '',
     avatar_url: '',
@@ -64,19 +72,12 @@ export default function ProfilePage() {
       return
     }
 
-    // ✅ If they checked is_creator, also set terms_accepted if not already
-    const updateData: any = {
+    const updateData = {
       full_name: profile.full_name,
       bio: profile.bio,
       avatar_url: profile.avatar_url,
       is_creator: profile.is_creator,
       payout_phone: profile.payout_phone,
-    }
-
-    // ✅ If becoming a creator, set terms_accepted to false so they see terms
-    // (they'll accept terms when they try to upload)
-    if (profile.is_creator) {
-      // Don't auto-set terms_accepted - they'll do it on upload
     }
 
     const { error: updateError } = await supabase
@@ -99,7 +100,6 @@ export default function ProfilePage() {
         router.push('/upload')
       }, 1500)
     } else if (intent === 'creator' && !profile.is_creator) {
-      // They unchecked creator, go to dashboard
       setTimeout(() => {
         router.push('/dashboard')
       }, 1500)
