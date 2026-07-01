@@ -3,7 +3,15 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getAllContent } from '@/app/actions/admin'
+import { 
+  getAllContent, 
+  approveContent, 
+  rejectContent, 
+  revokeApproval, 
+  deleteContent,
+  confirmTransaction, 
+  processPayout 
+} from '@/app/actions/admin'
 
 function getEmbedUrl(url: string): string {
   if (!url) return ''
@@ -116,10 +124,8 @@ export default function AdminPage() {
 
   const loadAdminData = async () => {
     setLoading(true)
-
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      
       if (!session) {
         router.push('/auth/login')
         return
@@ -136,42 +142,38 @@ export default function AdminPage() {
         return
       }
 
-      // ✅ Fetch ALL content using the server action
       const result = await getAllContent()
-      
       if (result.error) {
         console.error('Error fetching content:', result.error)
-        return
+      } else {
+        const allContent = result.content || []
+        setContent(allContent)
+        setFilteredContent(allContent)
       }
 
-      const allContent = result.content || []
-      
-      console.log('===== ADMIN PAGE DEBUG =====')
-      console.log('Total content:', allContent.length)
-      console.log('Pending content:', allContent.filter((c: any) => c.status === 'pending').length)
-      console.log('All content:', allContent.map((c: any) => ({ 
-        title: c.title, 
-        status: c.status, 
-        creator: c.creator_name 
-      })))
+      const { data: payoutData } = await supabase
+        .from('payout_requests')
+        .select('*, profiles(full_name)')
+        .order('requested_at', { ascending: false })
+      setPayouts(payoutData || [])
 
-      const totalFilms = allContent.length
-      const totalSales = allContent.reduce((sum: number, c: any) => sum + (c.purchase_count || 0), 0)
-      const totalRevenue = allContent.reduce((sum: number, c: any) => sum + (c.price * (c.purchase_count || 0)), 0)
-      const pendingSubmissions = allContent.filter((c: any) => c.status === 'pending').length
-
-      const { data: purchases } = await supabase
+      const { data: transactionsData } = await supabase
         .from('purchases')
-        .select('platform_fee, creator_earnings')
+        .select('*, content:content_id(title), buyer:buyer_id(email)')
+        .order('created_at', { ascending: false })
+      setTransactions(transactionsData || [])
 
+      // Calculate Stats
+      const totalFilms = result.content?.length || 0
+      const totalSales = result.content?.reduce((sum, c) => sum + (c.purchase_count || 0), 0) || 0
+      const totalRevenue = result.content?.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0) || 0
+      const pendingSubmissions = result.content?.filter((c: any) => c.status === 'pending').length || 0
+      
+      const { data: purchases } = await supabase.from('purchases').select('platform_fee, creator_earnings')
       const totalPlatformFees = purchases?.reduce((sum, p) => sum + (p.platform_fee || 0), 0) || 0
       const totalPaidToCreators = purchases?.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) || 0
-
-      const { data: pendingPayoutsData } = await supabase
-        .from('payout_requests')
-        .select('amount')
-        .eq('status', 'pending')
-
+      
+      const { data: pendingPayoutsData } = await supabase.from('payout_requests').select('amount').eq('status', 'pending')
       const pendingPayouts = pendingPayoutsData?.reduce((sum, p) => sum + p.amount, 0) || 0
 
       setStats({
@@ -183,36 +185,84 @@ export default function AdminPage() {
         pendingPayouts,
         pendingSubmissions,
       })
-
-      setContent(allContent as Content[])
-      setFilteredContent(allContent as Content[])
-
-      const { data: payoutData } = await supabase
-        .from('payout_requests')
-        .select(`
-          *,
-          profiles ( full_name )
-        `)
-        .order('requested_at', { ascending: false })
-
-      setPayouts(payoutData as PayoutRequest[])
-
-      const { data: transactionsData } = await supabase
-        .from('purchases')
-        .select(`
-          *,
-          content:content_id ( title ),
-          buyer:buyer_id ( email )
-        `)
-        .order('created_at', { ascending: false })
-
-      setTransactions(transactionsData || [])
-
     } catch (error) {
       console.error('Error loading admin data:', error)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    setLoading(false)
+  const handleApprove = async (id: string) => {
+    try {
+      const result = await approveContent(id)
+      if (result.success) {
+        alert('✅ Content approved successfully!')
+        loadAdminData()
+      } else {
+        alert('❌ Error: ' + (result.error || 'Unknown error'))
+      }
+    } catch (err) {
+      alert('❌ Failed to approve content')
+    }
+  }
+
+  const handleReject = async (id: string) => {
+    try {
+      const result = await rejectContent(id)
+      if (result.success) {
+        alert('✅ Content rejected.')
+        loadAdminData()
+      } else {
+        alert('❌ Error: ' + (result.error || 'Unknown error'))
+      }
+    } catch (err) {
+      alert('❌ Failed to reject content')
+    }
+  }
+
+  const handleRevokeApproval = async (id: string) => {
+    if (!confirm('Revoke approval for this film?')) return
+    try {
+      const result = await revokeApproval(id)
+      if (result.success) {
+        alert('✅ Approval revoked.')
+        loadAdminData()
+      } else {
+        alert('❌ Error: ' + (result.error || 'Unknown error'))
+      }
+    } catch (err) {
+      alert('❌ Failed to revoke approval')
+    }
+  }
+
+  const handleDeleteContent = async (id: string) => {
+    if (!confirm('Delete this film permanently?')) return
+    try {
+      const result = await deleteContent(id)
+      if (result.success) {
+        alert('✅ Content deleted.')
+        loadAdminData()
+      } else {
+        alert('❌ Error: ' + (result.error || 'Unknown error'))
+      }
+    } catch (err) {
+      alert('❌ Failed to delete content')
+    }
+  }
+
+  const handleMarkPayoutPaid = async (id: string) => {
+    if (!confirm('Mark this payout as paid?')) return
+    try {
+      const result = await processPayout(id)
+      if (result.success) {
+        alert('✅ Payout marked as processed.')
+        loadAdminData()
+      } else {
+        alert('❌ Error: ' + (result.error || 'Unknown error'))
+      }
+    } catch (err) {
+      alert('❌ Failed to process payout')
+    }
   }
 
   const handleConfirmTransaction = async () => {
@@ -220,73 +270,29 @@ export default function AdminPage() {
       setConfirmMessage('Please enter a confirmation code')
       return
     }
-
     setConfirmLoading(true)
-    setConfirmMessage('')
-
-    const { error } = await supabase
-      .from('purchases')
-      .update({
-        pesapal_transaction_id: confirmationCode.trim(),
-        status: 'completed',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', selectedTransaction.id)
-
-    if (error) {
-      setConfirmMessage('Error: ' + error.message)
-    } else {
-      setConfirmMessage('✅ Transaction confirmed successfully!')
-      if (selectedTransaction.content_id) {
-        await supabase.rpc('increment_sales', { content_id: selectedTransaction.content_id })
+    try {
+      const result = await confirmTransaction(selectedTransaction.id, confirmationCode.trim())
+      if (result.success) {
+        setConfirmMessage('✅ Transaction confirmed successfully!')
+        setTimeout(() => {
+          setIsConfirmModalOpen(false)
+          setConfirmationCode('')
+          setSelectedTransaction(null)
+          setConfirmMessage('')
+          loadAdminData()
+        }, 1500)
+      } else {
+        setConfirmMessage('❌ Error: ' + (result.error || 'Unknown error'))
       }
-      setTimeout(() => {
-        setIsConfirmModalOpen(false)
-        setConfirmationCode('')
-        setSelectedTransaction(null)
-        loadAdminData()
-      }, 1500)
+    } catch (err) {
+      setConfirmMessage('❌ Failed to confirm')
+    } finally {
+      setConfirmLoading(false)
     }
-    setConfirmLoading(false)
   }
 
-  const handleApprove = async (contentId: string) => {
-    const { error } = await supabase.from('content').update({ status: 'approved' }).eq('id', contentId)
-    if (error) alert('Error: ' + error.message)
-    else loadAdminData()
-  }
-
-  const handleReject = async (contentId: string) => {
-    const { error } = await supabase.from('content').update({ status: 'rejected' }).eq('id', contentId)
-    if (error) alert('Error: ' + error.message)
-    else loadAdminData()
-  }
-
-  const handleRevokeApproval = async (contentId: string) => {
-    if (!confirm('Revoke approval for this film?')) return
-    const { error } = await supabase.from('content').update({ status: 'pending' }).eq('id', contentId)
-    if (error) alert('Error: ' + error.message)
-    else loadAdminData()
-  }
-
-  const handleDeleteContent = async (contentId: string) => {
-    if (!confirm('Delete this film permanently?')) return
-    const { error } = await supabase.from('content').delete().eq('id', contentId)
-    if (error) alert('Error: ' + error.message)
-    else loadAdminData()
-  }
-
-  const handleMarkPayoutPaid = async (payoutId: string) => {
-    if (!confirm('Mark this payout as paid?')) return
-    const { error } = await supabase
-      .from('payout_requests')
-      .update({ status: 'processed', processed_at: new Date().toISOString() })
-      .eq('id', payoutId)
-    if (error) alert('Error: ' + error.message)
-    else loadAdminData()
-  }
-
-  const handlePreview = (film: Content) => {
+  const openPreview = (film: Content) => {
     setPreviewFilm(film)
     setIsPreviewOpen(true)
   }
@@ -322,6 +328,7 @@ export default function AdminPage() {
         <h1 className="text-3xl font-bold mb-2">Admin Panel</h1>
         <p className="text-gray-400 mb-8">Manage content, approvals, and payouts.</p>
 
+        {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Total Films</p>
@@ -362,6 +369,7 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* Filters */}
         <div className="flex flex-wrap gap-4 items-center mb-6">
           <div className="flex gap-2 flex-wrap">
             {(['all', 'pending', 'approved', 'rejected'] as ContentStatus[]).map((status) => (
@@ -394,6 +402,7 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Content Table */}
         <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden mb-12">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -402,9 +411,7 @@ export default function AdminPage() {
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Title</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Creator</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Price</th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Views</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Sales</th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Revenue</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Status</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Actions</th>
                 </tr>
@@ -412,67 +419,69 @@ export default function AdminPage() {
               <tbody className="divide-y divide-white/5">
                 {filteredContent.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 sm:px-6 py-8 text-center text-gray-500">No content found.</td>
+                    <td colSpan={6} className="px-4 sm:px-6 py-8 text-center text-gray-500">No content found.</td>
                   </tr>
                 ) : (
-                  filteredContent.map((film) => {
-                    const revenue = film.price * film.purchase_count
-                    return (
-                      <tr key={film.id} className="hover:bg-white/5 transition">
-                        <td className="px-4 sm:px-6 py-3 font-medium">{film.title}</td>
-                        <td className="px-4 sm:px-6 py-3 text-gray-400">{film.creator_name || 'Unknown'}</td>
-                        <td className="px-4 sm:px-6 py-3 text-[#f5c518] font-semibold">KES {film.price}</td>
-                        <td className="px-4 sm:px-6 py-3 text-gray-400">{film.views}</td>
-                        <td className="px-4 sm:px-6 py-3 text-gray-400">{film.purchase_count}</td>
-                        <td className="px-4 sm:px-6 py-3 text-green-400">KES {revenue}</td>
-                        <td className="px-4 sm:px-6 py-3">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                            ${film.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                              film.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                              film.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                              'bg-gray-500/20 text-gray-400'}`}>
-                            {film.status}
-                          </span>
-                        </td>
-                        <td className="px-4 sm:px-6 py-3">
-                          <div className="flex flex-wrap gap-2">
-                            <button onClick={() => handlePreview(film)} className="text-blue-400 hover:text-blue-300 text-xs transition">Preview</button>
-                            {film.status === 'pending' && (
-                              <>
-                                <button onClick={() => handleApprove(film.id)} className="text-green-400 hover:text-green-300 text-xs transition">Approve</button>
-                                <button onClick={() => handleReject(film.id)} className="text-red-400 hover:text-red-300 text-xs transition">Reject</button>
-                              </>
-                            )}
-                            {film.status === 'approved' && (
-                              <button onClick={() => handleRevokeApproval(film.id)} className="text-yellow-400 hover:text-yellow-300 text-xs transition">Revoke</button>
-                            )}
-                            <button onClick={() => handleDeleteContent(film.id)} className="text-red-400 hover:text-red-300 text-xs transition">Delete</button>
+                  filteredContent.map((item) => (
+                    <tr key={item.id} className="hover:bg-white/5 transition">
+                      <td className="px-4 sm:px-6 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-14 bg-[#0a0a0a] rounded overflow-hidden flex-shrink-0">
+                            {item.thumbnail_url && <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover" />}
                           </div>
-                        </td>
-                      </tr>
-                    )
-                  })
+                          <span className="font-medium">{item.title}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 text-gray-400">{item.creator_name || 'Unknown'}</td>
+                      <td className="px-4 sm:px-6 py-3 font-semibold">KES {item.price}</td>
+                      <td className="px-4 sm:px-6 py-3 text-gray-400">{item.purchase_count}</td>
+                      <td className="px-4 sm:px-6 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          item.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                          item.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                          item.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                          'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3">
+                        <div className="flex gap-2">
+                          <button onClick={() => openPreview(item)} className="text-[#f5c518] hover:underline text-xs font-semibold">Preview</button>
+                          {item.status === 'pending' && (
+                            <>
+                              <button onClick={() => handleApprove(item.id)} className="text-green-400 hover:underline text-xs font-semibold">Approve</button>
+                              <button onClick={() => handleReject(item.id)} className="text-red-400 hover:underline text-xs font-semibold">Reject</button>
+                            </>
+                          )}
+                          {item.status === 'approved' && (
+                            <button onClick={() => handleRevokeApproval(item.id)} className="text-yellow-400 hover:underline text-xs font-semibold">Revoke</button>
+                          )}
+                          <button onClick={() => handleDeleteContent(item.id)} className="text-gray-500 hover:text-red-500 transition">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
           </div>
         </div>
 
-        <h2 className="text-2xl font-bold mb-4">Payout Requests</h2>
-        <div className="flex gap-3 mb-4">
-          {(['all', 'pending', 'processed'] as const).map((status) => (
-            <button
-              key={status}
-              onClick={() => setPayoutFilter(status)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                payoutFilter === status
-                  ? 'bg-[#f5c518] text-black'
-                  : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#2a2a2a] hover:text-white'
-              }`}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
-          ))}
+        {/* Payouts Section */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Payout Requests</h2>
+          <select 
+            value={payoutFilter} 
+            onChange={(e) => setPayoutFilter(e.target.value as any)}
+            className="bg-[#1a1a1a] border border-white/10 rounded-lg px-3 py-1 text-sm outline-none"
+          >
+            <option value="all">All Payouts</option>
+            <option value="pending">Pending</option>
+            <option value="processed">Processed</option>
+          </select>
         </div>
         <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden mb-12">
           <div className="overflow-x-auto">
@@ -482,7 +491,6 @@ export default function AdminPage() {
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Creator</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Amount</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Phone</th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Requested</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Status</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Actions</th>
                 </tr>
@@ -490,15 +498,14 @@ export default function AdminPage() {
               <tbody className="divide-y divide-white/5">
                 {filteredPayouts.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 sm:px-6 py-8 text-center text-gray-500">No payout requests.</td>
+                    <td colSpan={5} className="px-4 sm:px-6 py-8 text-center text-gray-500">No payout requests.</td>
                   </tr>
                 ) : (
                   filteredPayouts.map((payout) => (
                     <tr key={payout.id} className="hover:bg-white/5 transition">
                       <td className="px-4 sm:px-6 py-3">{payout.profiles?.full_name || 'Unknown'}</td>
-                      <td className="px-4 sm:px-6 py-3 text-[#f5c518] font-bold">KES {payout.amount}</td>
-                      <td className="px-4 sm:px-6 py-3">{payout.phone}</td>
-                      <td className="px-4 sm:px-6 py-3 text-gray-400">{new Date(payout.requested_at).toLocaleDateString()}</td>
+                      <td className="px-4 sm:px-6 py-3 font-semibold text-green-400">KES {payout.amount}</td>
+                      <td className="px-4 sm:px-6 py-3 text-gray-400">{payout.phone}</td>
                       <td className="px-4 sm:px-6 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                           payout.status === 'processed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
@@ -508,12 +515,7 @@ export default function AdminPage() {
                       </td>
                       <td className="px-4 sm:px-6 py-3">
                         {payout.status === 'pending' && (
-                          <button
-                            onClick={() => handleMarkPayoutPaid(payout.id)}
-                            className="bg-[#f5c518] text-black px-3 py-1 rounded text-xs font-semibold hover:bg-[#e0b010] transition"
-                          >
-                            Mark Paid
-                          </button>
+                          <button onClick={() => handleMarkPayoutPaid(payout.id)} className="bg-[#f5c518] text-black px-3 py-1 rounded text-xs font-semibold hover:bg-[#e0b010] transition">Mark Paid</button>
                         )}
                       </td>
                     </tr>
@@ -524,6 +526,7 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Transactions Section */}
         <h2 className="text-2xl font-bold mb-4">Transaction History</h2>
         <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
           <div className="overflow-x-auto">
@@ -535,51 +538,30 @@ export default function AdminPage() {
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Amount</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Status</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Confirmation</th>
-                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Date</th>
                   <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {transactions.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 sm:px-6 py-8 text-center text-gray-500">No transactions yet.</td>
+                {transactions.map((tx) => (
+                  <tr key={tx.id} className="hover:bg-white/5 transition">
+                    <td className="px-4 sm:px-6 py-3">{tx.content?.title || 'N/A'}</td>
+                    <td className="px-4 sm:px-6 py-3 text-gray-400">{tx.buyer?.email || 'Unknown'}</td>
+                    <td className="px-4 sm:px-6 py-3 text-[#f5c518] font-semibold">KES {tx.amount_paid}</td>
+                    <td className="px-4 sm:px-6 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        tx.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        {tx.status}
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-3 text-xs font-mono">{tx.pesapal_transaction_id || '—'}</td>
+                    <td className="px-4 sm:px-6 py-3">
+                      {tx.status !== 'completed' && (
+                        <button onClick={() => openConfirmModal(tx)} className="bg-[#f5c518] text-black px-3 py-1 rounded text-xs font-semibold hover:bg-[#e0b010] transition">Confirm</button>
+                      )}
+                    </td>
                   </tr>
-                ) : (
-                  transactions.map((tx: Transaction) => (
-                    <tr key={tx.id} className="hover:bg-white/5 transition">
-                      <td className="px-4 sm:px-6 py-3">{tx.content?.title || 'N/A'}</td>
-                      <td className="px-4 sm:px-6 py-3 text-gray-400">{tx.buyer?.email || 'Unknown'}</td>
-                      <td className="px-4 sm:px-6 py-3 text-[#f5c518] font-semibold">KES {tx.amount_paid}</td>
-                      <td className="px-4 sm:px-6 py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          tx.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                          tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-gray-500/20 text-gray-400'
-                        }`}>
-                          {tx.status || 'pending'}
-                        </span>
-                      </td>
-                      <td className="px-4 sm:px-6 py-3">
-                        <span className="font-mono text-xs bg-[#0a0a0a] px-2 py-1 rounded border border-white/10">
-                          {tx.pesapal_transaction_id || '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 text-gray-400 text-xs">
-                        {new Date(tx.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 sm:px-6 py-3">
-                        {tx.status !== 'completed' && (
-                          <button
-                            onClick={() => openConfirmModal(tx)}
-                            className="bg-[#f5c518] text-black px-3 py-1 rounded text-xs font-semibold hover:bg-[#e0b010] transition"
-                          >
-                            Confirm
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>
@@ -592,19 +574,12 @@ export default function AdminPage() {
               <div className="sticky top-0 bg-[#1a1a1a] px-6 py-4 border-b border-white/10 flex justify-between items-center">
                 <h2 className="text-xl font-bold">{previewFilm.title}</h2>
                 <button onClick={closePreview} className="text-gray-400 hover:text-white transition">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
               <div className="p-6 space-y-6">
                 <div className="aspect-video bg-[#0a0a0a] rounded-xl overflow-hidden">
-                  <iframe
-                    src={getEmbedUrl(previewFilm.video_url)}
-                    className="w-full h-full"
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  />
+                  <iframe src={getEmbedUrl(previewFilm.video_url)} className="w-full h-full" allowFullScreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -614,41 +589,15 @@ export default function AdminPage() {
                   <div className="space-y-2">
                     <div><span className="text-sm text-gray-400">Creator:</span> <span className="ml-2">{previewFilm.creator_name || 'Unknown'}</span></div>
                     <div><span className="text-sm text-gray-400">Price:</span> <span className="ml-2 text-[#f5c518] font-bold">KES {previewFilm.price}</span></div>
-                    <div><span className="text-sm text-gray-400">Category:</span> <span className="ml-2">{previewFilm.category || 'N/A'}</span></div>
-                    <div><span className="text-sm text-gray-400">Views:</span> <span className="ml-2">{previewFilm.views}</span></div>
-                    <div><span className="text-sm text-gray-400">Sales:</span> <span className="ml-2">{previewFilm.purchase_count}</span></div>
-                    <div><span className="text-sm text-gray-400">Revenue:</span> <span className="ml-2 text-green-400">KES {previewFilm.price * previewFilm.purchase_count}</span></div>
-                    <div><span className="text-sm text-gray-400">Status:</span> <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium
-                      ${previewFilm.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                        previewFilm.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                        previewFilm.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                        'bg-gray-500/20 text-gray-400'}`}>
-                      {previewFilm.status}
-                    </span></div>
+                    <div><span className="text-sm text-gray-400">Status:</span> <span className="ml-2">{previewFilm.status}</span></div>
                   </div>
                 </div>
-                {previewFilm.trailer_url && (
-                  <div>
-                    <h3 className="text-sm text-gray-400 mb-2">Trailer</h3>
-                    <div className="aspect-video bg-[#0a0a0a] rounded-xl overflow-hidden">
-                      <iframe
-                        src={getEmbedUrl(previewFilm.trailer_url)}
-                        className="w-full h-full"
-                        allowFullScreen
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      />
-                    </div>
-                  </div>
-                )}
                 <div className="flex gap-3 pt-4 border-t border-white/10">
                   {previewFilm.status === 'pending' && (
                     <>
                       <button onClick={() => { handleApprove(previewFilm.id); closePreview(); }} className="flex-1 bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 transition">Approve</button>
                       <button onClick={() => { handleReject(previewFilm.id); closePreview(); }} className="flex-1 bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 transition">Reject</button>
                     </>
-                  )}
-                  {previewFilm.status === 'approved' && (
-                    <button onClick={() => { handleRevokeApproval(previewFilm.id); closePreview(); }} className="flex-1 bg-yellow-500 text-black py-2 rounded-lg font-semibold hover:bg-yellow-600 transition">Revoke Approval</button>
                   )}
                   <button onClick={closePreview} className="flex-1 border border-white/20 py-2 rounded-lg font-semibold hover:bg-white/5 transition">Close</button>
                 </div>
@@ -657,24 +606,12 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Confirmation Code Modal */}
+        {/* Confirmation Modal */}
         {isConfirmModalOpen && selectedTransaction && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[#1a1a1a] rounded-2xl max-w-md w-full border border-white/10 p-6">
               <h2 className="text-xl font-bold mb-4">Confirm Transaction</h2>
-              <p className="text-gray-400 text-sm mb-4">
-                Enter the confirmation code from PesaPal for this transaction.
-              </p>
-              
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Film</label>
-                  <p className="text-white">{selectedTransaction.content?.title || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Amount</label>
-                  <p className="text-[#f5c518] font-bold">KES {selectedTransaction.amount_paid}</p>
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Confirmation Code</label>
                   <input
@@ -682,37 +619,13 @@ export default function AdminPage() {
                     value={confirmationCode}
                     onChange={(e) => setConfirmationCode(e.target.value)}
                     placeholder="e.g. UFSJB94EZQ"
-                    className="w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white"
+                    className="w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-lg outline-none text-white"
                   />
                 </div>
-                
-                {confirmMessage && (
-                  <div className={`p-3 rounded-lg text-sm ${
-                    confirmMessage.includes('✅') ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                  }`}>
-                    {confirmMessage}
-                  </div>
-                )}
-                
+                {confirmMessage && <div className={`p-3 rounded-lg text-sm ${confirmMessage.includes('✅') ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>{confirmMessage}</div>}
                 <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={() => {
-                      setIsConfirmModalOpen(false)
-                      setConfirmationCode('')
-                      setSelectedTransaction(null)
-                      setConfirmMessage('')
-                    }}
-                    className="flex-1 border border-white/20 py-2 rounded-lg font-semibold hover:bg-white/5 transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleConfirmTransaction}
-                    disabled={confirmLoading}
-                    className="flex-1 bg-[#f5c518] text-black py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50"
-                  >
-                    {confirmLoading ? 'Confirming...' : 'Confirm'}
-                  </button>
+                  <button onClick={() => setIsConfirmModalOpen(false)} className="flex-1 border border-white/20 py-2 rounded-lg font-semibold transition">Cancel</button>
+                  <button onClick={handleConfirmTransaction} disabled={confirmLoading} className="flex-1 bg-[#f5c518] text-black py-2 rounded-lg font-semibold transition disabled:opacity-50">{confirmLoading ? 'Confirming...' : 'Confirm'}</button>
                 </div>
               </div>
             </div>
