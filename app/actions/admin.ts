@@ -4,13 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 
-// Helper to create admin client inside the action
 const createAdminClient = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error('Missing Supabase Admin environment variables')
+    throw new Error('Missing Supabase Admin environment variables (NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY)')
   }
 
   return createSupabaseClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -18,14 +17,11 @@ const createAdminClient = () => {
   })
 }
 
-/**
- * ✅ Fetch ALL content from ALL creators
- */
 export async function getAllContent() {
   try {
     const supabase = await createClient()
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return { error: 'Unauthorized', content: [] }
+    if (!session) return { error: 'Not authenticated', content: [] }
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -33,7 +29,7 @@ export async function getAllContent() {
       .eq('id', session.user.id)
       .single()
 
-    if (!profile?.is_admin) return { error: 'Forbidden', content: [] }
+    if (!profile?.is_admin) return { error: 'Access denied: Admin only', content: [] }
 
     const adminSupabase = createAdminClient()
     const { data: content, error: contentError } = await adminSupabase
@@ -66,14 +62,11 @@ export async function getAllContent() {
     }))
 
     return { content: allContent, error: null }
-  } catch (error) {
-    return { error: String(error), content: [] }
+  } catch (error: any) {
+    return { error: error.message || String(error), content: [] }
   }
 }
 
-/**
- * ✅ Approve content submission
- */
 export async function approveContent(contentId: string) {
   try {
     const adminSupabase = createAdminClient()
@@ -82,17 +75,14 @@ export async function approveContent(contentId: string) {
       .update({ status: 'approved', is_reviewed: true })
       .eq('id', contentId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     revalidatePath('/admin')
     return { success: true }
-  } catch (error) {
-    return { error: String(error) }
+  } catch (error: any) {
+    return { error: error.message || String(error) }
   }
 }
 
-/**
- * ✅ Reject content submission
- */
 export async function rejectContent(contentId: string) {
   try {
     const adminSupabase = createAdminClient()
@@ -101,17 +91,14 @@ export async function rejectContent(contentId: string) {
       .update({ status: 'rejected', is_reviewed: true })
       .eq('id', contentId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     revalidatePath('/admin')
     return { success: true }
-  } catch (error) {
-    return { error: String(error) }
+  } catch (error: any) {
+    return { error: error.message || String(error) }
   }
 }
 
-/**
- * ✅ Revoke approval
- */
 export async function revokeApproval(contentId: string) {
   try {
     const adminSupabase = createAdminClient()
@@ -120,40 +107,64 @@ export async function revokeApproval(contentId: string) {
       .update({ status: 'pending', is_reviewed: false })
       .eq('id', contentId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     revalidatePath('/admin')
     return { success: true }
-  } catch (error) {
-    return { error: String(error) }
+  } catch (error: any) {
+    return { error: error.message || String(error) }
   }
 }
 
-/**
- * ✅ Confirm a transaction with a code
- */
+export async function deleteContent(contentId: string) {
+  try {
+    const adminSupabase = createAdminClient()
+    const { error } = await adminSupabase
+      .from('content')
+      .delete()
+      .eq('id', contentId)
+
+    if (error) throw new Error(error.message)
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (error: any) {
+    return { error: error.message || String(error) }
+  }
+}
+
 export async function confirmTransaction(transactionId: string, confirmationCode: string) {
   try {
     const adminSupabase = createAdminClient()
+    
+    // Get purchase to find content_id for incrementing sales
+    const { data: purchase } = await adminSupabase
+      .from('purchases')
+      .select('content_id')
+      .eq('id', transactionId)
+      .single()
+
     const { error } = await adminSupabase
       .from('purchases')
       .update({ 
         status: 'completed', 
-        confirmation_code: confirmationCode,
+        pesapal_transaction_id: confirmationCode,
         updated_at: new Date().toISOString()
       })
       .eq('id', transactionId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
+
+    // Increment sales count
+    if (purchase?.content_id) {
+      await adminSupabase.rpc('increment_sales', { content_id: purchase.content_id })
+    }
+
     revalidatePath('/admin')
     return { success: true }
-  } catch (error) {
-    return { error: String(error) }
+  } catch (error: any) {
+    return { error: error.message || String(error) }
   }
 }
 
-/**
- * ✅ Process a payout request
- */
 export async function processPayout(payoutId: string) {
   try {
     const adminSupabase = createAdminClient()
@@ -165,10 +176,10 @@ export async function processPayout(payoutId: string) {
       })
       .eq('id', payoutId)
 
-    if (error) throw error
+    if (error) throw new Error(error.message)
     revalidatePath('/admin')
     return { success: true }
-  } catch (error) {
-    return { error: String(error) }
+  } catch (error: any) {
+    return { error: error.message || String(error) }
   }
 }
