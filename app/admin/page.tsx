@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 function getEmbedUrl(url: string): string {
   if (!url) return ''
@@ -32,7 +32,7 @@ interface Content {
   created_at: string
   slug: string | null
   creator_id: string
-  creator_name: string | null
+  creator_name: string
 }
 
 interface PayoutRequest {
@@ -87,7 +87,6 @@ export default function AdminPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [previewFilm, setPreviewFilm] = useState<Content | null>(null)
   const [payoutFilter, setPayoutFilter] = useState<'all' | 'pending' | 'processed'>('all')
-  const [debugInfo, setDebugInfo] = useState<string>('')
 
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
@@ -108,7 +107,7 @@ export default function AdminPage() {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(c =>
         c.title.toLowerCase().includes(term) ||
-        (c.creator_name?.toLowerCase() || '').includes(term)
+        c.creator_name.toLowerCase().includes(term)
       )
     }
     setFilteredContent(filtered)
@@ -116,88 +115,49 @@ export default function AdminPage() {
 
   const loadAdminData = async () => {
     setLoading(true)
-    setDebugInfo('Loading...')
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session) {
-        setDebugInfo('❌ No session')
         router.push('/auth/login')
         return
       }
 
-      setDebugInfo(`✅ Session: ${session.user.email}`)
-
       const { data: profile } = await supabase
         .from('profiles')
-        .select('is_admin, full_name')
+        .select('is_admin')
         .eq('id', session.user.id)
         .single()
 
       if (!profile?.is_admin) {
-        setDebugInfo(`❌ Not admin: ${profile?.full_name}`)
         router.push('/dashboard')
         return
       }
 
-      setDebugInfo(`✅ Admin: ${profile.full_name}`)
+      // ✅ Fetch content from our API
+      const response = await fetch('/api/admin/content')
+      const data = await response.json()
 
-      // ✅ STEP 1: Fetch ALL content from ALL creators (no filters!)
-      setDebugInfo('🔄 Fetching ALL content from ALL creators...')
-      
-      const { data: contentData, error: contentError } = await supabase
-        .from('content')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (contentError) {
-        setDebugInfo(`❌ Error: ${contentError.message}`)
-        console.error('Error:', contentError)
+      if (data.error) {
+        console.error('Error fetching content:', data.error)
       }
 
-      // ✅ STEP 2: Get all unique creator IDs
-      const creatorIds = [...new Set((contentData || []).map(c => c.creator_id).filter(Boolean))]
-
-      // ✅ STEP 3: Fetch creator names separately
-      let creatorNames: Record<string, string> = {}
-      if (creatorIds.length > 0) {
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', creatorIds)
-        
-        if (profilesData) {
-          creatorNames = profilesData.reduce((acc, p) => {
-            acc[p.id] = p.full_name || 'Unknown Creator'
-            return acc
-          }, {} as Record<string, string>)
-        }
-      }
-
-      // ✅ STEP 4: Map content with creator names
-      const allContent = (contentData || []).map((item: any) => ({
-        ...item,
-        creator_name: creatorNames[item.creator_id] || 'Unknown Creator'
-      }))
-
-      const pendingCount = allContent.filter(c => c.status === 'pending').length
-      setDebugInfo(`📊 Total: ${allContent.length} | Pending: ${pendingCount}`)
+      const allContent = data.content || []
       
-      console.log('===== ADMIN DEBUG =====')
+      console.log('===== ADMIN API DEBUG =====')
       console.log('Total content:', allContent.length)
-      console.log('Pending content:', pendingCount)
+      console.log('Pending content:', allContent.filter((c: any) => c.status === 'pending').length)
       console.log('All content:', allContent.map((c: any) => ({ 
         title: c.title, 
         status: c.status, 
-        creator_id: c.creator_id,
-        creator_name: c.creator_name
+        creator: c.creator_name 
       })))
 
       const totalFilms = allContent.length
-      const totalSales = allContent.reduce((sum, c) => sum + (c.purchase_count || 0), 0)
-      const totalRevenue = allContent.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0)
-      const pendingSubmissions = pendingCount
+      const totalSales = allContent.reduce((sum: number, c: any) => sum + (c.purchase_count || 0), 0)
+      const totalRevenue = allContent.reduce((sum: number, c: any) => sum + (c.price * (c.purchase_count || 0)), 0)
+      const pendingSubmissions = allContent.filter((c: any) => c.status === 'pending').length
 
       const { data: purchases } = await supabase
         .from('purchases')
@@ -223,8 +183,8 @@ export default function AdminPage() {
         pendingSubmissions,
       })
 
-      setContent(allContent as Content[])
-      setFilteredContent(allContent as Content[])
+      setContent(allContent)
+      setFilteredContent(allContent)
 
       const { data: payoutData } = await supabase
         .from('payout_requests')
@@ -247,9 +207,8 @@ export default function AdminPage() {
 
       setTransactions(transactionsData || [])
 
-    } catch (err) {
-      setDebugInfo(`❌ Catch error: ${err}`)
-      console.error('Catch error:', err)
+    } catch (error) {
+      console.error('Error loading admin data:', error)
     }
 
     setLoading(false)
@@ -363,11 +322,6 @@ export default function AdminPage() {
         <h1 className="text-3xl font-bold mb-2">Admin Panel</h1>
         <p className="text-gray-400 mb-8">Manage content, approvals, and payouts.</p>
 
-        {/* Debug Info */}
-        <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 mb-6">
-          <p className="text-sm text-gray-400">🔍 Debug: <span className="text-[#f5c518]">{debugInfo}</span></p>
-        </div>
-
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
@@ -467,9 +421,7 @@ export default function AdminPage() {
                     return (
                       <tr key={film.id} className="hover:bg-white/5 transition">
                         <td className="px-4 sm:px-6 py-3 font-medium">{film.title}</td>
-                        <td className="px-4 sm:px-6 py-3 text-gray-400">
-                          {film.creator_name || 'Unknown Creator'}
-                        </td>
+                        <td className="px-4 sm:px-6 py-3 text-gray-400">{film.creator_name || 'Unknown'}</td>
                         <td className="px-4 sm:px-6 py-3 text-[#f5c518] font-semibold">KES {film.price}</td>
                         <td className="px-4 sm:px-6 py-3 text-gray-400">{film.views}</td>
                         <td className="px-4 sm:px-6 py-3 text-gray-400">{film.purchase_count}</td>
