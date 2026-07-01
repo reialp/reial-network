@@ -107,7 +107,7 @@ export default function AdminPage() {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(c =>
         c.title.toLowerCase().includes(term) ||
-        c.creator_name.toLowerCase().includes(term)
+        (c.creator_name?.toLowerCase() || '').includes(term)
       )
     }
     setFilteredContent(filtered)
@@ -141,6 +141,7 @@ export default function AdminPage() {
 
       if (data.error) {
         console.error('Error fetching content:', data.error)
+        return
       }
 
       const allContent = data.content || []
