@@ -82,22 +82,37 @@ export default function Navbar() {
       return
     }
 
+    // Use current state first for faster response, then verify with fresh data
+    if (!isCreator) {
+      router.push('/profile')
+      return
+    }
+
+    if (!hasAcceptedTerms) {
+      router.push('/terms')
+      return
+    }
+
+    // Verify with fresh data to be sure
     const { data: profile } = await supabase
       .from('profiles')
       .select('terms_accepted, is_creator')
       .eq('id', session.user.id)
       .single()
 
-    // ✅ If not a creator, redirect to profile
-    if (!profile?.is_creator) {
-      router.push('/profile')
-      return
-    }
+    if (profile) {
+      setIsCreator(profile.is_creator || false)
+      setHasAcceptedTerms(profile.terms_accepted || false)
 
-    // ✅ If creator but hasn't accepted terms
-    if (!profile?.terms_accepted) {
-      router.push('/terms')
-      return
+      if (!profile.is_creator) {
+        router.push('/profile')
+        return
+      }
+
+      if (!profile.terms_accepted) {
+        router.push('/terms')
+        return
+      }
     }
 
     router.push('/upload')
@@ -105,13 +120,13 @@ export default function Navbar() {
 
   const navLinks = [
     { href: '/', label: 'Home' },
-    ...(user ? [
-      { href: '/dashboard', label: 'Dashboard' },
-      { href: '#', label: 'Upload', onClick: handleUploadClick },
-      { href: '/library', label: 'Library' },
-      { href: '/profile', label: 'Profile' },
-      ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
-    ] : [
+	    ...(user ? [
+	      { href: '/dashboard', label: 'Dashboard' },
+	      { href: '/upload', label: 'Upload', onClick: handleUploadClick },
+	      { href: '/library', label: 'Library' },
+	      { href: '/profile', label: 'Profile' },
+	      ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
+	    ] : [
       { href: '/auth/login', label: 'Sign In' },
       { href: '/auth/signup', label: 'Sign Up' },
     ]),
@@ -142,18 +157,18 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-6 flex-shrink-0">
-            {navLinks.map((link) => (
-              link.onClick ? (
-                <button
-                  key={link.href}
-                  onClick={link.onClick}
-                  className={`text-sm transition-colors hover:text-[#f5c518] ${
-                    pathname === '/upload' ? 'text-[#f5c518] font-semibold' : 'text-gray-300'
-                  }`}
-                >
-                  Upload
-                </button>
-              ) : (
+	            {navLinks.map((link) => (
+	              link.onClick ? (
+	                <button
+	                  key={link.label}
+	                  onClick={link.onClick}
+	                  className={`text-sm transition-colors hover:text-[#f5c518] ${
+	                    pathname === link.href ? 'text-[#f5c518] font-semibold' : 'text-gray-300'
+	                  }`}
+	                >
+	                  {link.label}
+	                </button>
+	              ) : (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -202,20 +217,22 @@ export default function Navbar() {
 
         <div id="mobile-menu" className="hidden md:hidden pb-4">
           <div className="flex flex-col gap-2">
-            {navLinks.map((link) => (
-              link.onClick ? (
-                <button
-                  key={link.href}
-                  onClick={(e) => {
-                    link.onClick(e)
-                    const menu = document.getElementById('mobile-menu')
-                    if (menu) menu.classList.add('hidden')
-                  }}
-                  className="px-3 py-2 rounded-md text-sm transition-colors hover:bg-white/5 text-gray-300 text-left"
-                >
-                  Upload
-                </button>
-              ) : (
+	            {navLinks.map((link) => (
+	              link.onClick ? (
+	                <button
+	                  key={link.label}
+	                  onClick={(e) => {
+	                    link.onClick(e)
+	                    const menu = document.getElementById('mobile-menu')
+	                    if (menu) menu.classList.add('hidden')
+	                  }}
+	                  className={`px-3 py-2 rounded-md text-sm transition-colors hover:bg-white/5 text-left ${
+	                    pathname === link.href ? 'text-[#f5c518] bg-white/5' : 'text-gray-300'
+	                  }`}
+	                >
+	                  {link.label}
+	                </button>
+	              ) : (
                 <Link
                   key={link.href}
                   href={link.href}
