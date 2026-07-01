@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { 
-  getAllContent, 
+  getAdminDashboardData,
   approveContent, 
   rejectContent, 
   revokeApproval, 
@@ -125,65 +125,23 @@ export default function AdminPage() {
   const loadAdminData = async () => {
     setLoading(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/auth/login')
-        return
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', session.user.id)
-        .single()
-
-      if (!profile?.is_admin) {
-        router.push('/dashboard')
-        return
-      }
-
-      const result = await getAllContent()
+      const result = await getAdminDashboardData()
+      
       if (result.error) {
-        console.error('Error fetching content:', result.error)
-      } else {
-        const allContent = result.content || []
-        setContent(allContent)
-        setFilteredContent(allContent)
+        if (result.error === 'Not authenticated') {
+          router.push('/auth/login')
+        } else if (result.error.includes('Access denied')) {
+          router.push('/dashboard')
+        }
+        console.error('Error fetching admin data:', result.error)
+        return
       }
 
-      const { data: payoutData } = await supabase
-        .from('payout_requests')
-        .select('*, profiles(full_name)')
-        .order('requested_at', { ascending: false })
-      setPayouts(payoutData || [])
-
-      const { data: transactionsData } = await supabase
-        .from('purchases')
-        .select('*, content:content_id(title), buyer:buyer_id(email)')
-        .order('created_at', { ascending: false })
-      setTransactions(transactionsData || [])
-
-      const totalFilms = result.content?.length || 0
-      const totalSales = result.content?.reduce((sum, c) => sum + (c.purchase_count || 0), 0) || 0
-      const totalRevenue = result.content?.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0) || 0
-      const pendingSubmissions = result.content?.filter((c: any) => c.status === 'pending').length || 0
+      setContent(result.content || [])
+      setPayouts(result.payouts || [])
+      setTransactions(result.transactions || [])
+      setStats(result.stats || stats)
       
-      const { data: purchases } = await supabase.from('purchases').select('platform_fee, creator_earnings')
-      const totalPlatformFees = purchases?.reduce((sum, p) => sum + (p.platform_fee || 0), 0) || 0
-      const totalPaidToCreators = purchases?.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) || 0
-      
-      const { data: pendingPayoutsData } = await supabase.from('payout_requests').select('amount').eq('status', 'pending')
-      const pendingPayouts = pendingPayoutsData?.reduce((sum, p) => sum + p.amount, 0) || 0
-
-      setStats({
-        totalFilms,
-        totalSales,
-        totalRevenue,
-        totalPlatformFees,
-        totalPaidToCreators,
-        pendingPayouts,
-        pendingSubmissions,
-      })
     } catch (error) {
       console.error('Error loading admin data:', error)
     } finally {
@@ -198,7 +156,7 @@ export default function AdminPage() {
         alert('✅ Content approved successfully!')
         loadAdminData()
       } else {
-        alert('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
+        alert('❌ Error: ' + result.error)
       }
     } catch (err) {
       alert('❌ Failed to approve content')
@@ -212,7 +170,7 @@ export default function AdminPage() {
         alert('✅ Content rejected.')
         loadAdminData()
       } else {
-        alert('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
+        alert('❌ Error: ' + result.error)
       }
     } catch (err) {
       alert('❌ Failed to reject content')
@@ -227,7 +185,7 @@ export default function AdminPage() {
         alert('✅ Approval revoked.')
         loadAdminData()
       } else {
-        alert('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
+        alert('❌ Error: ' + result.error)
       }
     } catch (err) {
       alert('❌ Failed to revoke approval')
@@ -242,7 +200,7 @@ export default function AdminPage() {
         alert('✅ Content deleted.')
         loadAdminData()
       } else {
-        alert('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
+        alert('❌ Error: ' + result.error)
       }
     } catch (err) {
       alert('❌ Failed to delete content')
@@ -257,7 +215,7 @@ export default function AdminPage() {
         alert('✅ Payout marked as processed.')
         loadAdminData()
       } else {
-        alert('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
+        alert('❌ Error: ' + result.error)
       }
     } catch (err) {
       alert('❌ Failed to process payout')
@@ -282,7 +240,7 @@ export default function AdminPage() {
           loadAdminData()
         }, 1500)
       } else {
-        setConfirmMessage('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
+        setConfirmMessage('❌ Error: ' + result.error)
       }
     } catch (err) {
       setConfirmMessage('❌ Failed to confirm')
@@ -311,7 +269,7 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-gray-400">Loading Dashboard...</div>
       </div>
     )
   }
