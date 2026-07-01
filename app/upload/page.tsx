@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -27,6 +27,29 @@ export default function UploadPage() {
   const [language, setLanguage] = useState('')
   const [subtitles, setSubtitles] = useState('')
   const [rightsConfirmed, setRightsConfirmed] = useState(false)
+
+  // ✅ Check if user has accepted terms
+  useEffect(() => {
+    const checkTerms = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/auth/login')
+        return
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('terms_accepted')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!profile?.terms_accepted) {
+        router.push('/terms')
+        return
+      }
+    }
+    checkTerms()
+  }, [router, supabase])
 
   // Upload poster to Supabase Storage
   const uploadPoster = async (file: File): Promise<string | null> => {
