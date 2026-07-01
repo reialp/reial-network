@@ -1,18 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ProfilePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+  const intent = searchParams.get('intent')
 
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
-  const intent = searchParams?.get('intent')
 
   const [profile, setProfile] = useState({
     full_name: '',
@@ -45,48 +46,89 @@ export default function ProfilePage() {
           payout_phone: data.payout_phone || '',
         })
       }
+      setLoading(false)
     }
     loadProfile()
   }, [router, supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    setSaving(true)
     setError(null)
+    setSuccess(false)
 
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
       setError('Not authenticated')
-      setLoading(false)
+      setSaving(false)
       return
+    }
+
+    // ✅ If they checked is_creator, also set terms_accepted if not already
+    const updateData: any = {
+      full_name: profile.full_name,
+      bio: profile.bio,
+      avatar_url: profile.avatar_url,
+      is_creator: profile.is_creator,
+      payout_phone: profile.payout_phone,
+    }
+
+    // ✅ If becoming a creator, set terms_accepted to false so they see terms
+    // (they'll accept terms when they try to upload)
+    if (profile.is_creator) {
+      // Don't auto-set terms_accepted - they'll do it on upload
     }
 
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({
-        full_name: profile.full_name,
-        bio: profile.bio,
-        avatar_url: profile.avatar_url,
-        is_creator: profile.is_creator,
-        payout_phone: profile.payout_phone,
-      })
+      .update(updateData)
       .eq('id', session.user.id)
 
     if (updateError) {
       setError(updateError.message)
-      setLoading(false)
+      setSaving(false)
       return
     }
 
     setSuccess(true)
-    setLoading(false)
-    setTimeout(() => setSuccess(false), 3000)
+    setSaving(false)
+
+    // ✅ If they came from creator intent and checked is_creator, redirect to upload
+    if (intent === 'creator' && profile.is_creator) {
+      setTimeout(() => {
+        router.push('/upload')
+      }, 1500)
+    } else if (intent === 'creator' && !profile.is_creator) {
+      // They unchecked creator, go to dashboard
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 1500)
+    } else {
+      setTimeout(() => setSuccess(false), 3000)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white px-6 py-8">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Profile Settings</h1>
+
+        {intent === 'creator' && (
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
+            <p className="text-yellow-400 text-sm">
+              🚀 To become a creator, check the "Become a Creator" box below and save your profile.
+              {profile.is_creator && <span className="block text-green-400 mt-1">✅ You are already a creator!</span>}
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
@@ -96,7 +138,7 @@ export default function ProfilePage() {
           )}
           {success && (
             <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg text-sm">
-              Profile updated successfully!
+              ✅ Profile updated successfully! {intent === 'creator' && profile.is_creator && 'Redirecting to upload...'}
             </div>
           )}
 
@@ -152,16 +194,20 @@ export default function ProfilePage() {
             />
             <label htmlFor="is_creator" className="text-sm font-medium text-gray-300 cursor-pointer">
               Become a Creator (upload and sell content)
-              {intent === 'creator' && <span className="block text-xs text-[#f5c518] mt-1">Check this to enable uploads</span>}
+              {intent === 'creator' && (
+                <span className="block text-xs text-[#f5c518] mt-1">
+                  {profile.is_creator ? '✅ You are a creator!' : 'Check this to enable uploads'}
+                </span>
+              )}
             </label>
           </div>
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={saving}
             className="w-full bg-[#f5c518] text-black py-3 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50"
           >
-            {loading ? 'Saving...' : 'Save Profile'}
+            {saving ? 'Saving...' : 'Save Profile'}
           </button>
         </form>
       </div>
