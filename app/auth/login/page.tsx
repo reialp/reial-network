@@ -10,8 +10,21 @@ export default function LoginPage() {
   const searchParams = useSearchParams()
   const supabase = createClient()
 
-  // ✅ Get where to redirect after login
-  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
+  // ✅ Get intent and redirectTo parameters
+  const intent = searchParams.get('intent')
+  const redirectTo = searchParams.get('redirectTo')
+
+  // ✅ Determine final redirect destination
+  const getFinalRedirect = () => {
+    // Priority 1: If they have a redirectTo, use it
+    if (redirectTo) return redirectTo
+    // Priority 2: If they clicked "Become a Creator", go to profile/creator setup
+    if (intent === 'creator') return '/profile'
+    // Priority 3: Default to dashboard
+    return '/dashboard'
+  }
+
+  const finalRedirect = getFinalRedirect()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -37,7 +50,7 @@ export default function LoginPage() {
     }
 
     // ✅ Redirect to the original page they wanted
-    router.push(redirectTo)
+    router.push(finalRedirect)
     router.refresh()
   }
 
@@ -72,12 +85,14 @@ export default function LoginPage() {
           </h1>
           <h2 className="mt-6 text-2xl font-semibold text-center">Sign in to your account</h2>
           <p className="mt-2 text-center text-gray-400 text-sm">
-            {redirectTo !== '/dashboard' ? (
+            {redirectTo ? (
               <span className="text-[#f5c518]">🔐 Complete your purchase by signing in</span>
+            ) : intent === 'creator' ? (
+              <span className="text-[#f5c518]">🎬 Access your creator account</span>
             ) : (
               <>
                 Or{' '}
-                <Link href={`/auth/signup?redirectTo=${redirectTo}`} className="text-[#f5c518] hover:underline">
+                <Link href={`/auth/signup?redirectTo=${encodeURIComponent(finalRedirect)}${intent ? `&intent=${intent}` : ''}`} className="text-[#f5c518] hover:underline">
                   create a new account
                 </Link>
               </>
