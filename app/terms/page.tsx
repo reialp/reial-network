@@ -33,27 +33,44 @@ export default function TermsPage() {
     setLoading(true)
     setError(null)
 
-    // ✅ Update profile - set both terms_accepted and is_creator
-    const { error } = await supabase
-      .from('profiles')
-      .update({ 
-        terms_accepted: true,
-        terms_accepted_at: new Date().toISOString(),
-        is_creator: true
-      })
-      .eq('id', userId)
+    try {
+      // ✅ Update profile - set terms_accepted and ensure is_creator is true
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ 
+          terms_accepted: true,
+          terms_accepted_at: new Date().toISOString(),
+          is_creator: true
+        })
+        .eq('id', userId)
+        .select()
 
-    if (error) {
-      setError('Failed to accept terms: ' + error.message)
+      if (error) {
+        console.error('Update error:', error)
+        setError('Failed to accept terms: ' + error.message)
+        setLoading(false)
+        return
+      }
+
+      console.log('✅ Profile updated:', data)
+
+      // ✅ Verify the update
+      const { data: verifyData } = await supabase
+        .from('profiles')
+        .select('terms_accepted, is_creator')
+        .eq('id', userId)
+        .single()
+
+      console.log('🔍 Verification:', verifyData)
+
+      // ✅ Redirect to upload
+      window.location.href = '/upload'
+
+    } catch (err) {
+      console.error('Error:', err)
+      setError('An unexpected error occurred.')
       setLoading(false)
-      return
     }
-
-    // ✅ Wait a moment for the database to update
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    // ✅ Redirect to upload
-    window.location.href = '/upload'
   }
 
   return (
