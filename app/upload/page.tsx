@@ -11,11 +11,13 @@ export default function UploadPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   // Form fields
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [thumbnailUrl, setThumbnailUrl] = useState('')
+  const [posterFile, setPosterFile] = useState<File | null>(null)
+  const [posterPreview, setPosterPreview] = useState<string>('')
   const [videoUrl, setVideoUrl] = useState('')
   const [trailerUrl, setTrailerUrl] = useState('')
   const [category, setCategory] = useState('')
@@ -24,6 +26,51 @@ export default function UploadPage() {
   const [language, setLanguage] = useState('')
   const [subtitles, setSubtitles] = useState('')
   const [rightsConfirmed, setRightsConfirmed] = useState(false)
+
+  // ✅ Upload poster to Supabase Storage
+  const uploadPoster = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`
+      const filePath = `posters/${fileName}`
+
+      const { error } = await supabase.storage
+        .from('content')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        })
+
+      if (error) {
+        console.error('Upload error:', error)
+        return null
+      }
+
+      // ✅ Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('content')
+        .getPublicUrl(filePath)
+
+      return publicUrl
+    } catch (error) {
+      console.error('Upload error:', error)
+      return null
+    }
+  }
+
+  // ✅ Handle poster file selection
+  const handlePosterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setPosterFile(file)
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPosterPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const handleSubmit = async (status: 'draft' | 'pending') => {
     if (!rightsConfirmed) {
@@ -38,6 +85,7 @@ export default function UploadPage() {
 
     setLoading(true)
     setError(null)
+    setUploadProgress(0)
 
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
@@ -46,37 +94,62 @@ export default function UploadPage() {
       return
     }
 
-    const payload = {
-      title,
-      description: description || null,
-      thumbnail_url: thumbnailUrl || null,
-      video_url: videoUrl,
-      trailer_url: trailerUrl || null,
-      category,
-      price: Number(price),
-      release_year: releaseYear ? Number(releaseYear) : null,
-      language: language || null,
-      subtitles: subtitles || null,
-      status,
-      rights_confirmed_at: new Date().toISOString(),
-      creator_id: session.user.id,
-    }
+    try {
+      // ✅ Upload poster if selected
+      setUploadProgress(30)
+      let posterUrl = ''
+      if (posterFile) {
+        const url = await uploadPoster(posterFile)
+        if (url) {
+          posterUrl = url
+        } else {
+          setError('Failed to upload poster. Please try again.')
+          setLoading(false)
+          return
+        }
+      }
 
-    const { error: insertError } = await supabase
-      .from('content')
-      .insert([payload])
+      setUploadProgress(70)
 
-    if (insertError) {
-      setError(insertError.message)
+      const payload = {
+        title,
+        description: description || null,
+        thumbnail_url: posterUrl || null, // This is the poster image
+        video_url: videoUrl,
+        trailer_url: trailerUrl || null,
+        category,
+        price: Number(price),
+        release_year: releaseYear ? Number(releaseYear) : null,
+        language: language || null,
+        subtitles: subtitles || null,
+        status,
+        rights_confirmed_at: new Date().toISOString(),
+        creator_id: session.user.id,
+      }
+
+      const { error: insertError } = await supabase
+        .from('content')
+        .insert([payload])
+
+      if (insertError) {
+        setError(insertError.message)
+        setLoading(false)
+        return
+      }
+
+      setUploadProgress(100)
+      setSuccess(true)
       setLoading(false)
-      return
-    }
+      
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 2000)
 
-    setSuccess(true)
-    setLoading(false)
-    setTimeout(() => {
-      router.push('/dashboard')
-    }, 2000)
+    } catch (error: any) {
+      console.error('Upload error:', error)
+      setError('Upload failed: ' + error.message)
+      setLoading(false)
+    }
   }
 
   if (success) {
@@ -148,36 +221,53 @@ export default function UploadPage() {
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <span className="text-[#f5c518]">🎬</span> Media
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Poster Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-300">Thumbnail Link</label>
-                <input
-                  type="url"
-                  value={thumbnailUrl}
-                  onChange={(e) => setThumbnailUrl(e.target.value)}
-                  className="mt-1 block w-full px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 transition"
-                  placeholder="Paste your thumbnail image link"
-                />
-                <div className="mt-2 text-xs text-gray-400 space-y-1">
-                  <p className="text-gray-500">
-                    1. Upload your thumbnail to Google Drive, Imgur, or any image hosting service
-                  </p>
-                  <p className="text-gray-500">
-                    2. Make sure the file is shared publicly (so the image can be shown)
-                  </p>
-                  <p className="text-gray-500">
-                    3. Copy the direct image link and paste it here
-                  </p>
-                  <p className="text-gray-500">
-                    4. The thumbnail should be clear and professional
-                  </p>
+                <label className="block text-sm font-medium text-gray-300">
+                  Poster Image <span className="text-red-400">*</span>
+                </label>
+                <div className="mt-1 flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-white/10 border-dashed rounded-lg cursor-pointer bg-[#0a0a0a] hover:bg-[#1a1a1a] transition">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <svg className="w-8 h-8 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="mb-2 text-sm text-gray-400">
+                        <span className="font-semibold">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF (Max 5MB)</p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handlePosterChange}
+                    />
+                  </label>
                 </div>
-                {thumbnailUrl && (
-                  <div className="mt-2 w-32 h-32 rounded-lg overflow-hidden border border-white/10">
-                    <img src={thumbnailUrl} alt="Thumbnail preview" className="w-full h-full object-cover" />
+                {posterPreview && (
+                  <div className="mt-2">
+                    <img src={posterPreview} alt="Poster preview" className="w-full h-auto max-h-48 object-cover rounded-lg border border-white/10" />
                   </div>
                 )}
+                <div className="mt-2 text-xs text-gray-400 space-y-1">
+                  <p className="text-gray-500">
+                    📸 Upload a poster image for your project.
+                  </p>
+                  <p className="text-gray-500">
+                    This will be the main image people see when browsing.
+                  </p>
+                  <p className="text-gray-500">
+                    Use a clear, eye-catching image that represents your project.
+                  </p>
+                  <p className="text-yellow-400/80 text-xs">
+                    ✅ Your poster will be stored securely on our platform.
+                  </p>
+                </div>
               </div>
+
+              {/* Video Link */}
               <div>
                 <label className="block text-sm font-medium text-gray-300">
                   Video Link <span className="text-red-400">*</span>
@@ -187,27 +277,32 @@ export default function UploadPage() {
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
                   className="mt-1 block w-full px-4 py-3 bg-[#0a0a0a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 transition"
-                  placeholder="Paste your YouTube, Vimeo, or Google Drive share link"
+                  placeholder="Paste your YouTube or Vimeo link"
                 />
                 <div className="mt-2 text-xs text-gray-400 space-y-1">
                   <p className="text-gray-500">
-                    1. Upload your video to YouTube, Vimeo, or Google Drive
+                    🎬 <strong>Recommended:</strong> Upload to <span className="text-[#f5c518] font-medium">YouTube</span>
                   </p>
                   <p className="text-gray-500">
-                    2. Set it to "Unlisted" (YouTube) or Private with domain privacy (Vimeo)
+                    1. Upload your video to YouTube (set to <strong>"Unlisted"</strong>)
                   </p>
                   <p className="text-gray-500">
-                    3. For Google Drive: Upload your video, then share it with anyone with the link
+                    2. Click <strong>"Share"</strong> and copy the link
                   </p>
-                  <p className="text-gray-500">
-                    4. Copy the share link and paste it here
+                  <p className="text-yellow-400/80 text-xs">
+                    ✅ YouTube videos work best because viewers don't need to sign in!
                   </p>
-                  <p className="text-yellow-400/80 text-xs mt-1">
-                    Important: YouTube videos must NOT be age-restricted – they won't play.
+                  <p className="text-red-400/80 text-xs">
+                    ⚠️ Make sure your video is <strong>not age-restricted</strong> – it won't play!
+                  </p>
+                  <p className="text-gray-500 text-xs mt-1">
+                    📌 You can also use Vimeo or other video hosting services.
                   </p>
                 </div>
               </div>
             </div>
+
+            {/* Trailer Link */}
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-300">Trailer Link (optional)</label>
               <input
@@ -219,8 +314,10 @@ export default function UploadPage() {
               />
               <div className="mt-2 text-xs text-gray-400">
                 <p className="text-gray-500">
-                  Upload a trailer to YouTube, Vimeo, or Google Drive and paste the share link here.
-                  This will appear on your project page.
+                  🎬 Add a trailer to give viewers a preview of your project.
+                </p>
+                <p className="text-gray-500">
+                  Upload to YouTube or Vimeo and paste the link here.
                 </p>
               </div>
             </div>
