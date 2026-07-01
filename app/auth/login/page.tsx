@@ -10,8 +10,9 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const supabase = createClient()
 
-  const intent = searchParams.get('intent')
-  const redirectTo = searchParams.get('redirectTo')
+  const intent = searchParams?.get('intent')
+  const redirectTo = searchParams?.get('redirectTo')
+  const urlError = searchParams?.get('error')
 
   const getFinalRedirect = () => {
     if (redirectTo) return redirectTo
@@ -24,7 +25,7 @@ function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(urlError)
   const [showPassword, setShowPassword] = useState(false)
   const [resetMessage, setResetMessage] = useState<string | null>(null)
 
