@@ -82,39 +82,36 @@ export default function Navbar() {
       return
     }
 
-    // Use current state first for faster response, then verify with fresh data
-    if (!isCreator) {
-      router.push('/profile')
-      return
-    }
-
-    if (!hasAcceptedTerms) {
-      router.push('/terms')
-      return
-    }
-
-    // Verify with fresh data to be sure
-    const { data: profile } = await supabase
+    // Fetch fresh profile data to ensure we have the latest status
+    const { data: profile, error } = await supabase
       .from('profiles')
       .select('terms_accepted, is_creator')
       .eq('id', session.user.id)
       .single()
 
-    if (profile) {
-      setIsCreator(profile.is_creator || false)
-      setHasAcceptedTerms(profile.terms_accepted || false)
-
-      if (!profile.is_creator) {
-        router.push('/profile')
-        return
-      }
-
-      if (!profile.terms_accepted) {
-        router.push('/terms')
-        return
-      }
+    if (error || !profile) {
+      console.error('Error fetching profile:', error)
+      router.push('/profile')
+      return
     }
 
+    // Update local state for consistency
+    setIsCreator(profile.is_creator || false)
+    setHasAcceptedTerms(profile.terms_accepted || false)
+
+    // ✅ If not a creator, redirect to profile
+    if (!profile.is_creator) {
+      router.push('/profile?intent=creator')
+      return
+    }
+
+    // ✅ If creator but hasn't accepted terms
+    if (!profile.terms_accepted) {
+      router.push('/terms')
+      return
+    }
+
+    // ✅ Everything is good, go to upload
     router.push('/upload')
   }
 
