@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { session }, error } = await supabase.auth.getSession()
-  
+
   // ✅ Log session status
   console.log('🔍 Session exists:', !!session)
   if (error) {
@@ -82,7 +82,11 @@ export async function middleware(request: NextRequest) {
       console.log('🔀 Middleware: Logged in, redirecting to:', redirectTo)
       return NextResponse.redirect(new URL(redirectTo, request.url))
     }
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    // ✅ Changed: default to home instead of dashboard.
+    // Dashboard should only happen via explicit intent=creator flows,
+    // which are handled upstream in login/signup pages via the `intent` param.
+    console.log('🔀 Middleware: Logged in, no redirectTo — defaulting to home')
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   // ✅ ONLY check terms for upload route
