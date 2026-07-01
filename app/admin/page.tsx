@@ -123,8 +123,10 @@ export default function AdminPage() {
 
   const loadAdminData = async () => {
     setLoading(true)
+
     try {
       const { data: { session } } = await supabase.auth.getSession()
+      
       if (!session) {
         router.push('/auth/login')
         return
@@ -141,50 +143,89 @@ export default function AdminPage() {
         return
       }
 
+      // ✅ Fetch ALL content using the server action
       const result = await getAllContent()
+      
       if (result.error) {
         console.error('Error fetching content:', result.error)
-      } else {
-        setContent(result.content || [])
+        return
       }
 
-      // Fetch Payouts
-      const { data: payoutsData } = await supabase
-        .from('payout_requests')
-        .select('*, profiles(full_name)')
-        .order('requested_at', { ascending: false })
-      setPayouts(payoutsData || [])
-
-      // Fetch Transactions
-      const { data: transData } = await supabase
-        .from('purchases')
-        .select('*, content(title), buyer:profiles(email)')
-        .order('created_at', { ascending: false })
-      setTransactions(transData || [])
-
-      // Calculate Stats
-      const totalRevenue = transData?.reduce((sum, t) => sum + t.amount_paid, 0) || 0
-      const totalPlatformFees = transData?.reduce((sum, t) => sum + t.platform_fee, 0) || 0
+      const allContent = result.content || []
       
+      console.log('===== ADMIN PAGE DEBUG =====')
+      console.log('Total content:', allContent.length)
+      console.log('Pending content:', allContent.filter((c: any) => c.status === 'pending').length)
+      console.log('All content:', allContent.map((c: any) => ({ 
+        title: c.title, 
+        status: c.status, 
+        creator: c.creator_name 
+      })))
+
+      const totalFilms = allContent.length
+      const totalSales = allContent.reduce((sum: number, c: any) => sum + (c.purchase_count || 0), 0)
+      const totalRevenue = allContent.reduce((sum: number, c: any) => sum + (c.price * (c.purchase_count || 0)), 0)
+      const pendingSubmissions = allContent.filter((c: any) => c.status === 'pending').length
+
+      const { data: purchases } = await supabase
+        .from('purchases')
+        .select('platform_fee, creator_earnings')
+
+      const totalPlatformFees = purchases?.reduce((sum, p) => sum + (p.platform_fee || 0), 0) || 0
+      const totalPaidToCreators = purchases?.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) || 0
+
+      const { data: pendingPayoutsData } = await supabase
+        .from('payout_requests')
+        .select('amount')
+        .eq('status', 'pending')
+
+      const pendingPayouts = pendingPayoutsData?.reduce((sum, p) => sum + p.amount, 0) || 0
+
       setStats({
-        totalFilms: result.content?.length || 0,
-        totalSales: transData?.length || 0,
+        totalFilms,
+        totalSales,
         totalRevenue,
         totalPlatformFees,
-        totalPaidToCreators: totalRevenue - totalPlatformFees,
-        pendingPayouts: payoutsData?.filter(p => p.status === 'pending').length || 0,
-        pendingSubmissions: result.content?.filter((c: any) => c.status === 'pending').length || 0,
+        totalPaidToCreators,
+        pendingPayouts,
+        pendingSubmissions,
       })
+
+      setContent(allContent as Content[])
+      setFilteredContent(allContent as Content[])
+
+      const { data: payoutData } = await supabase
+        .from('payout_requests')
+        .select(`
+          *,
+          profiles ( full_name )
+        `)
+        .order('requested_at', { ascending: false })
+
+      setPayouts(payoutData as PayoutRequest[])
+
+      const { data: transactionsData } = await supabase
+        .from('purchases')
+        .select(`
+          *,
+          content:content_id ( title ),
+          buyer:buyer_id ( email )
+        `)
+        .order('created_at', { ascending: false })
+
+      setTransactions(transactionsData || [])
 
     } catch (error) {
       console.error('Error loading admin data:', error)
-    } finally {
-      setLoading(false)
     }
+
+    setLoading(false)
   }
 
+  // ✅ Approve Content
   const handleApprove = async (id: string) => {
     if (!confirm('Are you sure you want to approve this content?')) return
+    
     try {
       const result = await approveContent(id)
       if (result.success) {
@@ -198,9 +239,11 @@ export default function AdminPage() {
     }
   }
 
+  // ✅ Reject Content
   const handleReject = async (id: string) => {
     const reason = prompt('Please enter a reason for rejection:')
     if (reason === null) return
+    
     try {
       const result = await rejectContent(id)
       if (result.success) {
@@ -214,57 +257,88 @@ export default function AdminPage() {
     }
   }
 
+  // ✅ Revoke Approval
   const handleRevokeApproval = async (id: string) => {
     if (!confirm('Revoke approval? This will hide the content from users.')) return
+    
     try {
       const result = await revokeApproval(id)
       if (result.success) {
         alert('✅ Approval revoked.')
         loadAdminData()
+      } else {
+        alert('❌ Error: ' + result.error)
       }
     } catch (err) {
       alert('❌ Failed to revoke approval')
     }
   }
 
-  const handleConfirmTransaction = async () => {
-    if (!selectedTransaction || !confirmationCode) return
-    setConfirmLoading(true)
+  // ✅ Delete Content
+  const handleDeleteContent = async (id: string) => {
+    if (!confirm('Delete this content permanently?')) return
+    
     try {
-      const result = await confirmTransaction(selectedTransaction.id, confirmationCode)
+      const { error } = await supabase.from('content').delete().eq('id', id)
+      if (error) {
+        alert('Error: ' + error.message)
+      } else {
+        alert('✅ Content deleted.')
+        loadAdminData()
+      }
+    } catch (err) {
+      alert('❌ Failed to delete content')
+    }
+  }
+
+  // ✅ Confirm Transaction
+  const handleConfirmTransaction = async () => {
+    if (!selectedTransaction || !confirmationCode.trim()) {
+      setConfirmMessage('Please enter a confirmation code')
+      return
+    }
+
+    setConfirmLoading(true)
+    setConfirmMessage('')
+
+    try {
+      const result = await confirmTransaction(selectedTransaction.id, confirmationCode.trim())
       if (result.success) {
         setConfirmMessage('✅ Transaction confirmed!')
         setTimeout(() => {
           setIsConfirmModalOpen(false)
           setConfirmationCode('')
           setSelectedTransaction(null)
-          setConfirmMessage('')
           loadAdminData()
         }, 1500)
       } else {
         setConfirmMessage('❌ Error: ' + result.error)
       }
     } catch (err) {
-      setConfirmMessage('❌ Failed to confirm')
+      setConfirmMessage('❌ Failed to confirm transaction')
     } finally {
       setConfirmLoading(false)
     }
   }
 
+  // ✅ Process Payout
   const handleProcessPayout = async (id: string) => {
     if (!confirm('Mark this payout as processed?')) return
+    
     try {
       const result = await processPayout(id)
       if (result.success) {
         alert('✅ Payout marked as processed.')
         loadAdminData()
+      } else {
+        alert('❌ Error: ' + result.error)
       }
     } catch (err) {
       alert('❌ Failed to process payout')
     }
   }
 
-  const openPreview = (film: Content) => {
+  const handlePreview = (film: Content) => {
     setPreviewFilm(film)
     setIsPreviewOpen(true)
   }
@@ -274,250 +348,361 @@ export default function AdminPage() {
     setPreviewFilm(null)
   }
 
+  const openConfirmModal = (transaction: Transaction) => {
+    setSelectedTransaction(transaction)
+    setConfirmationCode('')
+    setConfirmMessage('')
+    setIsConfirmModalOpen(true)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#f5c518]"></div>
+        <div className="text-gray-400">Loading...</div>
       </div>
     )
   }
 
+  const filteredPayouts = payouts.filter((p) => {
+    if (payoutFilter === 'all') return true
+    return p.status === payoutFilter
+  })
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-6 md:p-10">
-      <div className="max-w-7xl mx-auto space-y-10">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-gray-400">Manage content, payouts, and platform performance</p>
+    <div className="min-h-screen bg-[#0a0a0a] text-white px-6 py-8">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-2">Admin Panel</h1>
+        <p className="text-gray-400 mb-8">Manage content, approvals, and payouts.</p>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
+          <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Total Films</p>
+            <p className="text-2xl font-bold mt-1">{stats.totalFilms}</p>
           </div>
-          <button 
-            onClick={loadAdminData}
-            className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition text-sm"
-          >
-            Refresh Data
-          </button>
+          <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Total Sales</p>
+            <p className="text-2xl font-bold mt-1 text-blue-400">{stats.totalSales}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Revenue</p>
+            <p className="text-2xl font-bold mt-1 text-green-400">KES {stats.totalRevenue}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Platform Fees</p>
+            <p className="text-2xl font-bold mt-1 text-yellow-400">KES {stats.totalPlatformFees}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Paid to Creators</p>
+            <p className="text-2xl font-bold mt-1 text-purple-400">KES {stats.totalPaidToCreators}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Pending Payouts</p>
+            <p className="text-2xl font-bold mt-1 text-orange-400">KES {stats.pendingPayouts}</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-xl p-4 border border-yellow-500/20 bg-yellow-500/5">
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Pending Submissions</p>
+            <p className="text-2xl font-bold mt-1 text-yellow-400">{stats.pendingSubmissions}</p>
+          </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-[#1a1a1a] p-6 rounded-2xl border border-white/5">
-            <p className="text-gray-400 text-sm mb-1">Total Revenue</p>
-            <h3 className="text-2xl font-bold text-[#f5c518]">KES {stats.totalRevenue.toLocaleString()}</h3>
+        {stats.pendingSubmissions > 0 && (
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
+            <p className="text-yellow-400 text-sm">
+              📤 <span className="font-bold">{stats.pendingSubmissions}</span> project{stats.pendingSubmissions > 1 ? 's' : ''} awaiting approval.
+              Click the <span className="font-bold">"Pending"</span> filter above to review them.
+            </p>
           </div>
-          <div className="bg-[#1a1a1a] p-6 rounded-2xl border border-white/5">
-            <p className="text-gray-400 text-sm mb-1">Platform Fees</p>
-            <h3 className="text-2xl font-bold text-green-500">KES {stats.totalPlatformFees.toLocaleString()}</h3>
-          </div>
-          <div className="bg-[#1a1a1a] p-6 rounded-2xl border border-white/5">
-            <p className="text-gray-400 text-sm mb-1">Pending Submissions</p>
-            <h3 className="text-2xl font-bold text-blue-500">{stats.pendingSubmissions}</h3>
-          </div>
-          <div className="bg-[#1a1a1a] p-6 rounded-2xl border border-white/5">
-            <p className="text-gray-400 text-sm mb-1">Pending Payouts</p>
-            <h3 className="text-2xl font-bold text-red-500">{stats.pendingPayouts}</h3>
-          </div>
-        </div>
+        )}
 
-        {/* Content Management Section */}
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h2 className="text-xl font-bold">Content Management</h2>
-            <div className="flex flex-wrap gap-3">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search films or creators..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] outline-none text-sm w-64"
-                />
-                <svg className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as ContentStatus)}
-                className="px-4 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] outline-none text-sm"
+        <div className="flex flex-wrap gap-4 items-center mb-6">
+          <div className="flex gap-2 flex-wrap">
+            {(['all', 'pending', 'approved', 'rejected'] as ContentStatus[]).map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  statusFilter === status
+                    ? 'bg-[#f5c518] text-black'
+                    : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#2a2a2a] hover:text-white'
+                }`}
               >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
-            </div>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {status === 'pending' && stats.pendingSubmissions > 0 && (
+                  <span className="ml-2 bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full text-xs">
+                    {stats.pendingSubmissions}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
+          <div className="flex-1 min-w-[200px]">
+            <input
+              type="text"
+              placeholder="Search by title or creator..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500"
+            />
+          </div>
+        </div>
 
-          <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-white/5 text-gray-400 text-xs uppercase tracking-wider">
-                    <th className="px-6 py-4 font-semibold">Film</th>
-                    <th className="px-6 py-4 font-semibold">Creator</th>
-                    <th className="px-6 py-4 font-semibold">Category</th>
-                    <th className="px-6 py-4 font-semibold">Status</th>
-                    <th className="px-6 py-4 font-semibold">Date</th>
-                    <th className="px-6 py-4 font-semibold text-right">Actions</th>
+        <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden mb-12">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[#0a0a0a] border-b border-white/5">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Title</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Creator</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Price</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Views</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Sales</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Revenue</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Status</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredContent.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 sm:px-6 py-8 text-center text-gray-500">No content found.</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredContent.length > 0 ? (
-                    filteredContent.map((item) => (
-                      <tr key={item.id} className="hover:bg-white/[0.02] transition group">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-16 bg-gray-800 rounded overflow-hidden flex-shrink-0">
-                              {item.thumbnail_url && (
-                                <img src={item.thumbnail_url} alt="" className="h-full w-full object-cover" />
-                              )}
-                            </div>
-                            <span className="font-medium truncate max-w-[200px]">{item.title}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-300">{item.creator_name}</td>
-                        <td className="px-6 py-4 text-sm text-gray-400">{item.category}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
-                            item.status === 'approved' ? 'bg-green-500/10 text-green-500' :
-                            item.status === 'pending' ? 'bg-blue-500/10 text-blue-500' :
-                            'bg-red-500/10 text-red-500'
-                          }`}>
-                            {item.status}
+                ) : (
+                  filteredContent.map((film) => {
+                    const revenue = film.price * film.purchase_count
+                    return (
+                      <tr key={film.id} className="hover:bg-white/5 transition">
+                        <td className="px-4 sm:px-6 py-3 font-medium">{film.title}</td>
+                        <td className="px-4 sm:px-6 py-3 text-gray-400">{film.creator_name || 'Unknown'}</td>
+                        <td className="px-4 sm:px-6 py-3 text-[#f5c518] font-semibold">KES {film.price}</td>
+                        <td className="px-4 sm:px-6 py-3 text-gray-400">{film.views}</td>
+                        <td className="px-4 sm:px-6 py-3 text-gray-400">{film.purchase_count}</td>
+                        <td className="px-4 sm:px-6 py-3 text-green-400">KES {revenue}</td>
+                        <td className="px-4 sm:px-6 py-3">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                            ${film.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                              film.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                              film.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                              'bg-gray-500/20 text-gray-400'}`}>
+                            {film.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          {new Date(item.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
-                            <button 
-                              onClick={() => openPreview(item)}
-                              className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition"
-                              title="Preview"
-                            >
-                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                            {item.status === 'pending' && (
+                        <td className="px-4 sm:px-6 py-3">
+                          <div className="flex flex-wrap gap-2">
+                            <button onClick={() => handlePreview(film)} className="text-blue-400 hover:text-blue-300 text-xs transition">Preview</button>
+                            {film.status === 'pending' && (
                               <>
-                                <button 
-                                  onClick={() => handleApprove(item.id)}
-                                  className="p-2 hover:bg-green-500/20 rounded-lg text-green-500 transition"
-                                  title="Approve"
-                                >
-                                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                </button>
-                                <button 
-                                  onClick={() => handleReject(item.id)}
-                                  className="p-2 hover:bg-red-500/20 rounded-lg text-red-500 transition"
-                                  title="Reject"
-                                >
-                                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
+                                <button onClick={() => handleApprove(film.id)} className="text-green-400 hover:text-green-300 text-xs transition">Approve</button>
+                                <button onClick={() => handleReject(film.id)} className="text-red-400 hover:text-red-300 text-xs transition">Reject</button>
                               </>
                             )}
+                            {film.status === 'approved' && (
+                              <button onClick={() => handleRevokeApproval(film.id)} className="text-yellow-400 hover:text-yellow-300 text-xs transition">Revoke</button>
+                            )}
+                            <button onClick={() => handleDeleteContent(film.id)} className="text-red-400 hover:text-red-300 text-xs transition">Delete</button>
                           </div>
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
-                        No content found matching your filters.
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h2 className="text-2xl font-bold mb-4">Payout Requests</h2>
+        <div className="flex gap-3 mb-4">
+          {(['all', 'pending', 'processed'] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => setPayoutFilter(status)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                payoutFilter === status
+                  ? 'bg-[#f5c518] text-black'
+                  : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#2a2a2a] hover:text-white'
+              }`}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </button>
+          ))}
+        </div>
+        <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden mb-12">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[#0a0a0a] border-b border-white/5">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Creator</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Amount</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Phone</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Requested</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Status</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredPayouts.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 sm:px-6 py-8 text-center text-gray-500">No payout requests.</td>
+                  </tr>
+                ) : (
+                  filteredPayouts.map((payout) => (
+                    <tr key={payout.id} className="hover:bg-white/5 transition">
+                      <td className="px-4 sm:px-6 py-3">{payout.profiles?.full_name || 'Unknown'}</td>
+                      <td className="px-4 sm:px-6 py-3 text-[#f5c518] font-bold">KES {payout.amount}</td>
+                      <td className="px-4 sm:px-6 py-3">{payout.phone}</td>
+                      <td className="px-4 sm:px-6 py-3 text-gray-400">{new Date(payout.requested_at).toLocaleDateString()}</td>
+                      <td className="px-4 sm:px-6 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          payout.status === 'processed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {payout.status === 'processed' ? '✅ Paid' : '⏳ Pending'}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3">
+                        {payout.status === 'pending' && (
+                          <button
+                            onClick={() => handleProcessPayout(payout.id)}
+                            className="bg-[#f5c518] text-black px-3 py-1 rounded text-xs font-semibold hover:bg-[#e0b010] transition"
+                          >
+                            Mark Paid
+                          </button>
+                        )}
                       </td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h2 className="text-2xl font-bold mb-4">Transaction History</h2>
+        <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[#0a0a0a] border-b border-white/5">
+                <tr>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Film</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Buyer</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Amount</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Status</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Confirmation</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Date</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 sm:px-6 py-8 text-center text-gray-500">No transactions yet.</td>
+                  </tr>
+                ) : (
+                  transactions.map((tx: Transaction) => (
+                    <tr key={tx.id} className="hover:bg-white/5 transition">
+                      <td className="px-4 sm:px-6 py-3">{tx.content?.title || 'N/A'}</td>
+                      <td className="px-4 sm:px-6 py-3 text-gray-400">{tx.buyer?.email || 'Unknown'}</td>
+                      <td className="px-4 sm:px-6 py-3 text-[#f5c518] font-semibold">KES {tx.amount_paid}</td>
+                      <td className="px-4 sm:px-6 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          tx.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                          tx.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {tx.status || 'pending'}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3">
+                        <span className="font-mono text-xs bg-[#0a0a0a] px-2 py-1 rounded border border-white/10">
+                          {tx.pesapal_transaction_id || '—'}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 text-gray-400 text-xs">
+                        {new Date(tx.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 sm:px-6 py-3">
+                        {tx.status !== 'completed' && (
+                          <button
+                            onClick={() => openConfirmModal(tx)}
+                            className="bg-[#f5c518] text-black px-3 py-1 rounded text-xs font-semibold hover:bg-[#e0b010] transition"
+                          >
+                            Confirm
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
         {/* Preview Modal */}
         {isPreviewOpen && previewFilm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[#1a1a1a] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/10">
-              <div className="aspect-video bg-black relative">
-                <iframe
-                  src={getEmbedUrl(previewFilm.trailer_url)}
-                  className="w-full h-full"
-                  allowFullScreen
-                ></iframe>
+              <div className="sticky top-0 bg-[#1a1a1a] px-6 py-4 border-b border-white/10 flex justify-between items-center">
+                <h2 className="text-xl font-bold">{previewFilm.title}</h2>
+                <button onClick={closePreview} className="text-gray-400 hover:text-white transition">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <div className="p-8 space-y-6">
-                <div className="flex justify-between items-start gap-4">
+              <div className="p-6 space-y-6">
+                <div className="aspect-video bg-[#0a0a0a] rounded-xl overflow-hidden">
+                  <iframe
+                    src={getEmbedUrl(previewFilm.video_url)}
+                    className="w-full h-full"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <h2 className="text-2xl font-bold mb-2">{previewFilm.title}</h2>
-                    <p className="text-[#f5c518] font-medium">{previewFilm.category} • {previewFilm.release_year}</p>
+                    <h3 className="text-sm text-gray-400">Description</h3>
+                    <p className="mt-1">{previewFilm.description || 'No description.'}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-400">Price</p>
-                    <p className="text-xl font-bold">KES {previewFilm.price}</p>
+                  <div className="space-y-2">
+                    <div><span className="text-sm text-gray-400">Creator:</span> <span className="ml-2">{previewFilm.creator_name || 'Unknown'}</span></div>
+                    <div><span className="text-sm text-gray-400">Price:</span> <span className="ml-2 text-[#f5c518] font-bold">KES {previewFilm.price}</span></div>
+                    <div><span className="text-sm text-gray-400">Category:</span> <span className="ml-2">{previewFilm.category || 'N/A'}</span></div>
+                    <div><span className="text-sm text-gray-400">Views:</span> <span className="ml-2">{previewFilm.views}</span></div>
+                    <div><span className="text-sm text-gray-400">Sales:</span> <span className="ml-2">{previewFilm.purchase_count}</span></div>
+                    <div><span className="text-sm text-gray-400">Revenue:</span> <span className="ml-2 text-green-400">KES {previewFilm.price * previewFilm.purchase_count}</span></div>
+                    <div><span className="text-sm text-gray-400">Status:</span> <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium
+                      ${previewFilm.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                        previewFilm.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                        previewFilm.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                        'bg-gray-500/20 text-gray-400'}`}>
+                      {previewFilm.status}
+                    </span></div>
                   </div>
                 </div>
-                
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Description</h3>
-                  <p className="text-gray-300 leading-relaxed">{previewFilm.description}</p>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 border-t border-white/5">
+                {previewFilm.trailer_url && (
                   <div>
-                    <p className="text-xs text-gray-500 uppercase mb-1">Creator</p>
-                    <p className="text-sm font-medium">{previewFilm.creator_name}</p>
+                    <h3 className="text-sm text-gray-400 mb-2">Trailer</h3>
+                    <div className="aspect-video bg-[#0a0a0a] rounded-xl overflow-hidden">
+                      <iframe
+                        src={getEmbedUrl(previewFilm.trailer_url)}
+                        className="w-full h-full"
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase mb-1">Language</p>
-                    <p className="text-sm font-medium">{previewFilm.language}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase mb-1">Subtitles</p>
-                    <p className="text-sm font-medium">{previewFilm.subtitles || 'None'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase mb-1">Submitted</p>
-                    <p className="text-sm font-medium">{new Date(previewFilm.created_at).toLocaleDateString()}</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 pt-6">
-                  {previewFilm.status === 'pending' ? (
+                )}
+                <div className="flex gap-3 pt-4 border-t border-white/10">
+                  {previewFilm.status === 'pending' && (
                     <>
-                      <button 
-                        onClick={() => { handleApprove(previewFilm.id); closePreview(); }}
-                        className="flex-1 bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition"
-                      >
-                        Approve Content
-                      </button>
-                      <button 
-                        onClick={() => { handleReject(previewFilm.id); closePreview(); }}
-                        className="flex-1 bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition"
-                      >
-                        Reject Content
-                      </button>
+                      <button onClick={() => { handleApprove(previewFilm.id); closePreview(); }} className="flex-1 bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 transition">Approve</button>
+                      <button onClick={() => { handleReject(previewFilm.id); closePreview(); }} className="flex-1 bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 transition">Reject</button>
                     </>
-                  ) : previewFilm.status === 'approved' && (
-                    <button 
-                      onClick={() => { handleRevokeApproval(previewFilm.id); closePreview(); }}
-                      className="flex-1 bg-yellow-500 text-black py-2 rounded-lg font-semibold hover:bg-yellow-600 transition"
-                    >
-                      Revoke Approval
-                    </button>
                   )}
-                  <button 
-                    onClick={closePreview}
-                    className="flex-1 border border-white/20 py-2 rounded-lg font-semibold hover:bg-white/5 transition"
-                  >
-                    Close
-                  </button>
+                  {previewFilm.status === 'approved' && (
+                    <button onClick={() => { handleRevokeApproval(previewFilm.id); closePreview(); }} className="flex-1 bg-yellow-500 text-black py-2 rounded-lg font-semibold hover:bg-yellow-600 transition">Revoke Approval</button>
+                  )}
+                  <button onClick={closePreview} className="flex-1 border border-white/20 py-2 rounded-lg font-semibold hover:bg-white/5 transition">Close</button>
                 </div>
               </div>
             </div>
@@ -526,7 +711,7 @@ export default function AdminPage() {
 
         {/* Confirmation Code Modal */}
         {isConfirmModalOpen && selectedTransaction && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-[#1a1a1a] rounded-2xl max-w-md w-full border border-white/10 p-6">
               <h2 className="text-xl font-bold mb-4">Confirm Transaction</h2>
               <p className="text-gray-400 text-sm mb-4">
