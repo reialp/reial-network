@@ -3,14 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { 
-  getAllContent, 
-  approveContent, 
-  rejectContent, 
-  revokeApproval,
-  confirmTransaction,
-  processPayout
-} from '@/app/actions/admin'
+import { getAllContent } from '@/app/actions/admin'
 
 function getEmbedUrl(url: string): string {
   if (!url) return ''
@@ -222,76 +215,6 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-  // ✅ Approve Content
-  const handleApprove = async (id: string) => {
-    if (!confirm('Are you sure you want to approve this content?')) return
-    
-    try {
-      const result = await approveContent(id)
-      if (result.success) {
-        alert('✅ Content approved successfully!')
-        loadAdminData()
-      } else {
-        alert('❌ Error: ' + result.error)
-      }
-    } catch (err) {
-      alert('❌ Failed to approve content')
-    }
-  }
-
-  // ✅ Reject Content
-  const handleReject = async (id: string) => {
-    const reason = prompt('Please enter a reason for rejection:')
-    if (reason === null) return
-    
-    try {
-      const result = await rejectContent(id)
-      if (result.success) {
-        alert('✅ Content rejected.')
-        loadAdminData()
-      } else {
-        alert('❌ Error: ' + result.error)
-      }
-    } catch (err) {
-      alert('❌ Failed to reject content')
-    }
-  }
-
-  // ✅ Revoke Approval
-  const handleRevokeApproval = async (id: string) => {
-    if (!confirm('Revoke approval? This will hide the content from users.')) return
-    
-    try {
-      const result = await revokeApproval(id)
-      if (result.success) {
-        alert('✅ Approval revoked.')
-        loadAdminData()
-      } else {
-        alert('❌ Error: ' + result.error)
-      }
-    } catch (err) {
-      alert('❌ Failed to revoke approval')
-    }
-  }
-
-  // ✅ Delete Content
-  const handleDeleteContent = async (id: string) => {
-    if (!confirm('Delete this content permanently?')) return
-    
-    try {
-      const { error } = await supabase.from('content').delete().eq('id', id)
-      if (error) {
-        alert('Error: ' + error.message)
-      } else {
-        alert('✅ Content deleted.')
-        loadAdminData()
-      }
-    } catch (err) {
-      alert('❌ Failed to delete content')
-    }
-  }
-
-  // ✅ Confirm Transaction
   const handleConfirmTransaction = async () => {
     if (!selectedTransaction || !confirmationCode.trim()) {
       setConfirmMessage('Please enter a confirmation code')
@@ -301,41 +224,66 @@ export default function AdminPage() {
     setConfirmLoading(true)
     setConfirmMessage('')
 
-    try {
-      const result = await confirmTransaction(selectedTransaction.id, confirmationCode.trim())
-      if (result.success) {
-        setConfirmMessage('✅ Transaction confirmed!')
-        setTimeout(() => {
-          setIsConfirmModalOpen(false)
-          setConfirmationCode('')
-          setSelectedTransaction(null)
-          loadAdminData()
-        }, 1500)
-      } else {
-        setConfirmMessage('❌ Error: ' + result.error)
+    const { error } = await supabase
+      .from('purchases')
+      .update({
+        pesapal_transaction_id: confirmationCode.trim(),
+        status: 'completed',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', selectedTransaction.id)
+
+    if (error) {
+      setConfirmMessage('Error: ' + error.message)
+    } else {
+      setConfirmMessage('✅ Transaction confirmed successfully!')
+      if (selectedTransaction.content_id) {
+        await supabase.rpc('increment_sales', { content_id: selectedTransaction.content_id })
       }
-    } catch (err) {
-      setConfirmMessage('❌ Failed to confirm transaction')
-    } finally {
-      setConfirmLoading(false)
+      setTimeout(() => {
+        setIsConfirmModalOpen(false)
+        setConfirmationCode('')
+        setSelectedTransaction(null)
+        loadAdminData()
+      }, 1500)
     }
+    setConfirmLoading(false)
   }
 
-  // ✅ Process Payout
-  const handleProcessPayout = async (id: string) => {
-    if (!confirm('Mark this payout as processed?')) return
-    
-    try {
-      const result = await processPayout(id)
-      if (result.success) {
-        alert('✅ Payout marked as processed.')
-        loadAdminData()
-      } else {
-        alert('❌ Error: ' + result.error)
-      }
-    } catch (err) {
-      alert('❌ Failed to process payout')
-    }
+  const handleApprove = async (contentId: string) => {
+    const { error } = await supabase.from('content').update({ status: 'approved' }).eq('id', contentId)
+    if (error) alert('Error: ' + error.message)
+    else loadAdminData()
+  }
+
+  const handleReject = async (contentId: string) => {
+    const { error } = await supabase.from('content').update({ status: 'rejected' }).eq('id', contentId)
+    if (error) alert('Error: ' + error.message)
+    else loadAdminData()
+  }
+
+  const handleRevokeApproval = async (contentId: string) => {
+    if (!confirm('Revoke approval for this film?')) return
+    const { error } = await supabase.from('content').update({ status: 'pending' }).eq('id', contentId)
+    if (error) alert('Error: ' + error.message)
+    else loadAdminData()
+  }
+
+  const handleDeleteContent = async (contentId: string) => {
+    if (!confirm('Delete this film permanently?')) return
+    const { error } = await supabase.from('content').delete().eq('id', contentId)
+    if (error) alert('Error: ' + error.message)
+    else loadAdminData()
+  }
+
+  const handleMarkPayoutPaid = async (payoutId: string) => {
+    if (!confirm('Mark this payout as paid?')) return
+    const { error } = await supabase
+      .from('payout_requests')
+      .update({ status: 'processed', processed_at: new Date().toISOString() })
+      .eq('id', payoutId)
+    if (error) alert('Error: ' + error.message)
+    else loadAdminData()
   }
 
   const handlePreview = (film: Content) => {
@@ -561,7 +509,7 @@ export default function AdminPage() {
                       <td className="px-4 sm:px-6 py-3">
                         {payout.status === 'pending' && (
                           <button
-                            onClick={() => handleProcessPayout(payout.id)}
+                            onClick={() => handleMarkPayoutPaid(payout.id)}
                             className="bg-[#f5c518] text-black px-3 py-1 rounded text-xs font-semibold hover:bg-[#e0b010] transition"
                           >
                             Mark Paid
