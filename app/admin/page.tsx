@@ -88,6 +88,7 @@ export default function AdminPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [previewFilm, setPreviewFilm] = useState<Content | null>(null)
   const [payoutFilter, setPayoutFilter] = useState<'all' | 'pending' | 'processed'>('all')
+  const [debugInfo, setDebugInfo] = useState<string>('')
 
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
@@ -116,98 +117,117 @@ export default function AdminPage() {
 
   const loadAdminData = async () => {
     setLoading(true)
+    setDebugInfo('Loading...')
 
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      router.push('/auth/login')
-      return
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        setDebugInfo('❌ No session')
+        router.push('/auth/login')
+        return
+      }
+
+      setDebugInfo(`✅ Session: ${session.user.email}`)
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin, full_name')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!profile?.is_admin) {
+        setDebugInfo(`❌ Not admin: ${profile?.full_name}`)
+        router.push('/dashboard')
+        return
+      }
+
+      setDebugInfo(`✅ Admin: ${profile.full_name}`)
+
+      // ✅ TEST: Get ALL content with NO filters
+      setDebugInfo('🔄 Fetching ALL content...')
+      
+      const { data: contentData, error: contentError } = await supabase
+        .from('content')
+        .select(`
+          *,
+          profiles ( full_name )
+        `)
+        .order('created_at', { ascending: false })
+
+      if (contentError) {
+        setDebugInfo(`❌ Error: ${contentError.message}`)
+        console.error('Error:', contentError)
+      }
+
+      const allContent = contentData || []
+      
+      // ✅ Debug info
+      setDebugInfo(`📊 Total: ${allContent.length} | Pending: ${allContent.filter(c => c.status === 'pending').length}`)
+      
+      console.log('===== ADMIN DEBUG =====')
+      console.log('Total content:', allContent.length)
+      console.log('Pending content:', allContent.filter(c => c.status === 'pending').length)
+      console.log('All statuses:', allContent.map(c => ({ title: c.title, status: c.status, creator: c.creator_id })))
+      console.log('Raw content:', allContent)
+
+      const totalFilms = allContent.length
+      const totalSales = allContent.reduce((sum, c) => sum + (c.purchase_count || 0), 0)
+      const totalRevenue = allContent.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0)
+      const pendingSubmissions = allContent.filter(c => c.status === 'pending').length
+
+      const { data: purchases } = await supabase
+        .from('purchases')
+        .select('platform_fee, creator_earnings')
+
+      const totalPlatformFees = purchases?.reduce((sum, p) => sum + (p.platform_fee || 0), 0) || 0
+      const totalPaidToCreators = purchases?.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) || 0
+
+      const { data: pendingPayoutsData } = await supabase
+        .from('payout_requests')
+        .select('amount')
+        .eq('status', 'pending')
+
+      const pendingPayouts = pendingPayoutsData?.reduce((sum, p) => sum + p.amount, 0) || 0
+
+      setStats({
+        totalFilms,
+        totalSales,
+        totalRevenue,
+        totalPlatformFees,
+        totalPaidToCreators,
+        pendingPayouts,
+        pendingSubmissions,
+      })
+
+      setContent(allContent as Content[])
+      setFilteredContent(allContent as Content[])
+
+      const { data: payoutData } = await supabase
+        .from('payout_requests')
+        .select(`
+          *,
+          profiles ( full_name )
+        `)
+        .order('requested_at', { ascending: false })
+
+      setPayouts(payoutData as PayoutRequest[])
+
+      const { data: transactionsData } = await supabase
+        .from('purchases')
+        .select(`
+          *,
+          content:content_id ( title ),
+          buyer:buyer_id ( email )
+        `)
+        .order('created_at', { ascending: false })
+
+      setTransactions(transactionsData || [])
+
+    } catch (err) {
+      setDebugInfo(`❌ Catch error: ${err}`)
+      console.error('Catch error:', err)
     }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', session.user.id)
-      .single()
-
-    if (!profile?.is_admin) {
-      router.push('/dashboard')
-      return
-    }
-
-    // ✅ SIMPLE QUERY: Get ALL content from ALL creators
-    // NO filters, NO conditions, just ALL content
-    const { data: contentData, error: contentError } = await supabase
-      .from('content')
-      .select(`
-        *,
-        profiles ( full_name )
-      `)
-      .order('created_at', { ascending: false })
-
-    if (contentError) {
-      console.error('Error fetching content:', contentError)
-    }
-
-    const allContent = contentData || []
-
-    // ✅ Calculate stats
-    const totalFilms = allContent.length
-    const totalSales = allContent.reduce((sum, c) => sum + (c.purchase_count || 0), 0)
-    const totalRevenue = allContent.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0)
-    const pendingSubmissions = allContent.filter(c => c.status === 'pending').length
-
-    // ✅ Log for debugging
-    console.log('📊 Total content:', totalFilms)
-    console.log('📊 Pending submissions:', pendingSubmissions)
-    console.log('📊 All statuses:', allContent.map(c => ({ title: c.title, status: c.status, creator: c.creator_id })))
-
-    const { data: purchases } = await supabase
-      .from('purchases')
-      .select('platform_fee, creator_earnings')
-
-    const totalPlatformFees = purchases?.reduce((sum, p) => sum + (p.platform_fee || 0), 0) || 0
-    const totalPaidToCreators = purchases?.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) || 0
-
-    const { data: pendingPayoutsData } = await supabase
-      .from('payout_requests')
-      .select('amount')
-      .eq('status', 'pending')
-
-    const pendingPayouts = pendingPayoutsData?.reduce((sum, p) => sum + p.amount, 0) || 0
-
-    setStats({
-      totalFilms,
-      totalSales,
-      totalRevenue,
-      totalPlatformFees,
-      totalPaidToCreators,
-      pendingPayouts,
-      pendingSubmissions,
-    })
-
-    setContent(allContent as Content[])
-    setFilteredContent(allContent as Content[])
-
-    const { data: payoutData } = await supabase
-      .from('payout_requests')
-      .select(`
-        *,
-        profiles ( full_name )
-      `)
-      .order('requested_at', { ascending: false })
-
-    setPayouts(payoutData as PayoutRequest[])
-
-    const { data: transactionsData } = await supabase
-      .from('purchases')
-      .select(`
-        *,
-        content:content_id ( title ),
-        buyer:buyer_id ( email )
-      `)
-      .order('created_at', { ascending: false })
-
-    setTransactions(transactionsData || [])
 
     setLoading(false)
   }
@@ -319,6 +339,11 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">Admin Panel</h1>
         <p className="text-gray-400 mb-8">Manage content, approvals, and payouts.</p>
+
+        {/* Debug Info */}
+        <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 mb-6">
+          <p className="text-sm text-gray-400">🔍 Debug: <span className="text-[#f5c518]">{debugInfo}</span></p>
+        </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
