@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { getAllContent } from '@/app/actions/admin'
 
 function getEmbedUrl(url: string): string {
   if (!url) return ''
@@ -135,16 +136,15 @@ export default function AdminPage() {
         return
       }
 
-      // ✅ Fetch content from our API
-      const response = await fetch('/api/admin/content')
-      const data = await response.json()
-
-      if (data.error) {
-        console.error('Error fetching content:', data.error)
+      // ✅ Fetch ALL content using the server action
+      const result = await getAllContent()
+      
+      if (result.error) {
+        console.error('Error fetching content:', result.error)
         return
       }
 
-      const allContent = data.content || []
+      const allContent = result.content || []
       
       console.log('===== ADMIN PAGE DEBUG =====')
       console.log('Total content:', allContent.length)
