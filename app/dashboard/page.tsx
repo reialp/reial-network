@@ -30,7 +30,7 @@ export default function DashboardPage() {
     grossRevenue: 0,
     yourEarnings: 0,
     availableBalance: 0,
-    platformFees: 0, // ✅ Added platform fees
+    platformFees: 0,
   })
   const [displayName, setDisplayName] = useState('Creator')
   const [loading, setLoading] = useState(true)
@@ -45,8 +45,35 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState('')
   const [isCreator, setIsCreator] = useState(false)
 
+  // ✅ Check if user has accepted terms before loading dashboard
   useEffect(() => {
-    loadDashboard()
+    const checkTerms = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/auth/login')
+        return
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('terms_accepted')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!profile?.terms_accepted) {
+        router.push('/terms')
+        return
+      }
+
+      setUserId(session.user.id)
+      loadDashboard()
+    }
+    checkTerms()
+  }, [])
+
+  // ✅ Real-time subscriptions
+  useEffect(() => {
+    if (!userId) return
 
     const channel = supabase
       .channel('dashboard-updates')
@@ -79,7 +106,7 @@ export default function DashboardPage() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [userId])
 
   const loadDashboard = async () => {
     setLoading(true)
@@ -89,7 +116,6 @@ export default function DashboardPage() {
       router.push('/auth/login')
       return
     }
-    setUserId(session.user.id)
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -117,7 +143,6 @@ export default function DashboardPage() {
     const yourEarnings = Math.round(grossRevenue * 0.85)
     const platformFees = Math.round(grossRevenue * 0.15)
 
-    // ✅ Calculate available balance from ACTUAL earnings
     const { data: purchasesData } = await supabase
       .from('purchases')
       .select('creator_earnings')
@@ -285,7 +310,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ✅ Revenue Breakdown Banner */}
         <div className="bg-gradient-to-r from-[#1a1a1a] to-[#2a1a0a] rounded-2xl p-6 border border-[#f5c518]/20 mb-8">
           <h3 className="text-lg font-bold mb-3 text-[#f5c518]">Revenue Breakdown</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
