@@ -21,7 +21,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // ✅ Fetch ALL content with creator names
+    // ✅ Fetch ALL content from ALL creators (no filters!)
     const { data: content, error: contentError } = await supabase
       .from('content')
       .select('*')
@@ -56,8 +56,8 @@ export async function GET() {
       creator_name: creatorNames[item.creator_id] || 'Unknown Creator'
     }))
 
-    console.log('API - Total content:', allContent.length)
-    console.log('API - Pending content:', allContent.filter((c: any) => c.status === 'pending').length)
+    console.log('📊 API - Total content:', allContent.length)
+    console.log('📊 API - Pending content:', allContent.filter((c: any) => c.status === 'pending').length)
 
     return NextResponse.json({ content: allContent })
   } catch (error) {
