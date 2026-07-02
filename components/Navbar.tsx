@@ -28,7 +28,6 @@ export default function Navbar() {
           .eq('id', session.user.id)
           .single()
         if (profile) {
-          console.log('📊 Navbar profile loaded:', profile)
           setIsCreator(profile.is_creator || false)
           setIsAdmin(profile.is_admin || false)
           setHasAcceptedTerms(profile.terms_accepted || false)
@@ -73,62 +72,40 @@ export default function Navbar() {
     router.refresh()
   }
 
-  // ✅ FIXED: Handle upload click with fresh profile data and proper checks
+  // ✅ Upload only for creators who accepted terms
   const handleUploadClick = async (e: React.MouseEvent) => {
     e.preventDefault()
     
-    console.log('🎯 Upload clicked')
-    
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
-      console.log('🔀 No session, redirecting to login')
       router.push('/auth/login?redirectTo=/upload')
       return
     }
 
-    console.log('👤 User ID:', session.user.id)
-
-    // ✅ Fetch fresh profile data
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('terms_accepted, is_creator')
       .eq('id', session.user.id)
       .single()
 
-    if (error) {
-      console.error('❌ Error fetching profile:', error)
+    if (error || !profile) {
       router.push('/profile')
       return
     }
 
-    if (!profile) {
-      console.log('🔀 No profile found, redirecting to profile')
-      router.push('/profile')
-      return
-    }
-
-    console.log('📊 Profile data:', profile)
-
-    // ✅ Update local state
-    setIsCreator(profile.is_creator || false)
-    setHasAcceptedTerms(profile.terms_accepted || false)
-
-    // ✅ If not a creator, redirect to profile
+    // ✅ Only creators can upload
     if (!profile.is_creator) {
-      console.log('🔀 Not a creator, redirecting to profile')
       router.push('/profile?intent=creator')
       return
     }
 
-    // ✅ If creator but hasn't accepted terms
+    // ✅ Must accept terms
     if (!profile.terms_accepted) {
-      console.log('🔀 Creator but no terms, redirecting to terms')
       router.push('/terms')
       return
     }
 
-    // ✅ Everything is good, go to upload
-    console.log('✅ All checks passed, going to upload')
+    // ✅ All checks passed
     router.push('/upload')
   }
 
@@ -136,7 +113,8 @@ export default function Navbar() {
     { href: '/', label: 'Home' },
     ...(user ? [
       { href: '/dashboard', label: 'Dashboard' },
-      { href: '/upload', label: 'Upload', onClick: handleUploadClick },
+      // ✅ Upload only shows for creators
+      ...(isCreator ? [{ href: '/upload', label: 'Upload', onClick: handleUploadClick }] : []),
       { href: '/library', label: 'Library' },
       { href: '/profile', label: 'Profile' },
       ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
