@@ -1,35 +1,21 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
 
-  const intent = searchParams?.get('intent')
-  const redirectTo = searchParams?.get('redirectTo')
-  const urlError = searchParams?.get('error')
-
-  // ✅ FIX #5: Properly prioritize redirectTo over other redirects
-  const getFinalRedirect = () => {
-    // If redirectTo is explicitly set (e.g., from checkout), use it first
-    if (redirectTo) return redirectTo
-    // If intent is creator, go to profile
-    if (intent === 'creator') return '/profile?intent=creator'
-    // Default to dashboard
-    return '/dashboard'
-  }
-
-  const finalRedirect = getFinalRedirect()
+  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(urlError)
+  const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [resetMessage, setResetMessage] = useState<string | null>(null)
 
@@ -49,8 +35,7 @@ function LoginForm() {
       return
     }
 
-    // ✅ FIX #5: Use router.push() with the preserved redirectTo parameter
-    router.push(finalRedirect)
+    router.push(redirectTo)
     router.refresh()
   }
 
@@ -70,8 +55,7 @@ function LoginForm() {
     if (error) {
       setError(error.message)
     } else {
-      setResetMessage('📧 Password reset email sent! Please check your inbox or spam/junk folder.')
-      setEmail('')
+      setResetMessage('📧 Password reset email sent! Check your inbox or spam/junk folder.')
     }
     setLoading(false)
   }
@@ -85,17 +69,12 @@ function LoginForm() {
           </h1>
           <h2 className="mt-6 text-2xl font-semibold text-center">Sign in to your account</h2>
           <p className="mt-2 text-center text-gray-400 text-sm">
-            {redirectTo ? (
+            {redirectTo !== '/dashboard' ? (
               <span className="text-[#f5c518]">🔐 Complete your purchase by signing in</span>
-            ) : intent === 'creator' ? (
-              <span className="text-[#f5c518]">🎬 Access your creator account</span>
             ) : (
               <>
                 Or{' '}
-                <Link
-                  href={`/auth/signup?redirectTo=${encodeURIComponent(finalRedirect)}${intent ? `&intent=${intent}` : ''}`}
-                  className="text-[#f5c518] hover:underline"
-                >
+                <Link href={`/auth/signup?redirectTo=${redirectTo}`} className="text-[#f5c518] hover:underline">
                   create a new account
                 </Link>
               </>
@@ -183,19 +162,5 @@ function LoginForm() {
         </form>
       </div>
     </div>
-  )
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-          <div className="text-gray-400">Loading...</div>
-        </div>
-      }
-    >
-      <LoginForm />
-    </Suspense>
   )
 }
