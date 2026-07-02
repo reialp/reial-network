@@ -1,30 +1,45 @@
 'use client'
 
-import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function TermsPage() {
+  const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [debug, setDebug] = useState<string>('')
+  const [debug, setDebug] = useState<string>('Waiting for action...')
+  const [userId, setUserId] = useState<string | null>(null)
+
+  // ✅ Get user ID on load
+  useEffect(() => {
+    async function getUserId() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setUserId(session.user.id)
+        setDebug(`✅ User ID: ${session.user.id}`)
+      } else {
+        setDebug('❌ No user logged in')
+        router.push('/auth/login')
+      }
+    }
+    getUserId()
+  }, [supabase, router])
 
   const acceptTerms = async () => {
+    if (!userId) {
+      setError('Please log in first.')
+      return
+    }
+
     setLoading(true)
     setError(null)
-    setDebug('Starting...')
+    setDebug('🔄 Updating profile...')
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        setError('Please log in first.')
-        setLoading(false)
-        return
-      }
-
-      setDebug('Updating profile...')
-
+      // ✅ Update the profile
       const { data, error } = await supabase
         .from('profiles')
         .update({
@@ -32,24 +47,25 @@ export default function TermsPage() {
           terms_accepted_at: new Date().toISOString(),
           is_creator: true
         })
-        .eq('id', session.user.id)
+        .eq('id', userId)
         .select()
 
       if (error) {
         setDebug(`❌ Update error: ${error.message}`)
-        setError('Failed to accept terms: ' + error.message)
+        setError(`Failed to save: ${error.message}`)
         setLoading(false)
         return
       }
 
-      setDebug('✅ Profile updated, redirecting...')
+      setDebug(`✅ Profile updated! ${JSON.stringify(data)}`)
 
-      // ✅ Redirect to upload using window.location (bypasses router issues)
+      // ✅ Force redirect to upload
+      setDebug('🔀 Redirecting to upload...')
       window.location.href = '/upload'
 
     } catch (err: any) {
       setDebug(`❌ Error: ${err.message}`)
-      setError('An unexpected error occurred.')
+      setError('Something went wrong. Please try again.')
       setLoading(false)
     }
   }
@@ -63,11 +79,10 @@ export default function TermsPage() {
             Please read these terms carefully before uploading content to Reial Network.
           </p>
 
-          {debug && (
-            <div className="bg-[#0a0a0a] rounded-xl p-3 mb-4 border border-white/10">
-              <p className="text-xs text-gray-400">🔍 {debug}</p>
-            </div>
-          )}
+          {/* ✅ Debug info */}
+          <div className="bg-[#0a0a0a] rounded-xl p-3 mb-4 border border-white/10">
+            <p className="text-xs text-gray-400">🔍 Debug: <span className="text-[#f5c518]">{debug}</span></p>
+          </div>
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm mb-4">
