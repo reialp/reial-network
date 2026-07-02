@@ -95,6 +95,9 @@ export default function ProfilePage() {
       return
     }
 
+    // ✅ Save current profile data before update
+    const currentProfile = { ...profile }
+
     // ✅ Update profile
     const { error: updateError } = await supabase
       .from('profiles')
@@ -128,8 +131,12 @@ export default function ProfilePage() {
     // ✅ Refresh the router to update Navbar state
     router.refresh()
 
-    if (intent === 'creator' && profile.is_creator) {
+    // ✅ FIXED: If they just became a creator, redirect to terms
+    if (intent === 'creator' && currentProfile.is_creator) {
       setTimeout(() => router.push('/terms'), 1500)
+    } else if (intent === 'creator' && !currentProfile.is_creator) {
+      // They didn't check the box, stay on profile
+      setTimeout(() => setSuccess(false), 3000)
     } else {
       setTimeout(() => setSuccess(false), 3000)
     }
