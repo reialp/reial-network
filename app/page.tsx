@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -159,15 +159,16 @@ export default function HomePage() {
 
   const carouselFilms = allFilms.slice(0, 5)
 
-  // ✅ CORRECT: User chooses to become a creator
-  const handleBecomeCreator = async () => {
-    console.log('🎯 Become a Creator clicked')
+  // ✅ FIXED: Use useCallback to prevent recreation
+  const handleBecomeCreator = useCallback(async () => {
+    console.log('🎯 Become a Creator clicked - function called!')
     
     try {
       const { data: { session } } = await supabase.auth.getSession()
+      console.log('📋 Session:', session?.user?.id || 'No session')
       
       if (!session) {
-        // Not logged in, redirect to signup with creator intent
+        console.log('🔀 Redirecting to signup')
         router.push('/auth/signup?intent=creator')
         return
       }
@@ -179,14 +180,17 @@ export default function HomePage() {
         .eq('id', session.user.id)
         .single()
 
+      console.log('📊 Profile data:', profile)
+      console.log('❌ Error:', error)
+
       if (error || !profile) {
-        // No profile exists, go to profile to create one
+        console.log('🔀 No profile, redirecting to profile')
         router.push('/profile?intent=creator')
         return
       }
 
       if (profile.is_creator) {
-        // Already a creator, check terms
+        console.log('✅ Already a creator')
         if (profile.terms_accepted) {
           router.push('/upload')
         } else {
@@ -195,12 +199,12 @@ export default function HomePage() {
         return
       }
 
-      // Regular user wants to become a creator
+      console.log('🔀 Not a creator, redirecting to profile')
       router.push('/profile?intent=creator')
     } catch (err) {
       console.error('❌ Error in handleBecomeCreator:', err)
     }
-  }
+  }, [router, supabase])
 
   const renderFilmCard = (film: Film) => {
     const isPurchased = purchasedIds.has(film.id)
@@ -312,8 +316,12 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </Link>
+              {/* ✅ FIXED: Explicit onclick with console log for debugging */}
               <button
-                onClick={handleBecomeCreator}
+                onClick={(e) => {
+                  console.log('🟢 Button clicked directly!');
+                  handleBecomeCreator();
+                }}
                 className="px-8 py-4 border border-white/20 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 text-center cursor-pointer"
                 type="button"
               >
