@@ -13,7 +13,6 @@ export default function TermsPage() {
   const [debug, setDebug] = useState<string>('Waiting for action...')
   const [userId, setUserId] = useState<string | null>(null)
 
-  // ✅ Get user ID on load and create profile if needed
   useEffect(() => {
     async function getUserId() {
       const { data: { session } } = await supabase.auth.getSession()
@@ -21,14 +20,14 @@ export default function TermsPage() {
         setUserId(session.user.id)
         setDebug(`✅ User ID: ${session.user.id}`)
 
-        // ✅ Check if profile exists
+        // Check if profile exists
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('id')
           .eq('id', session.user.id)
           .single()
 
-        // ✅ If profile doesn't exist, create it
+        // If profile doesn't exist, create it
         if (error && error.code === 'PGRST116') {
           setDebug('🔄 Creating profile...')
           const { error: insertError } = await supabase
@@ -65,7 +64,7 @@ export default function TermsPage() {
     setDebug('🔄 Updating profile...')
 
     try {
-      // ✅ Update the profile
+      // Update the profile
       const { data, error } = await supabase
         .from('profiles')
         .update({
@@ -77,6 +76,7 @@ export default function TermsPage() {
         .select()
 
       if (error) {
+        console.error('❌ Update error:', error)
         setDebug(`❌ Update error: ${error.message}`)
         setError(`Failed to save: ${error.message}`)
         setLoading(false)
@@ -86,11 +86,12 @@ export default function TermsPage() {
       console.log('✅ Terms accepted, profile updated:', data)
       setDebug(`✅ Profile updated!`)
 
-      // ✅ FIXED: Use router.push instead of window.location.href
-      setDebug('🔀 Redirecting to upload...')
-      router.push('/upload')
+      // ✅ FIXED: Redirect to dashboard after accepting terms
+      setDebug('🔀 Redirecting to dashboard...')
+      router.push('/dashboard')
 
     } catch (err: any) {
+      console.error('❌ Error:', err)
       setDebug(`❌ Error: ${err.message}`)
       setError('Something went wrong. Please try again.')
       setLoading(false)
@@ -106,7 +107,7 @@ export default function TermsPage() {
             Please read these terms carefully before uploading content to Reial Network.
           </p>
 
-          {/* ✅ Debug info */}
+          {/* Debug info */}
           <div className="bg-[#0a0a0a] rounded-xl p-3 mb-4 border border-white/10">
             <p className="text-xs text-gray-400">🔍 Debug: <span className="text-[#f5c518]">{debug}</span></p>
           </div>
