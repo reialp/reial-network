@@ -22,23 +22,15 @@ export default function Navbar() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         setUser(session.user)
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('is_creator, is_admin, terms_accepted')
-            .eq('id', session.user.id)
-            .single()
-
-          if (profile) {
-            setIsCreator(profile.is_creator || false)
-            setIsAdmin(profile.is_admin || false)
-            setHasAcceptedTerms(profile.terms_accepted || false)
-          }
-        } catch (err) {
-          // Profile might not exist yet
-          setIsCreator(false)
-          setIsAdmin(false)
-          setHasAcceptedTerms(false)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_creator, is_admin, terms_accepted')
+          .eq('id', session.user.id)
+          .single()
+        if (profile) {
+          setIsCreator(profile.is_creator || false)
+          setIsAdmin(profile.is_admin || false)
+          setHasAcceptedTerms(profile.terms_accepted || false)
         }
       }
     }
@@ -48,22 +40,15 @@ export default function Navbar() {
       async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
           setUser(session.user)
-          try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('is_creator, is_admin, terms_accepted')
-              .eq('id', session.user.id)
-              .single()
-
-            if (profile) {
-              setIsCreator(profile.is_creator || false)
-              setIsAdmin(profile.is_admin || false)
-              setHasAcceptedTerms(profile.terms_accepted || false)
-            }
-          } catch (err) {
-            setIsCreator(false)
-            setIsAdmin(false)
-            setHasAcceptedTerms(false)
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_creator, is_admin, terms_accepted')
+            .eq('id', session.user.id)
+            .single()
+          if (profile) {
+            setIsCreator(profile.is_creator || false)
+            setIsAdmin(profile.is_admin || false)
+            setHasAcceptedTerms(profile.terms_accepted || false)
           }
           router.refresh()
         } else if (event === 'SIGNED_OUT') {
@@ -87,55 +72,58 @@ export default function Navbar() {
     router.refresh()
   }
 
+  // ✅ Handle upload click with terms and creator checks
   const handleUploadClick = async (e: React.MouseEvent) => {
     e.preventDefault()
-
+    
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
       router.push('/auth/login?redirectTo=/upload')
       return
     }
 
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('terms_accepted, is_creator')
-        .eq('id', session.user.id)
-        .single()
+    // Fetch fresh profile data to ensure we have the latest status
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('terms_accepted, is_creator')
+      .eq('id', session.user.id)
+      .single()
 
-      if (!profile) {
-        router.push('/profile')
-        return
-      }
-
-      setIsCreator(profile.is_creator || false)
-      setHasAcceptedTerms(profile.terms_accepted || false)
-
-      if (!profile.is_creator) {
-        router.push('/profile?intent=creator')
-        return
-      }
-
-      if (!profile.terms_accepted) {
-        router.push('/terms')
-        return
-      }
-
-      router.push('/upload')
-    } catch (err) {
+    if (error || !profile) {
+      console.error('Error fetching profile:', error)
       router.push('/profile')
+      return
     }
+
+    // Update local state for consistency
+    setIsCreator(profile.is_creator || false)
+    setHasAcceptedTerms(profile.terms_accepted || false)
+
+    // ✅ If not a creator, redirect to profile
+    if (!profile.is_creator) {
+      router.push('/profile?intent=creator')
+      return
+    }
+
+    // ✅ If creator but hasn't accepted terms
+    if (!profile.terms_accepted) {
+      router.push('/terms')
+      return
+    }
+
+    // ✅ Everything is good, go to upload
+    router.push('/upload')
   }
 
   const navLinks = [
     { href: '/', label: 'Home' },
-    ...(user ? [
-      { href: '/dashboard', label: 'Dashboard' },
-      { href: '/upload', label: 'Upload' },
-      { href: '/library', label: 'Library' },
-      { href: '/profile', label: 'Profile' },
-      ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
-    ] : [
+	    ...(user ? [
+	      { href: '/dashboard', label: 'Dashboard' },
+	      { href: '/upload', label: 'Upload', onClick: handleUploadClick },
+	      { href: '/library', label: 'Library' },
+	      { href: '/profile', label: 'Profile' },
+	      ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
+	    ] : [
       { href: '/auth/login', label: 'Sign In' },
       { href: '/auth/signup', label: 'Sign Up' },
     ]),
@@ -166,21 +154,18 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-6 flex-shrink-0">
-            {navLinks.map((link) => {
-              if (link.label === 'Upload') {
-                return (
-                  <button
-                    key={link.href}
-                    onClick={handleUploadClick}
-                    className={`text-sm transition-colors hover:text-[#f5c518] ${
-                      pathname === link.href ? 'text-[#f5c518] font-semibold' : 'text-gray-300'
-                    }`}
-                  >
-                    Upload
-                  </button>
-                )
-              }
-              return (
+	            {navLinks.map((link) => (
+	              link.onClick ? (
+	                <button
+	                  key={link.label}
+	                  onClick={link.onClick}
+	                  className={`text-sm transition-colors hover:text-[#f5c518] ${
+	                    pathname === link.href ? 'text-[#f5c518] font-semibold' : 'text-gray-300'
+	                  }`}
+	                >
+	                  {link.label}
+	                </button>
+	              ) : (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -191,7 +176,7 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               )
-            })}
+            ))}
             {user && (
               <button
                 onClick={handleLogout}
@@ -229,25 +214,22 @@ export default function Navbar() {
 
         <div id="mobile-menu" className="hidden md:hidden pb-4">
           <div className="flex flex-col gap-2">
-            {navLinks.map((link) => {
-              if (link.label === 'Upload') {
-                return (
-                  <button
-                    key={link.href}
-                    onClick={(e) => {
-                      handleUploadClick(e)
-                      const menu = document.getElementById('mobile-menu')
-                      if (menu) menu.classList.add('hidden')
-                    }}
-                    className={`px-3 py-2 rounded-md text-sm transition-colors hover:bg-white/5 text-left ${
-                      pathname === link.href ? 'text-[#f5c518] bg-white/5' : 'text-gray-300'
-                    }`}
-                  >
-                    Upload
-                  </button>
-                )
-              }
-              return (
+	            {navLinks.map((link) => (
+	              link.onClick ? (
+	                <button
+	                  key={link.label}
+	                  onClick={(e) => {
+	                    link.onClick(e)
+	                    const menu = document.getElementById('mobile-menu')
+	                    if (menu) menu.classList.add('hidden')
+	                  }}
+	                  className={`px-3 py-2 rounded-md text-sm transition-colors hover:bg-white/5 text-left ${
+	                    pathname === link.href ? 'text-[#f5c518] bg-white/5' : 'text-gray-300'
+	                  }`}
+	                >
+	                  {link.label}
+	                </button>
+	              ) : (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -262,7 +244,7 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               )
-            })}
+            ))}
             {user && (
               <button
                 onClick={handleLogout}
