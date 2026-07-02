@@ -41,7 +41,15 @@ function LoginForm() {
       return
     }
 
-    router.push(redirectTo)
+    // ✅ Determine where to redirect after sign in
+    let finalRedirect = redirectTo
+    
+    // If user came from "Become a Creator", send them to profile
+    if (intent === 'creator') {
+      finalRedirect = '/profile?intent=creator'
+    }
+    
+    router.push(finalRedirect)
     router.refresh()
   }
 
@@ -70,7 +78,6 @@ function LoginForm() {
     setLoading(false)
   }
 
-  // ✅ Determine the subtitle based on intent
   const getSubtitle = () => {
     if (intent === 'creator') {
       return 'Sign in to continue your creator journey'
