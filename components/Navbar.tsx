@@ -22,15 +22,23 @@ export default function Navbar() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         setUser(session.user)
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_creator, is_admin, terms_accepted')
-          .eq('id', session.user.id)
-          .single()
-        if (profile) {
-          setIsCreator(profile.is_creator || false)
-          setIsAdmin(profile.is_admin || false)
-          setHasAcceptedTerms(profile.terms_accepted || false)
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_creator, is_admin, terms_accepted')
+            .eq('id', session.user.id)
+            .single()
+
+          if (profile) {
+            setIsCreator(profile.is_creator || false)
+            setIsAdmin(profile.is_admin || false)
+            setHasAcceptedTerms(profile.terms_accepted || false)
+          }
+        } catch (err) {
+          // Profile might not exist yet
+          setIsCreator(false)
+          setIsAdmin(false)
+          setHasAcceptedTerms(false)
         }
       }
     }
@@ -40,15 +48,22 @@ export default function Navbar() {
       async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
           setUser(session.user)
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('is_creator, is_admin, terms_accepted')
-            .eq('id', session.user.id)
-            .single()
-          if (profile) {
-            setIsCreator(profile.is_creator || false)
-            setIsAdmin(profile.is_admin || false)
-            setHasAcceptedTerms(profile.terms_accepted || false)
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('is_creator, is_admin, terms_accepted')
+              .eq('id', session.user.id)
+              .single()
+
+            if (profile) {
+              setIsCreator(profile.is_creator || false)
+              setIsAdmin(profile.is_admin || false)
+              setHasAcceptedTerms(profile.terms_accepted || false)
+            }
+          } catch (err) {
+            setIsCreator(false)
+            setIsAdmin(false)
+            setHasAcceptedTerms(false)
           }
           router.refresh()
         } else if (event === 'SIGNED_OUT') {
@@ -72,47 +87,44 @@ export default function Navbar() {
     router.refresh()
   }
 
-  // ✅ Handle upload click with terms and creator checks
   const handleUploadClick = async (e: React.MouseEvent) => {
     e.preventDefault()
-    
+
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
       router.push('/auth/login?redirectTo=/upload')
       return
     }
 
-    // Fetch fresh profile data
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('terms_accepted, is_creator')
-      .eq('id', session.user.id)
-      .single()
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('terms_accepted, is_creator')
+        .eq('id', session.user.id)
+        .single()
 
-    if (error || !profile) {
-      console.error('Error fetching profile:', error)
+      if (!profile) {
+        router.push('/profile')
+        return
+      }
+
+      setIsCreator(profile.is_creator || false)
+      setHasAcceptedTerms(profile.terms_accepted || false)
+
+      if (!profile.is_creator) {
+        router.push('/profile?intent=creator')
+        return
+      }
+
+      if (!profile.terms_accepted) {
+        router.push('/terms')
+        return
+      }
+
+      router.push('/upload')
+    } catch (err) {
       router.push('/profile')
-      return
     }
-
-    // Update local state
-    setIsCreator(profile.is_creator || false)
-    setHasAcceptedTerms(profile.terms_accepted || false)
-
-    // ✅ If not a creator, redirect to profile
-    if (!profile.is_creator) {
-      router.push('/profile?intent=creator')
-      return
-    }
-
-    // ✅ If creator but hasn't accepted terms
-    if (!profile.terms_accepted) {
-      router.push('/terms')
-      return
-    }
-
-    // ✅ Everything is good, go to upload
-    router.push('/upload')
   }
 
   const navLinks = [
