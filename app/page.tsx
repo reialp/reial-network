@@ -36,12 +36,10 @@ export default function HomePage() {
   const [purchaseTokens, setPurchaseTokens] = useState<Record<string, string>>({})
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // ✅ Listen for auth changes to refresh page state
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          // Refresh the page to update all state
           window.location.reload()
         }
       }
@@ -333,7 +331,7 @@ export default function HomePage() {
                 className="px-8 py-4 border border-white/20 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 text-center cursor-pointer"
                 type="button"
               >
-                {session ? 'Become a Creator' : 'Get Started'}
+                Become a Creator
               </button>
             </div>
           </div>
