@@ -157,40 +157,36 @@ export default function HomePage() {
     return result
   }, [allFilms, selectedCategory, searchTerm])
 
-  const totalFilms = allFilms.length
   const carouselFilms = allFilms.slice(0, 5)
 
-  // ✅ FIXED: Handle "Become a Creator" click with proper error logging
+  // ✅ CORRECT: User chooses to become a creator
   const handleBecomeCreator = async () => {
     console.log('🎯 Become a Creator clicked')
     
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      console.log('Session:', session?.user?.id || 'No session')
       
       if (!session) {
-        console.log('🔀 Redirecting to signup')
+        // Not logged in, redirect to signup with creator intent
         router.push('/auth/signup?intent=creator')
         return
       }
 
-      // Check if user already has a profile
+      // Check if user has a profile
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('is_creator, terms_accepted')
         .eq('id', session.user.id)
         .single()
 
-      console.log('Profile data:', profile, 'Error:', error)
-
       if (error || !profile) {
-        console.log('🔀 No profile, redirecting to profile')
+        // No profile exists, go to profile to create one
         router.push('/profile?intent=creator')
         return
       }
 
       if (profile.is_creator) {
-        console.log('✅ Already a creator')
+        // Already a creator, check terms
         if (profile.terms_accepted) {
           router.push('/upload')
         } else {
@@ -199,7 +195,7 @@ export default function HomePage() {
         return
       }
 
-      console.log('🔀 Not a creator, redirecting to profile')
+      // Regular user wants to become a creator
       router.push('/profile?intent=creator')
     } catch (err) {
       console.error('❌ Error in handleBecomeCreator:', err)
@@ -316,7 +312,6 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </Link>
-              {/* ✅ FIXED: Use button with onClick and add cursor-pointer */}
               <button
                 onClick={handleBecomeCreator}
                 className="px-8 py-4 border border-white/20 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 text-center cursor-pointer"
@@ -350,7 +345,6 @@ export default function HomePage() {
                   <Link
                     key={film.id}
                     href={linkUrl}
-                    onClick={() => console.log(`✅ Clicked: ${film.title} → ${linkUrl}`)}
                     className={`absolute inset-0 transition-all duration-700 ease-in-out cursor-pointer group ${
                       idx === carouselIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
                     }`}
