@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useSearch } from '@/context/SearchContext'
 
@@ -21,6 +22,7 @@ interface Film {
 }
 
 export default function HomePage() {
+  const router = useRouter()
   const supabase = createClient()
   const { searchTerm, selectedCategory, setSelectedCategory } = useSearch()
 
@@ -158,6 +160,49 @@ export default function HomePage() {
   const totalFilms = allFilms.length
   const carouselFilms = allFilms.slice(0, 5)
 
+  // ✅ FIXED: Handle "Become a Creator" click with proper flow
+  const handleBecomeCreator = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (!session) {
+      // Not logged in, redirect to signup with creator intent
+      router.push('/auth/signup?intent=creator')
+      return
+    }
+
+    // Check if user already has a profile
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('is_creator')
+      .eq('id', session.user.id)
+      .single()
+
+    if (error || !profile) {
+      // No profile exists, go to profile to create one
+      router.push('/profile?intent=creator')
+      return
+    }
+
+    if (profile.is_creator) {
+      // Already a creator, check terms
+      const { data: termsCheck } = await supabase
+        .from('profiles')
+        .select('terms_accepted')
+        .eq('id', session.user.id)
+        .single()
+      
+      if (termsCheck?.terms_accepted) {
+        router.push('/upload')
+      } else {
+        router.push('/terms')
+      }
+      return
+    }
+
+    // User exists but is not a creator, go to profile
+    router.push('/profile?intent=creator')
+  }
+
   const renderFilmCard = (film: Film) => {
     const isPurchased = purchasedIds.has(film.id)
     const token = purchaseTokens[film.id]
@@ -268,12 +313,13 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </Link>
-              <Link
-                href="/auth/signup?intent=creator"
+              {/* ✅ FIXED: Use onClick handler instead of direct href */}
+              <button
+                onClick={handleBecomeCreator}
                 className="px-8 py-4 border border-white/20 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 text-center"
               >
                 Become a Creator
-              </Link>
+              </button>
             </div>
           </div>
 
