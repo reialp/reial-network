@@ -10,7 +10,6 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const supabase = createClient()
 
-  // ✅ searchParams is now safely used inside Suspense
   const redirectTo = searchParams?.get('redirectTo') || '/dashboard'
 
   const [email, setEmail] = useState('')
@@ -19,11 +18,6 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [resetMessage, setResetMessage] = useState<string | null>(null)
-  const [origin, setOrigin] = useState('')
-
-  useEffect(() => {
-    setOrigin(window.location.origin)
-  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,12 +48,8 @@ function LoginForm() {
     setError(null)
     setResetMessage(null)
 
-    const resetUrl = origin 
-      ? `${origin}/auth/reset-password`
-      : '/auth/reset-password'
-
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: resetUrl,
+      redirectTo: `${window.location.origin}/auth/reset-password`,
     })
 
     if (error) {
@@ -175,7 +165,6 @@ function LoginForm() {
   )
 }
 
-// ✅ The Suspense boundary MUST wrap the component that uses useSearchParams()
 export default function LoginPage() {
   return (
     <Suspense fallback={
