@@ -10,6 +10,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const supabase = createClient()
 
+  // ✅ searchParams is now safely used inside Suspense
   const redirectTo = searchParams?.get('redirectTo') || '/dashboard'
 
   const [email, setEmail] = useState('')
@@ -174,6 +175,7 @@ function LoginForm() {
   )
 }
 
+// ✅ The Suspense boundary MUST wrap the component that uses useSearchParams()
 export default function LoginPage() {
   return (
     <Suspense fallback={
