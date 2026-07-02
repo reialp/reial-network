@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -12,7 +12,7 @@ interface Profile {
   payout_phone: string
 }
 
-export default function ProfilePage() {
+function ProfileForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -36,7 +36,7 @@ export default function ProfilePage() {
   useEffect(() => {
     async function loadProfile() {
       setLoading(true)
-      
+
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         router.push('/auth/login')
@@ -44,7 +44,6 @@ export default function ProfilePage() {
       }
 
       setUserId(session.user.id)
-      console.log('🔍 Loading profile for user:', session.user.id)
 
       const { data, error } = await supabase
         .from('profiles')
@@ -53,7 +52,6 @@ export default function ProfilePage() {
         .single()
 
       if (error && error.code === 'PGRST116') {
-        console.log('🔄 Creating new profile for user:', session.user.id)
         const { error: insertError } = await supabase
           .from('profiles')
           .insert({
@@ -64,11 +62,9 @@ export default function ProfilePage() {
           })
 
         if (!insertError) {
-          console.log('✅ Profile created, reloading...')
           loadProfile()
           return
         } else {
-          console.error('❌ Failed to create profile:', insertError)
           setError('Failed to create profile. Please try again.')
           setLoading(false)
           return
@@ -76,7 +72,6 @@ export default function ProfilePage() {
       }
 
       if (data) {
-        console.log('📊 Profile loaded:', data)
         setProfile({
           full_name: data.full_name || '',
           bio: data.bio || '',
@@ -106,10 +101,7 @@ export default function ProfilePage() {
     const wasCreator = profile.is_creator
     const currentProfile = { ...profile }
 
-    console.log('📝 Updating profile for user:', userId)
-    console.log('📝 Data:', currentProfile)
-
-    const { error: updateError } = await supabase
+    const { error: updateError, data: updateData } = await supabase
       .from('profiles')
       .update({
         full_name: currentProfile.full_name,
@@ -119,23 +111,25 @@ export default function ProfilePage() {
         payout_phone: currentProfile.payout_phone,
       })
       .eq('id', userId)
+      .select()
 
     if (updateError) {
-      console.error('❌ Update error:', updateError)
       setError('Failed to save: ' + updateError.message)
       setSaving(false)
       return
     }
 
-    console.log('✅ Profile updated successfully')
+    if (!updateData || updateData.length === 0) {
+      setError('Update was blocked (no rows changed). This is usually a permissions issue.')
+      setSaving(false)
+      return
+    }
 
     const { data: verifyData } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single()
-
-    console.log('✅ Verified data:', verifyData)
 
     if (verifyData) {
       setProfile({
@@ -153,7 +147,6 @@ export default function ProfilePage() {
     router.refresh()
 
     if (intent === 'creator' && currentProfile.is_creator && !wasCreator) {
-      console.log('🚀 User became a creator! Redirecting to terms...')
       setTimeout(() => {
         router.push('/terms')
       }, 1500)
@@ -267,5 +260,17 @@ export default function ProfilePage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    }>
+      <ProfileForm />
+    </Suspense>
   )
 }
