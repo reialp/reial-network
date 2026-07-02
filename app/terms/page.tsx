@@ -2,18 +2,18 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function TermsPage() {
   const supabase = createClient()
-  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [debug, setDebug] = useState<string>('')
 
   const acceptTerms = async () => {
     setLoading(true)
     setError(null)
+    setDebug('Starting...')
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -23,38 +23,9 @@ export default function TermsPage() {
         return
       }
 
-      // ✅ Get current profile to check if it exists
-      const { data: existingProfile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', session.user.id)
-        .single()
+      setDebug('Updating profile...')
 
-      // ✅ If profile doesn't exist, create it first
-      if (fetchError && fetchError.code === 'PGRST116') {
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: session.user.id,
-            full_name: session.user.user_metadata?.full_name || '',
-            is_creator: true,
-            terms_accepted: true,
-            terms_accepted_at: new Date().toISOString()
-          })
-
-        if (insertError) {
-          setError('Failed to create profile: ' + insertError.message)
-          setLoading(false)
-          return
-        }
-
-        // ✅ FIX #1: Use router.push() instead of window.location.href for proper Next.js navigation
-        router.push('/upload')
-        return
-      }
-
-      // ✅ Update existing profile
-      const { error: updateError } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           terms_accepted: true,
@@ -62,19 +33,23 @@ export default function TermsPage() {
           is_creator: true
         })
         .eq('id', session.user.id)
+        .select()
 
-      if (updateError) {
-        setError('Failed to accept terms: ' + updateError.message)
+      if (error) {
+        setDebug(`❌ Update error: ${error.message}`)
+        setError('Failed to accept terms: ' + error.message)
         setLoading(false)
         return
       }
 
-      // ✅ FIX #1: Use router.push() instead of window.location.href for proper Next.js navigation
-      router.push('/upload')
+      setDebug('✅ Profile updated, redirecting...')
+
+      // ✅ Redirect to upload using window.location (bypasses router issues)
+      window.location.href = '/upload'
 
     } catch (err: any) {
-      console.error('Error:', err)
-      setError('An unexpected error occurred. Please try again.')
+      setDebug(`❌ Error: ${err.message}`)
+      setError('An unexpected error occurred.')
       setLoading(false)
     }
   }
@@ -87,6 +62,12 @@ export default function TermsPage() {
           <p className="text-gray-400 text-center mb-8">
             Please read these terms carefully before uploading content to Reial Network.
           </p>
+
+          {debug && (
+            <div className="bg-[#0a0a0a] rounded-xl p-3 mb-4 border border-white/10">
+              <p className="text-xs text-gray-400">🔍 {debug}</p>
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm mb-4">
@@ -109,7 +90,7 @@ export default function TermsPage() {
               <p>You confirm and guarantee that:</p>
               <ul className="list-disc list-inside mt-2 space-y-2 ml-4">
                 <li>You own or have obtained all necessary rights to the content you upload</li>
-                <li>Your content does not infringe on any third-party copyrights, trademarks, or other intellectual property rights</li>
+                <li>Your content does not infringe on any third-party copyrights</li>
                 <li>You have permission from all individuals appearing in your content</li>
                 <li>Your content does not contain defamatory, obscene, or illegal material</li>
               </ul>
