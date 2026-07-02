@@ -13,13 +13,39 @@ export default function TermsPage() {
   const [debug, setDebug] = useState<string>('Waiting for action...')
   const [userId, setUserId] = useState<string | null>(null)
 
-  // ✅ Get user ID on load
+  // ✅ Get user ID on load and create profile if needed
   useEffect(() => {
     async function getUserId() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         setUserId(session.user.id)
         setDebug(`✅ User ID: ${session.user.id}`)
+
+        // ✅ Check if profile exists
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', session.user.id)
+          .single()
+
+        // ✅ If profile doesn't exist, create it
+        if (error && error.code === 'PGRST116') {
+          setDebug('🔄 Creating profile...')
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: session.user.id,
+              full_name: session.user.user_metadata?.full_name || '',
+              is_creator: false,
+              terms_accepted: false,
+            })
+
+          if (insertError) {
+            setDebug(`❌ Failed to create profile: ${insertError.message}`)
+          } else {
+            setDebug('✅ Profile created!')
+          }
+        }
       } else {
         setDebug('❌ No user logged in')
         router.push('/auth/login')
