@@ -2,10 +2,12 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function TermsPage() {
   const supabase = createClient()
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -46,8 +48,8 @@ export default function TermsPage() {
           return
         }
 
-        // ✅ Redirect to upload
-        window.location.href = '/upload'
+        // ✅ FIX #1: Use router.push() instead of window.location.href for proper Next.js navigation
+        router.push('/upload')
         return
       }
 
@@ -67,8 +69,8 @@ export default function TermsPage() {
         return
       }
 
-      // ✅ Redirect to upload
-      window.location.href = '/upload'
+      // ✅ FIX #1: Use router.push() instead of window.location.href for proper Next.js navigation
+      router.push('/upload')
 
     } catch (err: any) {
       console.error('Error:', err)
