@@ -157,10 +157,9 @@ export default function HomePage() {
     return result
   }, [allFilms, selectedCategory, searchTerm])
 
-  const totalFilms = allFilms.length
   const carouselFilms = allFilms.slice(0, 5)
 
-  // ✅ FIXED: Handle "Become a Creator" click with proper flow
+  // ✅ Handle "Become a Creator" click with proper flow
   const handleBecomeCreator = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     
