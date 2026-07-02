@@ -31,15 +31,33 @@ export default function HomePage() {
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [session, setSession] = useState<any>(null)
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set())
   const [purchaseTokens, setPurchaseTokens] = useState<Record<string, string>>({})
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // ✅ Listen for auth changes to refresh page state
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          // Refresh the page to update all state
+          window.location.reload()
+        }
+      }
+    )
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase])
 
   useEffect(() => {
     async function fetchFilms() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         setUserId(session.user.id)
+        setSession(session)
       }
 
       const { data, error } = await supabase
@@ -159,15 +177,19 @@ export default function HomePage() {
   const carouselFilms = allFilms.slice(0, 5)
 
   const handleBecomeCreatorClick = async () => {
-    console.log('🟢 Become a Creator clicked!')
-    
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      console.log('📋 Session:', session?.user?.id || 'No session')
       
       if (!session) {
-        console.log('🔀 Redirecting to signup')
-        window.location.href = '/auth/signup?intent=creator'
+        // ✅ Show sign in option for existing users
+        const wantsSignIn = window.confirm(
+          'Already have an account? Click OK to sign in, or Cancel to create a new account.'
+        )
+        if (wantsSignIn) {
+          window.location.href = '/auth/login?intent=creator'
+        } else {
+          window.location.href = '/auth/signup?intent=creator'
+        }
         return
       }
 
@@ -177,16 +199,12 @@ export default function HomePage() {
         .eq('id', session.user.id)
         .single()
 
-      console.log('📊 Profile:', profile)
-      
       if (error || !profile) {
-        console.log('🔀 No profile, going to profile')
         window.location.href = '/profile?intent=creator'
         return
       }
 
       if (profile.is_creator) {
-        console.log('✅ Already a creator')
         if (profile.terms_accepted) {
           window.location.href = '/upload'
         } else {
@@ -195,10 +213,9 @@ export default function HomePage() {
         return
       }
 
-      console.log('🔀 Not a creator, going to profile')
       window.location.href = '/profile?intent=creator'
     } catch (err) {
-      console.error('❌ Error:', err)
+      console.error('Error:', err)
     }
   }
 
@@ -316,7 +333,7 @@ export default function HomePage() {
                 className="px-8 py-4 border border-white/20 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 text-center cursor-pointer"
                 type="button"
               >
-                Become a Creator
+                {session ? 'Become a Creator' : 'Get Started'}
               </button>
             </div>
           </div>
