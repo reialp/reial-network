@@ -98,4 +98,19 @@ export default function TermsPage() {
             <button
               onClick={acceptTerms}
               disabled={loading}
-              className="
+              className="flex-1 bg-[#f5c518] text-black py-3 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50"
+            >
+              {loading ? 'Accepting...' : 'I Agree to the Terms & Conditions'}
+            </button>
+            <Link
+              href="/dashboard"
+              className="flex-1 border border-white/20 py-3 rounded-lg font-semibold hover:bg-white/5 transition text-center"
+            >
+              Cancel
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
