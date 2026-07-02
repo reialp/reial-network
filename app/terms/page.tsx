@@ -83,7 +83,8 @@ export default function TermsPage() {
         return
       }
 
-      setDebug(`✅ Profile updated! ${JSON.stringify(data)}`)
+      console.log('✅ Terms accepted, profile updated:', data)
+      setDebug(`✅ Profile updated!`)
 
       // ✅ FIXED: Use router.push instead of window.location.href
       setDebug('🔀 Redirecting to upload...')
