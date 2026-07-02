@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -34,6 +34,12 @@ export default function HomePage() {
   const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set())
   const [purchaseTokens, setPurchaseTokens] = useState<Record<string, string>>({})
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [isClient, setIsClient] = useState(false)
+
+  // ✅ Fix hydration issues
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   useEffect(() => {
     async function fetchFilms() {
@@ -159,52 +165,55 @@ export default function HomePage() {
 
   const carouselFilms = allFilms.slice(0, 5)
 
-  // ✅ FIXED: Use useCallback to prevent recreation
-  const handleBecomeCreator = useCallback(async () => {
-    console.log('🎯 Become a Creator clicked - function called!')
+  // ✅ Define the function outside of any conditional
+  const handleBecomeCreatorClick = () => {
+    console.log('🟢 Button clicked!')
     
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      console.log('📋 Session:', session?.user?.id || 'No session')
-      
-      if (!session) {
-        console.log('🔀 Redirecting to signup')
-        router.push('/auth/signup?intent=creator')
-        return
-      }
-
-      // Check if user has a profile
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('is_creator, terms_accepted')
-        .eq('id', session.user.id)
-        .single()
-
-      console.log('📊 Profile data:', profile)
-      console.log('❌ Error:', error)
-
-      if (error || !profile) {
-        console.log('🔀 No profile, redirecting to profile')
-        router.push('/profile?intent=creator')
-        return
-      }
-
-      if (profile.is_creator) {
-        console.log('✅ Already a creator')
-        if (profile.terms_accepted) {
-          router.push('/upload')
-        } else {
-          router.push('/terms')
+    async function processCreatorFlow() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        console.log('📋 Session:', session?.user?.id || 'No session')
+        
+        if (!session) {
+          console.log('🔀 Redirecting to signup')
+          router.push('/auth/signup?intent=creator')
+          return
         }
-        return
-      }
 
-      console.log('🔀 Not a creator, redirecting to profile')
-      router.push('/profile?intent=creator')
-    } catch (err) {
-      console.error('❌ Error in handleBecomeCreator:', err)
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_creator, terms_accepted')
+          .eq('id', session.user.id)
+          .single()
+
+        console.log('📊 Profile data:', profile)
+        console.log('❌ Error:', error)
+
+        if (error || !profile) {
+          console.log('🔀 No profile, redirecting to profile')
+          router.push('/profile?intent=creator')
+          return
+        }
+
+        if (profile.is_creator) {
+          console.log('✅ Already a creator')
+          if (profile.terms_accepted) {
+            router.push('/upload')
+          } else {
+            router.push('/terms')
+          }
+          return
+        }
+
+        console.log('🔀 Not a creator, redirecting to profile')
+        router.push('/profile?intent=creator')
+      } catch (err) {
+        console.error('❌ Error in handleBecomeCreator:', err)
+      }
     }
-  }, [router, supabase])
+    
+    processCreatorFlow()
+  }
 
   const renderFilmCard = (film: Film) => {
     const isPurchased = purchasedIds.has(film.id)
@@ -316,14 +325,12 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </Link>
-              {/* ✅ FIXED: Explicit onclick with console log for debugging */}
+              {/* ✅ FIXED: Simple onclick without arrow function wrapper */}
               <button
-                onClick={(e) => {
-                  console.log('🟢 Button clicked directly!');
-                  handleBecomeCreator();
-                }}
+                onClick={handleBecomeCreatorClick}
                 className="px-8 py-4 border border-white/20 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 text-center cursor-pointer"
                 type="button"
+                id="become-creator-btn"
               >
                 Become a Creator
               </button>
