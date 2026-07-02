@@ -11,17 +11,32 @@ export default function TermsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    async function getUserId() {
+    async function checkTerms() {
       const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        setUserId(session.user.id)
-      } else {
+      if (!session?.user) {
         router.push('/auth/login')
+        return
+      }
+
+      setUserId(session.user.id)
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('terms_accepted')
+        .eq('id', session.user.id)
+        .single()
+
+      setChecking(false)
+
+      if (profile?.terms_accepted === true) {
+        router.push('/dashboard')
+        return
       }
     }
-    getUserId()
+    checkTerms()
   }, [router, supabase])
 
   const acceptTerms = async () => {
@@ -48,13 +63,21 @@ export default function TermsPage() {
         return
       }
 
-      router.push('/dashboard')
-      router.refresh()
+      // ✅ Force a hard refresh to clear all cached state
+      window.location.href = '/dashboard'
 
     } catch (err: any) {
       setError('Something went wrong. Please try again.')
       setLoading(false)
     }
+  }
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    )
   }
 
   return (
