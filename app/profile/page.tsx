@@ -109,8 +109,11 @@ export default function ProfilePage() {
     setSuccess(true)
     setSaving(false)
 
+    // ✅ FIX #2: Refresh the router to update Navbar state and show that changes persisted
+    router.refresh()
+
     if (intent === 'creator' && profile.is_creator) {
-      setTimeout(() => router.push('/upload'), 1500)
+      setTimeout(() => router.push('/terms'), 1500)
     } else {
       setTimeout(() => setSuccess(false), 3000)
     }
@@ -146,7 +149,7 @@ export default function ProfilePage() {
           )}
           {success && (
             <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg text-sm">
-              ✅ Profile updated! {intent === 'creator' && profile.is_creator && 'Redirecting...'}
+              ✅ Profile updated! {intent === 'creator' && profile.is_creator && 'Redirecting to terms...'}
             </div>
           )}
 
