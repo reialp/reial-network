@@ -28,6 +28,7 @@ export default function Navbar() {
           .eq('id', session.user.id)
           .single()
         if (profile) {
+          console.log('📊 Navbar profile loaded:', profile)
           setIsCreator(profile.is_creator || false)
           setIsAdmin(profile.is_admin || false)
           setHasAcceptedTerms(profile.terms_accepted || false)
@@ -72,46 +73,62 @@ export default function Navbar() {
     router.refresh()
   }
 
-  // ✅ FIXED: Handle upload click with fresh profile data
+  // ✅ FIXED: Handle upload click with fresh profile data and proper checks
   const handleUploadClick = async (e: React.MouseEvent) => {
     e.preventDefault()
     
+    console.log('🎯 Upload clicked')
+    
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
+      console.log('🔀 No session, redirecting to login')
       router.push('/auth/login?redirectTo=/upload')
       return
     }
 
-    // ✅ Fetch fresh profile data to ensure we have the latest status
+    console.log('👤 User ID:', session.user.id)
+
+    // ✅ Fetch fresh profile data
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('terms_accepted, is_creator')
       .eq('id', session.user.id)
       .single()
 
-    if (error || !profile) {
-      console.error('Error fetching profile:', error)
+    if (error) {
+      console.error('❌ Error fetching profile:', error)
       router.push('/profile')
       return
     }
 
-    // ✅ Update local state for consistency
+    if (!profile) {
+      console.log('🔀 No profile found, redirecting to profile')
+      router.push('/profile')
+      return
+    }
+
+    console.log('📊 Profile data:', profile)
+
+    // ✅ Update local state
     setIsCreator(profile.is_creator || false)
     setHasAcceptedTerms(profile.terms_accepted || false)
 
     // ✅ If not a creator, redirect to profile
     if (!profile.is_creator) {
+      console.log('🔀 Not a creator, redirecting to profile')
       router.push('/profile?intent=creator')
       return
     }
 
     // ✅ If creator but hasn't accepted terms
     if (!profile.terms_accepted) {
+      console.log('🔀 Creator but no terms, redirecting to terms')
       router.push('/terms')
       return
     }
 
     // ✅ Everything is good, go to upload
+    console.log('✅ All checks passed, going to upload')
     router.push('/upload')
   }
 
