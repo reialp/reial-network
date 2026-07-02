@@ -36,6 +36,7 @@ export default function HomePage() {
   const [purchaseTokens, setPurchaseTokens] = useState<Record<string, string>>({})
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
+  // ✅ Listen for auth changes to refresh page state
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -179,15 +180,7 @@ export default function HomePage() {
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session) {
-        // ✅ Show sign in option for existing users
-        const wantsSignIn = window.confirm(
-          'Already have an account? Click OK to sign in, or Cancel to create a new account.'
-        )
-        if (wantsSignIn) {
-          window.location.href = '/auth/login?intent=creator'
-        } else {
-          window.location.href = '/auth/signup?intent=creator'
-        }
+        window.location.href = '/auth/signup?intent=creator'
         return
       }
 
