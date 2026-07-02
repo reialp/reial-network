@@ -17,24 +17,30 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        setUser(session.user)
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_creator, is_admin, terms_accepted')
-          .eq('id', session.user.id)
-          .single()
-        if (profile) {
-          setIsCreator(profile.is_creator || false)
-          setIsAdmin(profile.is_admin || false)
-          setHasAcceptedTerms(profile.terms_accepted || false)
-        }
+  const loadUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      setUser(session.user)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_creator, is_admin, terms_accepted')
+        .eq('id', session.user.id)
+        .single()
+      if (profile) {
+        setIsCreator(profile.is_creator || false)
+        setIsAdmin(profile.is_admin || false)
+        setHasAcceptedTerms(profile.terms_accepted || false)
       }
+    } else {
+      setUser(null)
+      setIsCreator(false)
+      setIsAdmin(false)
+      setHasAcceptedTerms(false)
     }
-    getUser()
+  }
+
+  useEffect(() => {
+    loadUser()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -81,6 +87,7 @@ export default function Navbar() {
       return
     }
 
+    // ✅ Fresh fetch from database
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('terms_accepted, is_creator')
