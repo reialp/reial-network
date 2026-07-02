@@ -10,17 +10,12 @@ function SignupForm() {
   const searchParams = useSearchParams()
   const supabase = createClient()
 
-  // ✅ Get intent and redirectTo parameters
-  const intent = searchParams?.get('intent') // 'creator' or null
+  const intent = searchParams?.get('intent')
   const redirectTo = searchParams?.get('redirectTo')
 
-  // ✅ Determine final redirect destination
   const getFinalRedirect = () => {
-    // Priority 1: If they came from a purchase flow, go back to checkout
     if (redirectTo) return redirectTo
-    // Priority 2: If they clicked "Become a Creator", go to profile/creator setup
     if (intent === 'creator') return '/profile'
-    // Priority 3: Default to home
     return '/'
   }
 
@@ -96,7 +91,7 @@ function SignupForm() {
             We sent a confirmation link to <strong className="text-white">{email}</strong>.
           </p>
           <p className="text-yellow-400/80 text-sm mt-3 bg-[#1a1a1a] p-3 rounded-lg border border-yellow-500/20">
-            📌 Please check your <strong>inbox</strong> or <strong>spam/junk</strong> folder.
+            Please check your <strong>inbox</strong> or <strong>spam/junk</strong> folder.
           </p>
           <Link
             href={`/auth/login?redirectTo=${encodeURIComponent(finalRedirect)}${intent ? `&intent=${intent}` : ''}`}
@@ -119,16 +114,11 @@ function SignupForm() {
           <h2 className="mt-6 text-2xl font-semibold">Create your account</h2>
           <p className="mt-2 text-gray-400 text-sm">
             {redirectTo ? (
-              <span className="text-[#f5c518]">🔐 Complete your purchase by signing up</span>
+              <span className="text-[#f5c518]">Complete your purchase by signing up</span>
             ) : intent === 'creator' ? (
-              <span className="text-[#f5c518]">🎬 Create your creator account</span>
+              <span className="text-[#f5c518]">Start your creator journey</span>
             ) : (
-              <>
-                Already have an account?{' '}
-                <Link href={`/auth/login?redirectTo=${encodeURIComponent(finalRedirect)}${intent ? `&intent=${intent}` : ''}`} className="text-[#f5c518] hover:underline">
-                  Sign in
-                </Link>
-              </>
+              'Join the community'
             )}
           </p>
         </div>
@@ -213,6 +203,19 @@ function SignupForm() {
             {loading ? 'Creating account...' : 'Create account'}
           </button>
         </form>
+
+        {/* ✅ Sign in link below the form */}
+        <div className="text-center mt-6">
+          <p className="text-gray-400 text-sm">
+            Already have an account?{' '}
+            <Link
+              href={`/auth/login?redirectTo=${encodeURIComponent(finalRedirect)}${intent ? `&intent=${intent}` : ''}`}
+              className="text-[#f5c518] hover:underline font-medium"
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )
