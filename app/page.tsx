@@ -160,41 +160,50 @@ export default function HomePage() {
   const totalFilms = allFilms.length
   const carouselFilms = allFilms.slice(0, 5)
 
-  // ✅ FIXED: Complete "Become a Creator" handler
+  // ✅ FIXED: Handle "Become a Creator" click with proper error logging
   const handleBecomeCreator = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
+    console.log('🎯 Become a Creator clicked')
     
-    if (!session) {
-      // Not logged in, redirect to signup with creator intent
-      router.push('/auth/signup?intent=creator')
-      return
-    }
-
-    // Check if user already has a profile
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('is_creator, terms_accepted')
-      .eq('id', session.user.id)
-      .single()
-
-    if (error || !profile) {
-      // No profile exists, go to profile to create one
-      router.push('/profile?intent=creator')
-      return
-    }
-
-    if (profile.is_creator) {
-      // Already a creator, check terms
-      if (profile.terms_accepted) {
-        router.push('/upload')
-      } else {
-        router.push('/terms')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      console.log('Session:', session?.user?.id || 'No session')
+      
+      if (!session) {
+        console.log('🔀 Redirecting to signup')
+        router.push('/auth/signup?intent=creator')
+        return
       }
-      return
-    }
 
-    // User exists but is not a creator, go to profile
-    router.push('/profile?intent=creator')
+      // Check if user already has a profile
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('is_creator, terms_accepted')
+        .eq('id', session.user.id)
+        .single()
+
+      console.log('Profile data:', profile, 'Error:', error)
+
+      if (error || !profile) {
+        console.log('🔀 No profile, redirecting to profile')
+        router.push('/profile?intent=creator')
+        return
+      }
+
+      if (profile.is_creator) {
+        console.log('✅ Already a creator')
+        if (profile.terms_accepted) {
+          router.push('/upload')
+        } else {
+          router.push('/terms')
+        }
+        return
+      }
+
+      console.log('🔀 Not a creator, redirecting to profile')
+      router.push('/profile?intent=creator')
+    } catch (err) {
+      console.error('❌ Error in handleBecomeCreator:', err)
+    }
   }
 
   const renderFilmCard = (film: Film) => {
@@ -307,10 +316,11 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </Link>
-              {/* ✅ FIXED: Use onClick handler instead of direct href */}
+              {/* ✅ FIXED: Use button with onClick and add cursor-pointer */}
               <button
                 onClick={handleBecomeCreator}
-                className="px-8 py-4 border border-white/20 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 text-center"
+                className="px-8 py-4 border border-white/20 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 text-center cursor-pointer"
+                type="button"
               >
                 Become a Creator
               </button>
