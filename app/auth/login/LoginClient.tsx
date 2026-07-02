@@ -20,7 +20,6 @@ export default function LoginClient() {
   const [resetMessage, setResetMessage] = useState<string | null>(null)
   const [origin, setOrigin] = useState('')
 
-  // ✅ Only runs in browser, not during build
   useEffect(() => {
     setOrigin(window.location.origin)
   }, [])
@@ -54,7 +53,6 @@ export default function LoginClient() {
     setError(null)
     setResetMessage(null)
 
-    // ✅ Uses origin state (browser) or fallback (build)
     const resetUrl = origin 
       ? `${origin}/auth/reset-password`
       : '/auth/reset-password'
