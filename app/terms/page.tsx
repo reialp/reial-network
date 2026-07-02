@@ -32,7 +32,7 @@ export default function TermsPage() {
       setChecking(false)
 
       if (profile?.terms_accepted === true) {
-        router.push('/dashboard')
+        window.location.href = '/dashboard'
         return
       }
     }
@@ -63,7 +63,6 @@ export default function TermsPage() {
         return
       }
 
-      // ✅ Force a hard refresh to clear all cached state
       window.location.href = '/dashboard'
 
     } catch (err: any) {
