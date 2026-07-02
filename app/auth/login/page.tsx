@@ -14,9 +14,13 @@ function LoginForm() {
   const redirectTo = searchParams?.get('redirectTo')
   const urlError = searchParams?.get('error')
 
+  // ✅ FIX #5: Properly prioritize redirectTo over other redirects
   const getFinalRedirect = () => {
+    // If redirectTo is explicitly set (e.g., from checkout), use it first
     if (redirectTo) return redirectTo
-    if (intent === 'creator') return '/profile'
+    // If intent is creator, go to profile
+    if (intent === 'creator') return '/profile?intent=creator'
+    // Default to dashboard
     return '/dashboard'
   }
 
@@ -45,6 +49,7 @@ function LoginForm() {
       return
     }
 
+    // ✅ FIX #5: Use router.push() with the preserved redirectTo parameter
     router.push(finalRedirect)
     router.refresh()
   }
@@ -87,7 +92,10 @@ function LoginForm() {
             ) : (
               <>
                 Or{' '}
-                <Link href={`/auth/signup?redirectTo=${encodeURIComponent(finalRedirect)}${intent ? `&intent=${intent}` : ''}`} className="text-[#f5c518] hover:underline">
+                <Link
+                  href={`/auth/signup?redirectTo=${encodeURIComponent(finalRedirect)}${intent ? `&intent=${intent}` : ''}`}
+                  className="text-[#f5c518] hover:underline"
+                >
                   create a new account
                 </Link>
               </>
@@ -180,11 +188,13 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+          <div className="text-gray-400">Loading...</div>
+        </div>
+      }
+    >
       <LoginForm />
     </Suspense>
   )
