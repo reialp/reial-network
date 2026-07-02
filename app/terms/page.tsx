@@ -85,9 +85,9 @@ export default function TermsPage() {
 
       setDebug(`✅ Profile updated! ${JSON.stringify(data)}`)
 
-      // ✅ Force redirect to upload
+      // ✅ FIXED: Use router.push instead of window.location.href
       setDebug('🔀 Redirecting to upload...')
-      window.location.href = '/upload'
+      router.push('/upload')
 
     } catch (err: any) {
       setDebug(`❌ Error: ${err.message}`)
