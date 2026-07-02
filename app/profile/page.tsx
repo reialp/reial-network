@@ -22,7 +22,6 @@ function ProfileForm() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [profileId, setProfileId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
 
   const [profile, setProfile] = useState<Profile>({
@@ -79,7 +78,6 @@ function ProfileForm() {
           is_creator: data.is_creator || false,
           payout_phone: data.payout_phone || '',
         })
-        setProfileId(data.id)
       }
       setLoading(false)
     }
@@ -101,7 +99,7 @@ function ProfileForm() {
     const wasCreator = profile.is_creator
     const currentProfile = { ...profile }
 
-    const { error: updateError, data: updateData } = await supabase
+    const { error: updateError } = await supabase
       .from('profiles')
       .update({
         full_name: currentProfile.full_name,
@@ -111,7 +109,6 @@ function ProfileForm() {
         payout_phone: currentProfile.payout_phone,
       })
       .eq('id', userId)
-      .select()
 
     if (updateError) {
       setError('Failed to save: ' + updateError.message)
@@ -119,39 +116,17 @@ function ProfileForm() {
       return
     }
 
-    if (!updateData || updateData.length === 0) {
-      setError('Update was blocked (no rows changed). This is usually a permissions issue.')
-      setSaving(false)
-      return
-    }
-
-    const { data: verifyData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    if (verifyData) {
-      setProfile({
-        full_name: verifyData.full_name || '',
-        bio: verifyData.bio || '',
-        avatar_url: verifyData.avatar_url || '',
-        is_creator: verifyData.is_creator || false,
-        payout_phone: verifyData.payout_phone || '',
-      })
-      setProfileId(verifyData.id)
-    }
-
     setSuccess(true)
     setSaving(false)
+
     router.refresh()
 
     if (intent === 'creator' && currentProfile.is_creator && !wasCreator) {
       setTimeout(() => {
         router.push('/terms')
-      }, 1500)
+      }, 1000)
     } else {
-      setTimeout(() => setSuccess(false), 3000)
+      setTimeout(() => setSuccess(false), 2000)
     }
   }
 
@@ -168,18 +143,17 @@ function ProfileForm() {
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Profile Settings</h1>
 
-        {profileId && (
-          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2 mb-4">
-            <p className="text-xs text-green-400">✅ Profile ID: {profileId}</p>
+        {intent === 'creator' && !profile.is_creator && (
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
+            <p className="text-yellow-400 text-sm">
+              Check the box below to become a creator and start uploading content.
+            </p>
           </div>
         )}
 
-        {intent === 'creator' && (
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
-            <p className="text-yellow-400 text-sm">
-              🚀 To become a creator, check the box below and save your profile.
-              {profile.is_creator && <span className="block text-green-400 mt-1">✅ You are already a creator!</span>}
-            </p>
+        {profile.is_creator && (
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-4">
+            <p className="text-green-400 text-sm">You are a creator.</p>
           </div>
         )}
 
@@ -191,7 +165,7 @@ function ProfileForm() {
           )}
           {success && (
             <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg text-sm">
-              ✅ Profile updated! {intent === 'creator' && profile.is_creator && 'Redirecting to terms...'}
+              Profile saved successfully.
             </div>
           )}
 
@@ -227,7 +201,7 @@ function ProfileForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300">M-Pesa Phone</label>
+            <label className="block text-sm font-medium text-gray-300">Payout Phone</label>
             <input
               type="text"
               value={profile.payout_phone}
@@ -246,7 +220,7 @@ function ProfileForm() {
               className="w-5 h-5 accent-[#f5c518]"
             />
             <label htmlFor="is_creator" className="text-sm font-medium text-gray-300 cursor-pointer">
-              Become a Creator (upload and sell content)
+              Become a Creator
             </label>
           </div>
 
