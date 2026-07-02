@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -18,6 +18,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [resetMessage, setResetMessage] = useState<string | null>(null)
+  const [origin, setOrigin] = useState('')
+
+  // ✅ Fix: Set origin only on client side
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,8 +41,6 @@ export default function LoginPage() {
       return
     }
 
-    // ✅ FIXED: Use the redirectTo parameter from URL
-    // This will preserve the checkout or upload intent
     router.push(redirectTo)
     router.refresh()
   }
@@ -50,8 +54,13 @@ export default function LoginPage() {
     setError(null)
     setResetMessage(null)
 
+    // ✅ Fix: Use the origin state or a fallback
+    const resetUrl = origin 
+      ? `${origin}/auth/reset-password`
+      : '/auth/reset-password'
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
+      redirectTo: resetUrl,
     })
 
     if (error) {
