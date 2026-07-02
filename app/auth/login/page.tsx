@@ -35,6 +35,8 @@ export default function LoginPage() {
       return
     }
 
+    // ✅ FIXED: Use the redirectTo parameter from URL
+    // This will preserve the checkout or upload intent
     router.push(redirectTo)
     router.refresh()
   }
@@ -139,28 +141,4 @@ export default function LoginPage() {
                   </svg>
                 )}
               </button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 mr-2 flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-black bg-[#f5c518] hover:bg-[#e0b010] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f5c518] disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-            <button
-              type="button"
-              onClick={handleForgotPassword}
-              disabled={loading}
-              className="text-sm text-[#f5c518] hover:underline whitespace-nowrap"
-            >
-              Forgot password?
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
+            </div
