@@ -13,9 +13,15 @@ function SignupForm() {
   const intent = searchParams?.get('intent')
   const redirectTo = searchParams?.get('redirectTo')
 
+  // ✅ Determine where to redirect after signup
   const getFinalRedirect = () => {
+    // If user came from "Become a Creator", send them to profile
+    if (intent === 'creator') {
+      return '/profile?intent=creator'
+    }
+    // If they came from checkout, go back to checkout
     if (redirectTo) return redirectTo
-    if (intent === 'creator') return '/profile'
+    // Default to home
     return '/'
   }
 
@@ -114,9 +120,9 @@ function SignupForm() {
           <h2 className="mt-6 text-2xl font-semibold">Create your account</h2>
           <p className="mt-2 text-gray-400 text-sm">
             {redirectTo ? (
-              <span className="text-[#f5c518]">Complete your purchase by signing up</span>
+              <span>Complete your purchase by signing up</span>
             ) : intent === 'creator' ? (
-              <span className="text-[#f5c518]">Start your creator journey</span>
+              <span>Start your creator journey</span>
             ) : (
               'Join the community'
             )}
@@ -204,7 +210,6 @@ function SignupForm() {
           </button>
         </form>
 
-        {/* ✅ Sign in link below the form */}
         <div className="text-center mt-6">
           <p className="text-gray-400 text-sm">
             Already have an account?{' '}
