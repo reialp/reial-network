@@ -1,10 +1,7 @@
-import dynamic from 'next/dynamic'
+export const dynamic = 'force-dynamic';
 
-// This tells Next.js to skip prerendering this page during build
-const LoginClient = dynamic(() => import('./LoginClient'), {
-  ssr: false,
-})
+import LoginClient from './LoginClient';
 
 export default function LoginPage() {
-  return <LoginClient />
+  return <LoginClient />;
 }
