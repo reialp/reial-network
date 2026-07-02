@@ -39,6 +39,7 @@ export default function ProfilePage() {
         return
       }
 
+      // ✅ Try to get existing profile
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -57,7 +58,8 @@ export default function ProfilePage() {
           })
 
         if (!insertError) {
-          loadProfile() // Reload after creating
+          // ✅ Reload to get the newly created profile
+          loadProfile()
           return
         }
       }
@@ -89,6 +91,7 @@ export default function ProfilePage() {
       return
     }
 
+    // ✅ Update profile
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
@@ -109,9 +112,10 @@ export default function ProfilePage() {
     setSuccess(true)
     setSaving(false)
 
-    // ✅ FIX #2: Refresh the router to update Navbar state and show that changes persisted
+    // ✅ Refresh the router to update Navbar state
     router.refresh()
 
+    // ✅ If they checked is_creator and came from creator intent, go to terms
     if (intent === 'creator' && profile.is_creator) {
       setTimeout(() => router.push('/terms'), 1500)
     } else {
