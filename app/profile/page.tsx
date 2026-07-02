@@ -119,15 +119,16 @@ function ProfileForm() {
     setSuccess(true)
     setSaving(false)
 
-    router.refresh()
-
+    // ✅ If user became a creator, redirect to terms then dashboard
     if (intent === 'creator' && currentProfile.is_creator && !wasCreator) {
       setTimeout(() => {
         router.push('/terms')
       }, 1000)
-    } else {
-      setTimeout(() => setSuccess(false), 2000)
+      return
     }
+
+    // ✅ If just saving profile (no creator change), stay on profile
+    setTimeout(() => setSuccess(false), 2000)
   }
 
   if (loading) {
