@@ -22,7 +22,6 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [debug, setDebug] = useState<string>('')
   const [profileId, setProfileId] = useState<string | null>(null)
 
   const [profile, setProfile] = useState<Profile>({
@@ -35,7 +34,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function loadProfile() {
-      setDebug('🔄 Loading profile...')
+      setLoading(true)
       
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
@@ -43,71 +42,32 @@ export default function ProfilePage() {
         return
       }
 
-      setDebug(`✅ User ID: ${session.user.id}`)
-
       // ✅ Try to get existing profile
-      const { data, error, status } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single()
 
-      // ✅ Log everything for debugging
-      console.log('📊 Profile data:', data)
-      console.log('📊 Profile error:', error)
-      console.log('📊 Status code:', status)
+      // ✅ If profile doesn't exist, create one
+      if (error && error.code === 'PGRST116') {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: session.user.id,
+            full_name: session.user.user_metadata?.full_name || '',
+            is_creator: false,
+            terms_accepted: false,
+          })
 
-      // ✅ If profile doesn't exist (status 406 or error code PGRST116)
-      if (error) {
-        setDebug(`❌ Error loading: ${error.message} (code: ${error.code})`)
-        
-        // ✅ Create profile if it doesn't exist
-        if (error.code === 'PGRST116' || status === 406) {
-          setDebug('🔄 Creating profile...')
-          const { data: newProfile, error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: session.user.id,
-              full_name: session.user.user_metadata?.full_name || '',
-              is_creator: false,
-              terms_accepted: false,
-            })
-            .select()
-            .single()
-
-          if (insertError) {
-            setDebug(`❌ Insert error: ${insertError.message}`)
-            setError('Failed to create profile: ' + insertError.message)
-            setLoading(false)
-            return
-          }
-
-          setDebug(`✅ Profile created! ID: ${newProfile?.id}`)
-          setProfileId(newProfile?.id || null)
-          
-          // ✅ Set the profile data from the new profile
-          if (newProfile) {
-            setProfile({
-              full_name: newProfile.full_name || '',
-              bio: newProfile.bio || '',
-              avatar_url: newProfile.avatar_url || '',
-              is_creator: newProfile.is_creator || false,
-              payout_phone: newProfile.payout_phone || '',
-            })
-          }
-          setLoading(false)
+        if (!insertError) {
+          // ✅ Reload to get the newly created profile
+          loadProfile()
           return
         }
-
-        setError('Failed to load profile: ' + error.message)
-        setLoading(false)
-        return
       }
 
-      // ✅ Profile exists, load it
       if (data) {
-        setDebug(`✅ Profile loaded: ${data.full_name || 'No name'} (ID: ${data.id})`)
-        setProfileId(data.id)
         setProfile({
           full_name: data.full_name || '',
           bio: data.bio || '',
@@ -115,6 +75,7 @@ export default function ProfilePage() {
           is_creator: data.is_creator || false,
           payout_phone: data.payout_phone || '',
         })
+        setProfileId(data.id)
       }
       setLoading(false)
     }
@@ -126,7 +87,6 @@ export default function ProfilePage() {
     setSaving(true)
     setError(null)
     setSuccess(false)
-    setDebug('🔄 Saving profile...')
 
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
@@ -136,7 +96,7 @@ export default function ProfilePage() {
     }
 
     // ✅ Update profile
-    const { data, error } = await supabase
+    const { error: updateError } = await supabase
       .from('profiles')
       .update({
         full_name: profile.full_name,
@@ -146,23 +106,28 @@ export default function ProfilePage() {
         payout_phone: profile.payout_phone,
       })
       .eq('id', session.user.id)
-      .select()
 
-    if (error) {
-      setDebug(`❌ Update error: ${error.message}`)
-      setError('Failed to save: ' + error.message)
+    if (updateError) {
+      setError('Failed to save: ' + updateError.message)
       setSaving(false)
       return
     }
 
-    setDebug(`✅ Profile saved! ${JSON.stringify(data)}`)
     setSuccess(true)
     setSaving(false)
+
+    // ✅ Verify the update worked by fetching again
+    const { data: verifyData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single()
+    
+    console.log('🔍 Verified profile data:', verifyData)
 
     // ✅ Refresh the router to update Navbar state
     router.refresh()
 
-    // ✅ If they checked is_creator and came from creator intent, go to terms
     if (intent === 'creator' && profile.is_creator) {
       setTimeout(() => router.push('/terms'), 1500)
     } else {
@@ -183,15 +148,8 @@ export default function ProfilePage() {
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Profile Settings</h1>
 
-        {/* Debug info */}
-        {debug && (
-          <div className="bg-[#0a0a0a] rounded-xl p-3 mb-4 border border-white/10">
-            <p className="text-xs text-gray-400">🔍 Debug: <span className="text-[#f5c518]">{debug}</span></p>
-          </div>
-        )}
-
         {profileId && (
-          <div className="bg-[#0a0a0a] rounded-xl p-2 mb-4 border border-green-500/20">
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2 mb-4">
             <p className="text-xs text-green-400">✅ Profile ID: {profileId}</p>
           </div>
         )}
