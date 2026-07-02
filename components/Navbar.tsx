@@ -72,7 +72,6 @@ export default function Navbar() {
     router.refresh()
   }
 
-  // ✅ Upload only for creators who accepted terms
   const handleUploadClick = async (e: React.MouseEvent) => {
     e.preventDefault()
     
@@ -93,19 +92,16 @@ export default function Navbar() {
       return
     }
 
-    // ✅ Only creators can upload
     if (!profile.is_creator) {
       router.push('/profile?intent=creator')
       return
     }
 
-    // ✅ Must accept terms
     if (!profile.terms_accepted) {
       router.push('/terms')
       return
     }
 
-    // ✅ All checks passed
     router.push('/upload')
   }
 
@@ -113,7 +109,6 @@ export default function Navbar() {
     { href: '/', label: 'Home' },
     ...(user ? [
       { href: '/dashboard', label: 'Dashboard' },
-      // ✅ Upload only shows for creators
       ...(isCreator ? [{ href: '/upload', label: 'Upload', onClick: handleUploadClick }] : []),
       { href: '/library', label: 'Library' },
       { href: '/profile', label: 'Profile' },
