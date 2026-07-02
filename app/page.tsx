@@ -157,9 +157,10 @@ export default function HomePage() {
     return result
   }, [allFilms, selectedCategory, searchTerm])
 
+  const totalFilms = allFilms.length
   const carouselFilms = allFilms.slice(0, 5)
 
-  // ✅ Handle "Become a Creator" click with proper flow
+  // ✅ FIXED: Complete "Become a Creator" handler
   const handleBecomeCreator = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     
@@ -172,7 +173,7 @@ export default function HomePage() {
     // Check if user already has a profile
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('is_creator')
+      .select('is_creator, terms_accepted')
       .eq('id', session.user.id)
       .single()
 
@@ -184,13 +185,7 @@ export default function HomePage() {
 
     if (profile.is_creator) {
       // Already a creator, check terms
-      const { data: termsCheck } = await supabase
-        .from('profiles')
-        .select('terms_accepted')
-        .eq('id', session.user.id)
-        .single()
-      
-      if (termsCheck?.terms_accepted) {
+      if (profile.terms_accepted) {
         router.push('/upload')
       } else {
         router.push('/terms')
