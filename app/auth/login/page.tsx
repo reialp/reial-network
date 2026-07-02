@@ -11,6 +11,7 @@ function LoginForm() {
   const supabase = createClient()
 
   const redirectTo = searchParams?.get('redirectTo') || '/dashboard'
+  const intent = searchParams?.get('intent')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,6 +19,11 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [resetMessage, setResetMessage] = useState<string | null>(null)
+  const [origin, setOrigin] = useState('')
+
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,16 +54,31 @@ function LoginForm() {
     setError(null)
     setResetMessage(null)
 
+    const resetUrl = origin 
+      ? `${origin}/auth/reset-password`
+      : '/auth/reset-password'
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
+      redirectTo: resetUrl,
     })
 
     if (error) {
       setError(error.message)
     } else {
-      setResetMessage('📧 Password reset email sent! Check your inbox or spam/junk folder.')
+      setResetMessage('Password reset email sent. Check your inbox or spam folder.')
     }
     setLoading(false)
+  }
+
+  // ✅ Determine the subtitle based on intent
+  const getSubtitle = () => {
+    if (intent === 'creator') {
+      return 'Sign in to continue your creator journey'
+    }
+    if (redirectTo !== '/dashboard' && redirectTo?.includes('checkout')) {
+      return 'Complete your purchase by signing in'
+    }
+    return 'Welcome back'
   }
 
   return (
@@ -69,16 +90,7 @@ function LoginForm() {
           </h1>
           <h2 className="mt-6 text-2xl font-semibold text-center">Sign in to your account</h2>
           <p className="mt-2 text-center text-gray-400 text-sm">
-            {redirectTo !== '/dashboard' ? (
-              <span className="text-[#f5c518]">🔐 Complete your purchase by signing in</span>
-            ) : (
-              <>
-                Or{' '}
-                <Link href={`/auth/signup?redirectTo=${redirectTo}`} className="text-[#f5c518] hover:underline">
-                  create a new account
-                </Link>
-              </>
-            )}
+            {getSubtitle()}
           </p>
         </div>
 
@@ -158,6 +170,18 @@ function LoginForm() {
             >
               Forgot password?
             </button>
+          </div>
+
+          <div className="text-center mt-4">
+            <p className="text-gray-400 text-sm">
+              Don't have an account?{' '}
+              <Link
+                href={`/auth/signup?redirectTo=${encodeURIComponent(redirectTo)}${intent ? `&intent=${intent}` : ''}`}
+                className="text-[#f5c518] hover:underline font-medium"
+              >
+                Sign up
+              </Link>
+            </p>
           </div>
         </form>
       </div>
