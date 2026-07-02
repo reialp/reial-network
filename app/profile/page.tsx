@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -15,14 +15,18 @@ interface Profile {
 export default function ProfilePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
   const intent = searchParams.get('intent')
+  
+  // ✅ Create client once and keep it stable
+  const supabaseRef = useRef(createClient())
+  const supabase = supabaseRef.current
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [profileId, setProfileId] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
 
   const [profile, setProfile] = useState<Profile>({
     full_name: '',
@@ -32,6 +36,7 @@ export default function ProfilePage() {
     payout_phone: '',
   })
 
+  // ✅ Load profile - stable dependency array
   useEffect(() => {
     async function loadProfile() {
       setLoading(true)
@@ -42,6 +47,7 @@ export default function ProfilePage() {
         return
       }
 
+      setUserId(session.user.id)
       console.log('🔍 Loading profile for user:', session.user.id)
 
       const { data, error } = await supabase
@@ -87,32 +93,33 @@ export default function ProfilePage() {
       setLoading(false)
     }
     loadProfile()
+  // ✅ Stable dependencies - router and supabase are stable
   }, [router, supabase])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // ✅ Memoized submit handler to prevent recreation
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError(null)
     setSuccess(false)
 
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
+    if (!userId) {
       setError('Not authenticated')
       setSaving(false)
       return
     }
 
-    // ✅ Save the current state BEFORE update
+    // ✅ Save the current state BEFORE any potential updates
     const wasCreator = profile.is_creator
-    const userId = session.user.id
+    const currentProfile = { ...profile }
 
     console.log('📝 Attempting to update profile for user:', userId)
     console.log('📝 Data to update:', {
-      full_name: profile.full_name,
-      bio: profile.bio,
-      avatar_url: profile.avatar_url,
-      is_creator: profile.is_creator,
-      payout_phone: profile.payout_phone,
+      full_name: currentProfile.full_name,
+      bio: currentProfile.bio,
+      avatar_url: currentProfile.avatar_url,
+      is_creator: currentProfile.is_creator,
+      payout_phone: currentProfile.payout_phone,
     })
 
     // ✅ First, verify the profile exists
@@ -135,14 +142,14 @@ export default function ProfilePage() {
     const { data: updatedData, error: updateError } = await supabase
       .from('profiles')
       .update({
-        full_name: profile.full_name,
-        bio: profile.bio,
-        avatar_url: profile.avatar_url,
-        is_creator: profile.is_creator,
-        payout_phone: profile.payout_phone,
+        full_name: currentProfile.full_name,
+        bio: currentProfile.bio,
+        avatar_url: currentProfile.avatar_url,
+        is_creator: currentProfile.is_creator,
+        payout_phone: currentProfile.payout_phone,
       })
       .eq('id', userId)
-      .select()  // ✅ IMPORTANT: Return the updated data
+      .select()
 
     if (updateError) {
       console.error('❌ Update error:', updateError)
@@ -194,18 +201,19 @@ export default function ProfilePage() {
     router.refresh()
 
     // ✅ User CHOSE to become a creator - redirect to terms
-    if (intent === 'creator' && profile.is_creator && !wasCreator) {
+    // Use currentProfile.is_creator (not profile.is_creator which might be stale)
+    if (intent === 'creator' && currentProfile.is_creator && !wasCreator) {
       console.log('🚀 User became a creator! Redirecting to terms...')
       setTimeout(() => {
         router.push('/terms')
       }, 1500)
-    } else if (intent === 'creator' && !profile.is_creator) {
+    } else if (intent === 'creator' && !currentProfile.is_creator) {
       console.log('ℹ️ User is not a creator, staying on profile')
       setTimeout(() => setSuccess(false), 3000)
     } else {
       setTimeout(() => setSuccess(false), 3000)
     }
-  }
+  }, [userId, profile, intent, router, supabase])
 
   if (loading) {
     return (
