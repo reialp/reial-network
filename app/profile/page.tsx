@@ -42,6 +42,8 @@ export default function ProfilePage() {
         return
       }
 
+      console.log('🔍 Loading profile for user:', session.user.id)
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -49,7 +51,7 @@ export default function ProfilePage() {
         .single()
 
       if (error && error.code === 'PGRST116') {
-        // Create profile if it doesn't exist
+        console.log('🔄 Creating new profile for user:', session.user.id)
         const { error: insertError } = await supabase
           .from('profiles')
           .insert({
@@ -60,12 +62,19 @@ export default function ProfilePage() {
           })
 
         if (!insertError) {
+          console.log('✅ Profile created, reloading...')
           loadProfile()
+          return
+        } else {
+          console.error('❌ Failed to create profile:', insertError)
+          setError('Failed to create profile. Please try again.')
+          setLoading(false)
           return
         }
       }
 
       if (data) {
+        console.log('📊 Profile loaded:', data)
         setProfile({
           full_name: data.full_name || '',
           bio: data.bio || '',
@@ -93,15 +102,37 @@ export default function ProfilePage() {
       return
     }
 
-    // ✅ Save the current creator status BEFORE update
+    // ✅ Save the current state BEFORE update
     const wasCreator = profile.is_creator
+    const userId = session.user.id
 
-    console.log('📝 Updating profile:', {
+    console.log('📝 Attempting to update profile for user:', userId)
+    console.log('📝 Data to update:', {
       full_name: profile.full_name,
+      bio: profile.bio,
+      avatar_url: profile.avatar_url,
       is_creator: profile.is_creator,
+      payout_phone: profile.payout_phone,
     })
 
-    const { error: updateError } = await supabase
+    // ✅ First, verify the profile exists
+    const { data: existingProfile, error: checkError } = await supabase
+      .from('profiles')
+      .select('id, is_creator')
+      .eq('id', userId)
+      .single()
+
+    if (checkError || !existingProfile) {
+      console.error('❌ Profile not found:', checkError)
+      setError('Profile not found. Please try again.')
+      setSaving(false)
+      return
+    }
+
+    console.log('✅ Profile found, ID:', existingProfile.id)
+
+    // ✅ Perform the update
+    const { data: updatedData, error: updateError } = await supabase
       .from('profiles')
       .update({
         full_name: profile.full_name,
@@ -110,7 +141,8 @@ export default function ProfilePage() {
         is_creator: profile.is_creator,
         payout_phone: profile.payout_phone,
       })
-      .eq('id', session.user.id)
+      .eq('id', userId)
+      .select()  // ✅ IMPORTANT: Return the updated data
 
     if (updateError) {
       console.error('❌ Update error:', updateError)
@@ -119,19 +151,57 @@ export default function ProfilePage() {
       return
     }
 
-    console.log('✅ Profile updated successfully')
+    // ✅ CRITICAL: Verify the update actually happened
+    if (!updatedData || updatedData.length === 0) {
+      console.error('❌ No rows were updated!')
+      setError('Failed to save profile. No rows were updated.')
+      setSaving(false)
+      return
+    }
+
+    // ✅ Verify the update worked by fetching fresh data
+    const { data: verifyData, error: verifyError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (verifyError) {
+      console.error('❌ Verification error:', verifyError)
+      setError('Profile saved but verification failed. Please refresh.')
+      setSaving(false)
+      return
+    }
+
+    console.log('✅ Verified updated profile:', verifyData)
+
+    // ✅ Update local state with verified data
+    if (verifyData) {
+      setProfile({
+        full_name: verifyData.full_name || '',
+        bio: verifyData.bio || '',
+        avatar_url: verifyData.avatar_url || '',
+        is_creator: verifyData.is_creator || false,
+        payout_phone: verifyData.payout_phone || '',
+      })
+      setProfileId(verifyData.id)
+    }
+
     setSuccess(true)
     setSaving(false)
 
     // ✅ Refresh the router to update Navbar state
     router.refresh()
 
-    // ✅ User CHOSE to become a creator - send to terms
+    // ✅ User CHOSE to become a creator - redirect to terms
     if (intent === 'creator' && profile.is_creator && !wasCreator) {
-      console.log('🚀 User chose to become a creator, redirecting to terms')
+      console.log('🚀 User became a creator! Redirecting to terms...')
       setTimeout(() => {
         router.push('/terms')
       }, 1500)
+    } else if (intent === 'creator' && !profile.is_creator) {
+      console.log('ℹ️ User is not a creator, staying on profile')
+      setTimeout(() => setSuccess(false), 3000)
     } else {
       setTimeout(() => setSuccess(false), 3000)
     }
