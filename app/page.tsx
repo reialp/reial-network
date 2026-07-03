@@ -157,11 +157,11 @@ export default function HomePage() {
 
   const categories = ['All', ...new Set(allFilms.map(f => f.category).filter((c): c is string => c !== null))]
 
+  // ✅ FILTERED FILMS - Search works here
   const filteredFilms = useMemo(() => {
     let result = allFilms
-    if (selectedCategory !== 'All') {
-      result = result.filter(f => f.category === selectedCategory)
-    }
+    
+    // ✅ Apply search filter
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase()
       result = result.filter(f =>
@@ -169,8 +169,14 @@ export default function HomePage() {
         f.creator_name?.toLowerCase().includes(term)
       )
     }
+    
+    // ✅ Apply category filter
+    if (selectedCategory !== 'All') {
+      result = result.filter(f => f.category === selectedCategory)
+    }
+    
     return result
-  }, [allFilms, selectedCategory, searchTerm])
+  }, [allFilms, searchTerm, selectedCategory])
 
   const carouselFilms = allFilms.slice(0, 5)
 
@@ -236,7 +242,7 @@ export default function HomePage() {
       <Link
         key={film.id}
         href={watchUrl}
-        className="group flex-shrink-0 w-[150px] sm:w-[180px] md:w-[200px] lg:w-[220px] bg-[#1a1a1a] rounded-xl overflow-hidden hover:scale-[1.05] transition-all duration-300 hover:shadow-xl hover:shadow-[#f5c518]/20 border border-white/5 hover:border-[#f5c518]/30"
+        className="group flex-shrink-0 w-[140px] sm:w-[180px] md:w-[200px] lg:w-[220px] bg-[#1a1a1a] rounded-xl overflow-hidden hover:scale-[1.05] transition-all duration-300 hover:shadow-xl hover:shadow-[#f5c518]/20 border border-white/5 hover:border-[#f5c518]/30"
       >
         <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
           {film.thumbnail_url ? (
@@ -269,14 +275,6 @@ export default function HomePage() {
           <p className="text-gray-500 text-[8px] sm:text-xs mt-0.5 truncate">
             {film.creator_name || 'Unknown Creator'}
           </p>
-          <div className="flex items-center justify-between mt-1.5">
-            {isPurchased ? (
-              <span className="text-green-400 font-bold text-[8px] sm:text-xs">✓ Purchased</span>
-            ) : (
-              <span className="text-[#f5c518] font-bold text-[8px] sm:text-xs">KES {film.price}</span>
-            )}
-            <span className="text-gray-600 text-[8px] sm:text-xs">{isPurchased ? '▶' : '🎬'}</span>
-          </div>
         </div>
       </Link>
     )
@@ -290,39 +288,36 @@ export default function HomePage() {
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white">
             {title}
           </h2>
-          <Link href={`/explore?category=${title}`} className="text-[#f5c518] text-xs sm:text-sm hover:underline font-medium">
+          <Link href={`/explore?category=${encodeURIComponent(title)}`} className="text-[#f5c518] text-xs sm:text-sm hover:underline font-medium">
             See All →
           </Link>
         </div>
         <div className="relative">
           <button
             onClick={() => scrollRow('left', rowId)}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-opacity opacity-0 group-hover/row:opacity-100 hover:scale-110 hidden md:flex items-center justify-center w-10 h-10"
-            aria-label="Scroll left"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white p-1.5 sm:p-2 rounded-full transition-all duration-300 opacity-0 group-hover/row:opacity-100 hover:scale-110 hidden sm:flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-
           <button
             onClick={() => scrollRow('right', rowId)}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-opacity opacity-0 group-hover/row:opacity-100 hover:scale-110 hidden md:flex items-center justify-center w-10 h-10"
-            aria-label="Scroll right"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white p-1.5 sm:p-2 rounded-full transition-all duration-300 opacity-0 group-hover/row:opacity-100 hover:scale-110 hidden sm:flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
 
-          <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#0a0a0a] to-transparent z-10 pointer-events-none hidden md:block" />
-          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#0a0a0a] to-transparent z-10 pointer-events-none hidden md:block" />
+          <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-r from-[#0a0a0a] to-transparent z-10 pointer-events-none hidden sm:block" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-[#0a0a0a] to-transparent z-10 pointer-events-none hidden sm:block" />
 
           <div
             ref={(el) => { scrollContainerRefs.current[rowId] = el }}
-            className="overflow-x-auto scrollbar-hide px-4 sm:px-0 pb-4 -mx-4 sm:mx-0 scroll-smooth"
+            className="overflow-x-auto scrollbar-hide px-4 sm:px-0 pb-3 sm:pb-4 -mx-4 sm:mx-0 scroll-smooth"
           >
-            <div className="flex gap-3 sm:gap-4 md:gap-5 px-4 sm:px-0">
+            <div className="flex gap-2.5 sm:gap-3 md:gap-4 px-4 sm:px-0">
               {films.map(film => renderFilmCard(film))}
             </div>
           </div>
@@ -335,26 +330,28 @@ export default function HomePage() {
     )
   }
 
-  const featuredFilms = allFilms.slice(0, 8)
-  const topPicks = allFilms.slice(8, 16)
-  const recentFilms = allFilms.slice(16, 24)
-
-  const categoryRows = useMemo(() => {
+  // ✅ GROUP FILMS BY CATEGORY - Using filteredFilms
+  const groupedFilms = useMemo(() => {
     const grouped: Record<string, Film[]> = {}
-    allFilms.forEach(film => {
+    filteredFilms.forEach(film => {
       const cat = film.category || 'Other'
       if (!grouped[cat]) grouped[cat] = []
       grouped[cat].push(film)
     })
     return grouped
-  }, [allFilms])
+  }, [filteredFilms])
+
+  // ✅ ROW DATA - Using filteredFilms
+  const featuredFilms = filteredFilms.slice(0, 8)
+  const topPicks = filteredFilms.slice(8, 16)
+  const recentFilms = filteredFilms.slice(16, 24)
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Loading premium content...</p>
+          <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400 text-sm sm:text-base">Loading premium content...</p>
         </div>
       </div>
     )
@@ -363,8 +360,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
       
-      {/* ✅ HERO SECTION - Clear platform purpose */}
-      <section className="relative h-[75vh] sm:h-[85vh] md:h-[90vh] w-full overflow-hidden">
+      {/* ✅ HERO SECTION */}
+      <section className="relative h-[70vh] sm:h-[80vh] md:h-[85vh] lg:h-[90vh] w-full overflow-hidden">
         {/* Carousel Background */}
         <div className="absolute inset-0">
           {carouselFilms.map((film, idx) => (
@@ -393,10 +390,9 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* Hero Content - Focused on platform purpose */}
+        {/* Hero Content */}
         <div className="relative z-10 h-full flex flex-col justify-center px-4 sm:px-8 md:px-16">
           <div className="max-w-3xl">
-            {/* Platform tagline - CLEAR purpose */}
             <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] text-xs sm:text-sm font-medium mb-3 sm:mb-4">
               🎬 Creator Marketplace
             </div>
@@ -434,7 +430,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Carousel dots - above the bottom */}
+        {/* Carousel dots */}
         <div className="absolute bottom-16 sm:bottom-20 md:bottom-24 left-1/2 -translate-x-1/2 flex gap-2 z-20">
           {carouselFilms.map((_, idx) => (
             <button
@@ -456,7 +452,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ✅ CATEGORY FILTERS - No search (already in navbar) */}
+      {/* ✅ CATEGORY FILTERS - Sticky */}
       <div className="sticky top-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-white/5 py-2 sm:py-3 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide">
@@ -477,28 +473,101 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* CONTENT ROWS */}
-      <div className="max-w-7xl mx-auto py-3 sm:py-4 md:py-6">
-        {renderRow('Featured', featuredFilms, 'featured')}
-        {renderRow('Top Picks', topPicks, 'top-picks')}
-        {renderRow('Recently Added', recentFilms, 'recently-added')}
-        
-        {Object.entries(categoryRows).map(([category, films]) => {
-          if (category === 'Featured' || category === 'Top Picks' || category === 'Recently Added') return null
-          return renderRow(category, films, `category-${category}`)
-        })}
-      </div>
-
-      {/* FOOTER */}
-      <footer className="border-t border-white/5 mt-4 sm:mt-8 px-4 sm:px-6 py-6 sm:py-8 md:py-12">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-lg sm:text-xl md:text-2xl font-bold">Reial<span className="text-[#f5c518]">.</span></span>
-            <span className="text-gray-600 text-[10px] sm:text-xs md:text-sm">Premium Stories</span>
+      {/* ✅ CONTENT ROWS - Filtered by search */}
+      {filteredFilms.length === 0 ? (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          <div className="bg-[#1a1a1a] rounded-2xl p-8 sm:p-12 text-center border border-white/5">
+            <div className="text-5xl sm:text-6xl mb-4">🔍</div>
+            <h2 className="text-lg sm:text-xl font-bold mb-2">No content found</h2>
+            <p className="text-gray-400 text-sm">
+              {searchTerm ? `No results matching "${searchTerm}"` : 'Try adjusting your filters'}
+            </p>
+            {(searchTerm || selectedCategory !== 'All') && (
+              <button
+                onClick={() => {
+                  setSearchTerm('')
+                  setSelectedCategory('All')
+                }}
+                className="mt-4 bg-[#f5c518] text-black px-5 py-2 rounded-full font-semibold hover:scale-105 transition text-sm"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
-          <div className="text-gray-500 text-[10px] sm:text-xs md:text-sm">© 2026 Reial Network. All rights reserved.</div>
         </div>
-      </footer>
+      ) : (
+        <div className="max-w-7xl mx-auto py-3 sm:py-4 md:py-6">
+          
+          {/* ✅ STREAMING ROWS - Filtered by search */}
+          {Object.entries(groupedFilms).map(([category, films]) => {
+            if (category === 'Other' && films.length < 3) return null
+            return renderRow(category, films, `category-${category}`)
+          })}
+
+          {/* ✅ ALL FILMS - Grid view */}
+          <div className="mt-4 sm:mt-6 md:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-white/5 px-4 sm:px-0">
+            <div className="flex justify-between items-center mb-3 sm:mb-4">
+              <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">All Content</h2>
+              <span className="text-gray-500 text-xs sm:text-sm">{filteredFilms.length} films</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
+              {filteredFilms.map((film) => {
+                const isPurchased = purchasedIds.has(film.id)
+                const token = purchaseTokens[film.id]
+                const contentSlug = film.slug || film.id
+                const categoryPath = film.category ? film.category.toLowerCase() : 'film'
+                let watchUrl = `/${categoryPath}/${contentSlug}`
+                if (isPurchased && token) {
+                  watchUrl = `/watch/${token}`
+                } else if (isPurchased && !token) {
+                  watchUrl = `/watch/${film.id}`
+                }
+                
+                return (
+                  <Link
+                    key={film.id}
+                    href={watchUrl}
+                    className="group bg-[#1a1a1a] rounded-lg sm:rounded-xl overflow-hidden hover:scale-[1.03] transition-all duration-300 hover:shadow-lg hover:shadow-[#f5c518]/20 border border-white/5 hover:border-[#f5c518]/30"
+                  >
+                    <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
+                      {film.thumbnail_url ? (
+                        <Image
+                          src={film.thumbnail_url}
+                          alt={film.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-3xl sm:text-4xl opacity-20">🎬</div>
+                      )}
+                      {film.category && (
+                        <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-[#f5c518]/90 text-black text-[6px] sm:text-[8px] px-1 sm:px-2 py-0.5 rounded-full font-semibold">
+                          {film.category}
+                        </div>
+                      )}
+                      <div className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2">
+                        {isPurchased ? (
+                          <span className="bg-green-500 text-white text-[6px] sm:text-[8px] font-bold px-1 sm:px-2 py-0.5 rounded-full">✓ Owned</span>
+                        ) : (
+                          <span className="bg-black/80 text-[#f5c518] text-[6px] sm:text-[8px] font-bold px-1 sm:px-2 py-0.5 rounded-full">KES {film.price}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-1.5 sm:p-2 md:p-3">
+                      <h3 className="font-semibold text-[10px] sm:text-xs md:text-sm group-hover:text-[#f5c518] transition-colors line-clamp-1">
+                        {film.title}
+                      </h3>
+                      <p className="text-gray-500 text-[6px] sm:text-[8px] md:text-xs mt-0.5 truncate">
+                        {film.creator_name || 'Unknown Creator'}
+                      </p>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
