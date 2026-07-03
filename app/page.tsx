@@ -24,7 +24,7 @@ interface Film {
 export default function HomePage() {
   const router = useRouter()
   const supabase = createClient()
-  const { searchTerm, selectedCategory, setSelectedCategory } = useSearch()
+  const { searchTerm, setSearchTerm, selectedCategory, setSelectedCategory } = useSearch()
 
   const [allFilms, setAllFilms] = useState<Film[]>([])
   const [loading, setLoading] = useState(true)
@@ -363,8 +363,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
       
-      {/* ✅ HERO SECTION - Fixed for mobile */}
-      <section className="relative h-[70vh] sm:h-[80vh] md:h-[85vh] lg:h-[90vh] w-full overflow-hidden">
+      {/* ✅ HERO SECTION - Fixed flow */}
+      <section className="relative h-[75vh] sm:h-[80vh] md:h-[85vh] lg:h-[90vh] w-full overflow-hidden">
         {/* Carousel Background */}
         <div className="absolute inset-0">
           {carouselFilms.map((film, idx) => (
@@ -392,8 +392,8 @@ export default function HomePage() {
             </div>
           ))}
           
-          {/* Carousel dots - moved up for mobile */}
-          <div className="absolute bottom-20 sm:bottom-24 md:bottom-32 left-4 sm:left-8 md:left-16 flex gap-2 z-20">
+          {/* Carousel dots */}
+          <div className="absolute bottom-20 sm:bottom-24 md:bottom-28 left-4 sm:left-8 md:left-16 flex gap-2 z-20">
             {carouselFilms.map((_, idx) => (
               <button
                 key={idx}
@@ -406,20 +406,20 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ✅ Hero Content - Better mobile positioning */}
-        <div className="relative z-10 h-full flex flex-col justify-between">
-          {/* Top - Logo (smaller on mobile) */}
-          <div className="pt-4 sm:pt-6 md:pt-8 px-4 sm:px-8 md:px-16">
+        {/* Hero Content */}
+        <div className="relative z-10 h-full flex flex-col">
+          {/* Top - Logo */}
+          <div className="pt-4 sm:pt-6 md:pt-8 px-4 sm:px-8 md:px-16 flex-shrink-0">
             <div className="flex items-center gap-2 sm:gap-4">
               <span className="text-lg sm:text-xl md:text-2xl font-bold">Reial<span className="text-[#f5c518]">.</span></span>
               <span className="text-gray-400 text-[10px] sm:text-xs md:text-sm hidden xs:inline">Premium Stories</span>
             </div>
           </div>
 
-          {/* Center - Featured content (centered better on mobile) */}
-          <div className="flex-1 flex items-center px-4 sm:px-8 md:px-16 pb-4 sm:pb-8">
+          {/* Center - Main content - FLEXIBLE */}
+          <div className="flex-1 flex items-center px-4 sm:px-8 md:px-16 py-2 sm:py-4">
             <div className="max-w-2xl w-full">
-              <div className="inline-block px-2 sm:px-3 md:px-4 py-0.5 sm:py-1 md:py-1.5 rounded-full bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] text-[10px] sm:text-xs md:text-sm font-medium mb-2 sm:mb-3 md:mb-4">
+              <div className="inline-block px-2 sm:px-3 md:px-4 py-0.5 sm:py-1 rounded-full bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] text-[10px] sm:text-xs md:text-sm font-medium mb-2 sm:mb-3">
                 {carouselFilms[carouselIndex]?.category || 'Featured'}
               </div>
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-[1.1] mb-1 sm:mb-2 line-clamp-2">
@@ -429,17 +429,16 @@ export default function HomePage() {
                 {carouselFilms[carouselIndex]?.creator_name || 'Unknown Creator'}
               </p>
               
-              {/* Action buttons - stacked on mobile, row on larger screens */}
               <div className="flex flex-wrap gap-2 sm:gap-3 md:gap-4">
                 <Link
                   href={`/${carouselFilms[carouselIndex]?.category?.toLowerCase() || 'film'}/${carouselFilms[carouselIndex]?.slug || carouselFilms[carouselIndex]?.id}`}
-                  className="bg-[#f5c518] text-black px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 md:py-2.5 rounded-full font-semibold hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-[#f5c518]/25 flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base"
+                  className="bg-[#f5c518] text-black px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full font-semibold hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-[#f5c518]/25 flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base"
                 >
                   <span>▶ Watch Now</span>
                 </Link>
                 <Link
                   href="/explore"
-                  className="border border-white/30 text-white px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 md:py-2.5 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base"
+                  className="border border-white/30 text-white px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base"
                 >
                   <span>Explore All</span>
                 </Link>
@@ -447,15 +446,15 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Bottom - App description + Become a Creator (better mobile layout) */}
-          <div className="pb-3 sm:pb-4 md:pb-6 px-4 sm:px-8 md:px-16 z-20">
-            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3 md:gap-4">
+          {/* Bottom - Fixed position */}
+          <div className="flex-shrink-0 pb-3 sm:pb-4 md:pb-6 px-4 sm:px-8 md:px-16 z-20">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3">
               <p className="text-gray-400 text-[10px] sm:text-xs md:text-sm text-center sm:text-left">
                 Discover and buy exclusive films, documentaries, series and more from amazing creators.
               </p>
               <button
                 onClick={handleBecomeCreatorClick}
-                className="bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] px-3 sm:px-4 md:px-6 py-1 sm:py-1.5 md:py-2 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold transition-all duration-300 hover:scale-105 whitespace-nowrap"
+                className="bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] px-3 sm:px-4 md:px-6 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold transition-all duration-300 hover:scale-105 whitespace-nowrap"
               >
                 Become a Creator
               </button>
@@ -463,7 +462,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Scroll indicator - smaller on mobile */}
+        {/* Scroll indicator */}
         <div className="absolute bottom-1 sm:bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 sm:gap-1 text-gray-500 animate-bounce z-10">
           <span className="text-[5px] sm:text-[6px] md:text-[8px] uppercase tracking-widest">Scroll</span>
           <svg className="w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -472,10 +471,25 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CATEGORY FILTERS */}
+      {/* ✅ SEARCH BAR - Fixed */}
       <div className="sticky top-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-white/5 py-2 sm:py-3 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row gap-2 sm:gap-3 items-center">
+          {/* Search Input */}
+          <div className="relative w-full sm:flex-1">
+            <input
+              type="text"
+              placeholder="Search films, creators..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-xs sm:text-sm"
+            />
+            <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          
+          {/* Category Filters */}
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide w-full sm:w-auto">
             {categories.map((category) => (
               <button
                 key={category}
@@ -507,7 +521,7 @@ export default function HomePage() {
 
       {/* FOOTER */}
       <footer className="border-t border-white/5 mt-4 sm:mt-8 px-4 sm:px-6 py-6 sm:py-8 md:py-12">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 md:gap-6">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="text-lg sm:text-xl md:text-2xl font-bold">Reial<span className="text-[#f5c518]">.</span></span>
             <span className="text-gray-600 text-[10px] sm:text-xs md:text-sm">Premium Stories</span>
