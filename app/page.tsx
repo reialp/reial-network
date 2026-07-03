@@ -208,7 +208,7 @@ export default function HomePage() {
     }
   }
 
-  // ✅ RENDER FILM CARD - Clean card
+  // ✅ FILM CARD - Responsive sizing
   const renderFilmCard = (film: Film) => {
     const isPurchased = purchasedIds.has(film.id)
     const token = purchaseTokens[film.id]
@@ -272,31 +272,6 @@ export default function HomePage() {
     )
   }
 
-  // ✅ RENDER ROW - Horizontal scroll row (Netflix style)
-  const renderRow = (title: string, films: Film[]) => {
-    if (films.length === 0) return null
-    return (
-      <div className="mb-6 sm:mb-8">
-        <div className="flex justify-between items-center mb-3 sm:mb-4 px-4 sm:px-0">
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold">{title}</h2>
-          <Link href={`/explore?category=${title}`} className="text-[#f5c518] text-xs sm:text-sm hover:underline">
-            See All →
-          </Link>
-        </div>
-        <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
-          <div className="flex gap-3 sm:gap-4 pb-4">
-            {films.map(film => renderFilmCard(film))}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Prepare rows
-  const featuredFilms = allFilms.slice(0, 5)
-  const topPicks = allFilms.slice(5, 13)
-  const recentFilms = allFilms.slice(13, 21)
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -311,15 +286,15 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
       
-      {/* ✅ HERO SECTION - App description + buttons (KEPT) */}
-      <section className="relative min-h-[60vh] sm:min-h-screen flex items-center px-4 sm:px-6 overflow-hidden bg-grid-pattern">
+      {/* ✅ HERO SECTION */}
+      <section className="relative min-h-[60vh] sm:min-h-screen flex items-center px-4 sm:px-6 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-[#1a0a0a] to-[#0a0a0a]">
           <div className="absolute top-1/4 left-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-[#f5c518]/5 rounded-full blur-3xl" />
           <div className="absolute bottom-1/3 right-1/4 w-[250px] sm:w-[400px] h-[250px] sm:h-[400px] bg-[#f5c518]/5 rounded-full blur-3xl" />
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10 w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-          {/* Left side - Text and buttons */}
+          {/* Left - Text */}
           <div className="text-center lg:text-left">
             <div className="inline-block px-3 sm:px-4 py-1.5 rounded-full bg-[#f5c518]/10 border border-[#f5c518]/20 text-[#f5c518] text-xs sm:text-sm font-medium mb-4 sm:mb-6">
               Premium Content Marketplace
@@ -355,7 +330,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ✅ Right side - Carousel (KEPT) */}
+          {/* Right - Carousel */}
           {carouselFilms.length > 0 && (
             <div
               className="relative aspect-[4/3] max-h-[50vh] sm:max-h-[60vh] w-full rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 shadow-2xl mt-6 lg:mt-0"
@@ -470,7 +445,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ✅ CATEGORY FILTERS (KEPT) */}
+      {/* ✅ CATEGORY FILTERS */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
           {categories.map((category) => (
@@ -489,26 +464,69 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ✅ CONTENT ROWS - Streaming Style (KEPT) */}
-      <div className="max-w-7xl mx-auto py-4 sm:py-6">
-        {renderRow('Top Picks', topPicks)}
-        {renderRow('Recently Added', recentFilms)}
-        
-        {/* Category-based rows */}
-        {Object.entries(
-          allFilms.reduce((acc: Record<string, Film[]>, film) => {
-            const cat = film.category || 'Other'
-            if (!acc[cat]) acc[cat] = []
-            acc[cat].push(film)
-            return acc
-          }, {})
-        ).map(([category, films]) => {
-          if (category === 'All' || category === 'Top Picks' || category === 'Recently Added') return null
-          return renderRow(category, films)
-        })}
-      </div>
+      {/* ✅ FEATURED CONTENT GRID - Responsive: 2 cols mobile, 4+ desktop */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6">
+          <div className="text-center sm:text-left w-full">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold">Featured Content</h2>
+            <p className="text-gray-500 text-xs sm:text-sm mt-1">
+              {filteredFilms.length} {filteredFilms.length === 1 ? 'item' : 'items'} available
+            </p>
+          </div>
+        </div>
 
-      {/* ✅ FOOTER (KEPT) */}
+        {filteredFilms.length === 0 ? (
+          <div className="bg-[#1a1a1a] rounded-2xl p-8 sm:p-16 text-center border border-white/5">
+            <div className="text-4xl sm:text-6xl mb-4">🎬</div>
+            <p className="text-lg sm:text-xl text-gray-400">No content found.</p>
+            <p className="text-gray-600 text-xs sm:text-sm mt-2">Check back soon for new content.</p>
+          </div>
+        ) : (
+          /* ✅ RESPONSIVE GRID: 2 cols mobile, 3 tablet, 4 desktop, 5 large */
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
+            {filteredFilms.map((film) => renderFilmCard(film))}
+          </div>
+        )}
+      </section>
+
+      {/* ✅ STREAMING ROWS - Horizontal scroll (Netflix style) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        {/* Top Picks Row */}
+        {allFilms.slice(5, 13).length > 0 && (
+          <div className="mb-6 sm:mb-8">
+            <div className="flex justify-between items-center mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold">Top Picks</h2>
+              <Link href="/explore" className="text-[#f5c518] text-xs sm:text-sm hover:underline">
+                See All →
+              </Link>
+            </div>
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex gap-3 sm:gap-4 pb-4">
+                {allFilms.slice(5, 13).map(film => renderFilmCard(film))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Recently Added Row */}
+        {allFilms.slice(13, 21).length > 0 && (
+          <div className="mb-6 sm:mb-8">
+            <div className="flex justify-between items-center mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold">Recently Added</h2>
+              <Link href="/explore" className="text-[#f5c518] text-xs sm:text-sm hover:underline">
+                See All →
+              </Link>
+            </div>
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex gap-3 sm:gap-4 pb-4">
+                {allFilms.slice(13, 21).map(film => renderFilmCard(film))}
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ✅ FOOTER */}
       <footer className="border-t border-white/5 mt-4 sm:mt-8 px-4 sm:px-6 py-8 sm:py-12">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
           <div className="flex items-center gap-2 sm:gap-3">
