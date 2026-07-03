@@ -240,27 +240,32 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-center">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400 text-sm sm:text-base">Loading dashboard...</p>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 flex items-start justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+        
+        {/* Header */}
+        <div className="mb-4 sm:mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
               Welcome back, <span className="text-[#f5c518]">{displayName}</span>!
             </h1>
-            <p className="text-gray-400 text-sm mt-1">Here's an overview of your creator performance.</p>
+            <p className="text-gray-400 text-xs sm:text-sm mt-0.5 sm:mt-1">Here's an overview of your creator performance.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <button
               onClick={loadDashboard}
-              className="text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
+              className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               Refresh
@@ -268,7 +273,7 @@ export default function DashboardPage() {
             {isCreator && (
               <button
                 onClick={() => setIsOnboardingOpen(true)}
-                className="text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
+                className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
               >
                 <span>📖</span> How it works
               </button>
@@ -276,72 +281,76 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Not Creator Banner */}
         {!isCreator && (
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-8">
-            <p className="text-yellow-400 text-sm">
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <p className="text-yellow-400 text-xs sm:text-sm">
               You're not a creator yet. <Link href="/profile?intent=creator" className="text-[#f5c518] hover:underline">Become a creator</Link> to upload films and earn money.
             </p>
           </div>
         )}
 
-        <div className="bg-gradient-to-r from-[#1a1a1a] to-[#2a1a0a] rounded-2xl p-6 border border-[#f5c518]/20 mb-8">
-          <h3 className="text-lg font-bold mb-3 text-[#f5c518]">Revenue Breakdown</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
-              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Total Sales</p>
-              <p className="text-2xl font-bold text-blue-400">{stats.totalSales}</p>
+        {/* Revenue Breakdown */}
+        <div className="bg-gradient-to-r from-[#1a1a1a] to-[#2a1a0a] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#f5c518]/20 mb-4 sm:mb-6 md:mb-8">
+          <h3 className="text-sm sm:text-base md:text-lg font-bold mb-2 sm:mb-3 text-[#f5c518]">Revenue Breakdown</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="bg-[#0a0a0a] rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/5">
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">Total Sales</p>
+              <p className="text-xl sm:text-2xl font-bold text-blue-400">{stats.totalSales}</p>
             </div>
-            <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
-              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">You Earn (85%)</p>
-              <p className="text-2xl font-bold text-[#f5c518]">KES {formatCurrency(stats.yourEarnings)}</p>
+            <div className="bg-[#0a0a0a] rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/5">
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">You Earn (85%)</p>
+              <p className="text-xl sm:text-2xl font-bold text-[#f5c518]">KES {formatCurrency(stats.yourEarnings)}</p>
             </div>
-            <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
-              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Platform Fee (15%)</p>
-              <p className="text-2xl font-bold text-yellow-400">KES {formatCurrency(stats.platformFees)}</p>
+            <div className="bg-[#0a0a0a] rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/5">
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">Platform Fee (15%)</p>
+              <p className="text-xl sm:text-2xl font-bold text-yellow-400">KES {formatCurrency(stats.platformFees)}</p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
-          <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 hover:border-[#f5c518]/20 transition-all">
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Films Uploaded</p>
-            <p className="text-2xl font-bold mt-1">{stats.totalFilms}</p>
+        {/* Stats Grid - Mobile optimized */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
+          <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 md:p-5 border border-white/5 hover:border-[#f5c518]/20 transition-all">
+            <p className="text-gray-400 text-[8px] sm:text-[10px] md:text-xs uppercase tracking-wider font-medium">Films</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5">{stats.totalFilms}</p>
           </div>
-          <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 hover:border-yellow-500/20 transition-all">
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Pending Approvals</p>
-            <p className="text-2xl font-bold mt-1 text-yellow-400">{stats.pendingApprovals}</p>
+          <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 md:p-5 border border-white/5 hover:border-yellow-500/20 transition-all">
+            <p className="text-gray-400 text-[8px] sm:text-[10px] md:text-xs uppercase tracking-wider font-medium">Pending</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-yellow-400">{stats.pendingApprovals}</p>
           </div>
-          <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 hover:border-blue-500/20 transition-all">
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Total Sales</p>
-            <p className="text-2xl font-bold mt-1 text-blue-400">{stats.totalSales}</p>
+          <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 md:p-5 border border-white/5 hover:border-blue-500/20 transition-all">
+            <p className="text-gray-400 text-[8px] sm:text-[10px] md:text-xs uppercase tracking-wider font-medium">Sales</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-blue-400">{stats.totalSales}</p>
           </div>
-          <div className="bg-[#1a1a1a] rounded-2xl p-5 border border-white/5 hover:border-green-500/20 transition-all">
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Gross Revenue</p>
-            <p className="text-2xl font-bold mt-1 text-green-400">KES {formatCurrency(stats.grossRevenue)}</p>
+          <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 md:p-5 border border-white/5 hover:border-green-500/20 transition-all">
+            <p className="text-gray-400 text-[8px] sm:text-[10px] md:text-xs uppercase tracking-wider font-medium">Revenue</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-green-400">KES {formatCurrency(stats.grossRevenue)}</p>
           </div>
-          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#2a1a0a] rounded-2xl p-5 border border-[#f5c518]/20 relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-[#f5c518]/10 px-3 py-1 rounded-bl-lg text-xs text-[#f5c518] font-semibold">85%</div>
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Total Earnings</p>
-            <p className="text-2xl font-bold mt-1 text-[#f5c518]">KES {formatCurrency(stats.yourEarnings)}</p>
+          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#2a1a0a] rounded-xl p-3 sm:p-4 md:p-5 border border-[#f5c518]/20 relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-[#f5c518]/10 px-2 sm:px-3 py-0.5 rounded-bl-lg text-[8px] sm:text-[10px] text-[#f5c518] font-semibold">85%</div>
+            <p className="text-gray-400 text-[8px] sm:text-[10px] md:text-xs uppercase tracking-wider font-medium">Earnings</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-[#f5c518]">KES {formatCurrency(stats.yourEarnings)}</p>
           </div>
-          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0a2a1a] rounded-2xl p-5 border border-green-500/20 relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-green-500/10 px-3 py-1 rounded-bl-lg text-xs text-green-400 font-semibold">Available</div>
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Available Balance</p>
-            <p className="text-2xl font-bold mt-1 text-green-400">KES {formatCurrency(stats.availableBalance)}</p>
+          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0a2a1a] rounded-xl p-3 sm:p-4 md:p-5 border border-green-500/20 relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-green-500/10 px-2 sm:px-3 py-0.5 rounded-bl-lg text-[8px] sm:text-[10px] text-green-400 font-semibold">Available</div>
+            <p className="text-gray-400 text-[8px] sm:text-[10px] md:text-xs uppercase tracking-wider font-medium">Balance</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-green-400">KES {formatCurrency(stats.availableBalance)}</p>
           </div>
         </div>
 
-        <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        {/* Content Table - Mobile optimized with horizontal scroll */}
+        <div className="bg-[#1a1a1a] rounded-xl sm:rounded-2xl border border-white/5 overflow-hidden">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <h2 className="text-lg font-semibold">Performance Overview</h2>
-              <p className="text-gray-500 text-xs">Manage your content and track performance</p>
+              <h2 className="text-base sm:text-lg font-semibold">Performance Overview</h2>
+              <p className="text-gray-500 text-[10px] sm:text-xs">Manage your content and track performance</p>
             </div>
             <Link
               href="/upload"
-              className="bg-[#f5c518] text-black px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#e0b010] transition flex items-center gap-2"
+              className="bg-[#f5c518] text-black px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#e0b010] transition flex items-center gap-1.5 sm:gap-2"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Upload New
@@ -350,18 +359,18 @@ export default function DashboardPage() {
 
           {content && content.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-xs sm:text-sm">
                 <thead className="bg-[#0a0a0a] border-b border-white/5">
                   <tr>
-                    <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Title</th>
-                    <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Category</th>
-                    <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Price</th>
-                    <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Views</th>
-                    <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Sales</th>
-                    <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Conversion</th>
-                    <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Revenue</th>
-                    <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Status</th>
-                    <th className="px-6 py-3 text-left text-gray-500 text-xs uppercase tracking-wider font-medium">Actions</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Title</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden sm:table-cell">Category</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Price</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden md:table-cell">Views</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden lg:table-cell">Sales</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden xl:table-cell">Conv</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden sm:table-cell">Revenue</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Status</th>
+                    <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -374,39 +383,37 @@ export default function DashboardPage() {
                     
                     return (
                       <tr key={film.id} className="hover:bg-white/5 transition">
-                        <td className="px-6 py-4 font-medium">{film.title}</td>
-                        <td className="px-6 py-4 text-gray-400 text-xs">
-                          <span className="bg-[#0a0a0a] px-2 py-0.5 rounded-full">
-                            {film.category || 'Film'}
-                          </span>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 font-medium text-xs sm:text-sm line-clamp-1 max-w-[80px] sm:max-w-[120px]">{film.title}</td>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-gray-400 text-[8px] sm:text-xs hidden sm:table-cell">
+                          <span className="bg-[#0a0a0a] px-1.5 sm:px-2 py-0.5 rounded-full">{film.category || 'Film'}</span>
                         </td>
-                        <td className="px-6 py-4 text-[#f5c518] font-semibold">KES {film.price}</td>
-                        <td className="px-6 py-4 text-gray-400">{film.views}</td>
-                        <td className="px-6 py-4 text-gray-400">{film.purchase_count}</td>
-                        <td className="px-6 py-4 text-gray-400">{conversion}%</td>
-                        <td className="px-6 py-4 text-green-400">KES {formatCurrency(revenue)}</td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(film.status)}`}>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-[#f5c518] font-semibold text-xs sm:text-sm">KES {film.price}</td>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-gray-400 text-xs hidden md:table-cell">{film.views}</td>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-gray-400 text-xs hidden lg:table-cell">{film.purchase_count}</td>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-gray-400 text-xs hidden xl:table-cell">{conversion}%</td>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-green-400 text-xs hidden sm:table-cell">KES {formatCurrency(revenue)}</td>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4">
+                          <span className={`inline-flex items-center px-1.5 sm:px-2.5 py-0.5 rounded-full text-[8px] sm:text-xs font-medium ${getStatusColor(film.status)}`}>
                             {film.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex gap-3">
+                        <td className="px-3 sm:px-6 py-2 sm:py-4">
+                          <div className="flex flex-wrap gap-1.5 sm:gap-2">
                             <button
                               onClick={() => window.open(filmUrl + '?preview=true', '_blank')}
-                              className="text-gray-500 hover:text-[#f5c518] text-xs transition"
+                              className="text-gray-500 hover:text-[#f5c518] text-[8px] sm:text-xs transition"
                             >
                               Preview
                             </button>
                             <Link
                               href={`/upload/${film.id}`}
-                              className="text-gray-500 hover:text-[#f5c518] text-xs transition"
+                              className="text-gray-500 hover:text-[#f5c518] text-[8px] sm:text-xs transition"
                             >
                               Edit
                             </Link>
                             <button
                               onClick={() => handleDelete(film.id, film.title)}
-                              className="text-gray-500 hover:text-red-400 text-xs transition"
+                              className="text-gray-500 hover:text-red-400 text-[8px] sm:text-xs transition"
                             >
                               Delete
                             </button>
@@ -423,7 +430,7 @@ export default function DashboardPage() {
                                   prompt('Copy this link:', url)
                                 }
                               }}
-                              className="text-gray-500 hover:text-blue-400 text-xs transition"
+                              className="text-gray-500 hover:text-blue-400 text-[8px] sm:text-xs transition"
                             >
                               Share
                             </button>
@@ -436,36 +443,37 @@ export default function DashboardPage() {
               </table>
             </div>
           ) : (
-            <div className="p-12 text-center">
-              <div className="text-5xl mb-4 opacity-20">🎬</div>
-              <p className="text-gray-400">No films uploaded yet.</p>
-              <Link href="/upload" className="text-[#f5c518] hover:underline text-sm mt-2 inline-block">
+            <div className="p-8 sm:p-12 text-center">
+              <div className="text-4xl sm:text-5xl mb-4 opacity-20">🎬</div>
+              <p className="text-gray-400 text-sm sm:text-base">No films uploaded yet.</p>
+              <Link href="/upload" className="text-[#f5c518] hover:underline text-xs sm:text-sm mt-2 inline-block">
                 Create your first film →
               </Link>
             </div>
           )}
         </div>
 
-        <div className="mt-12 bg-[#1a1a1a] rounded-2xl border border-white/5 p-6">
-          <h2 className="text-xl font-bold mb-2">Request Payout</h2>
-          <p className="text-gray-400 text-sm mb-1">
+        {/* Payout Section - Mobile optimized */}
+        <div className="mt-6 sm:mt-8 md:mt-12 bg-[#1a1a1a] rounded-xl sm:rounded-2xl border border-white/5 p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold mb-1">Request Payout</h2>
+          <p className="text-gray-400 text-xs sm:text-sm mb-1">
             Minimum payout: KES 500 • Processing time: 1-3 business days
           </p>
-          <p className="text-green-400 text-sm mb-4">
+          <p className="text-green-400 text-xs sm:text-sm mb-3 sm:mb-4">
             Available balance: <span className="font-bold">KES {formatCurrency(stats.availableBalance)}</span>
           </p>
 
           {payoutMessage && (
-            <div className={`mb-4 p-3 rounded-lg text-sm ${
+            <div className={`mb-3 sm:mb-4 p-2.5 sm:p-3 rounded-lg text-xs sm:text-sm ${
               payoutMessage.includes('✅') ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
             }`}>
               {payoutMessage}
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Amount (KES)</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">Amount (KES)</label>
               <input
                 type="number"
                 value={payoutAmount}
@@ -473,20 +481,20 @@ export default function DashboardPage() {
                 placeholder={`Max: ${formatCurrency(stats.availableBalance)}`}
                 min="500"
                 max={stats.availableBalance}
-                className="w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white"
+                className="w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-[#0a0a0a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
                 Max: KES {formatCurrency(stats.availableBalance)}
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">M-Pesa Phone Number</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">M-Pesa Phone</label>
               <input
                 type="tel"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                className="w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white"
-                placeholder="e.g. 0712345678"
+                className="w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-[#0a0a0a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm"
+                placeholder="0712345678"
               />
             </div>
           </div>
@@ -494,7 +502,7 @@ export default function DashboardPage() {
           <button
             onClick={handlePayoutRequest}
             disabled={isRequesting || stats.availableBalance < 500}
-            className={`mt-4 px-6 py-2 rounded-lg font-semibold transition ${
+            className={`mt-3 sm:mt-4 px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition ${
               stats.availableBalance < 500 
                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
                 : 'bg-[#f5c518] text-black hover:bg-[#e0b010]'
@@ -503,32 +511,33 @@ export default function DashboardPage() {
             {isRequesting ? 'Submitting...' : stats.availableBalance < 500 ? 'Insufficient Balance' : 'Request Payout'}
           </button>
 
+          {/* Payout History - Mobile optimized */}
           {payoutHistory.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-sm font-medium text-gray-400 mb-3">Payout History</h3>
+            <div className="mt-4 sm:mt-6">
+              <h3 className="text-xs sm:text-sm font-medium text-gray-400 mb-2 sm:mb-3">Payout History</h3>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-xs sm:text-sm">
                   <thead className="text-gray-500 border-b border-white/5">
                     <tr>
-                      <th className="px-4 py-2 text-left">Amount</th>
-                      <th className="px-4 py-2 text-left">Phone</th>
-                      <th className="px-4 py-2 text-left">Status</th>
-                      <th className="px-4 py-2 text-left">Date</th>
+                      <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-left">Amount</th>
+                      <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-left hidden sm:table-cell">Phone</th>
+                      <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-left">Status</th>
+                      <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-left hidden xs:table-cell">Date</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {payoutHistory.map((payout) => (
+                    {payoutHistory.slice(0, 10).map((payout) => (
                       <tr key={payout.id} className="border-b border-white/5">
-                        <td className="px-4 py-2 text-[#f5c518] font-bold">KES {payout.amount}</td>
-                        <td className="px-4 py-2">{payout.phone}</td>
-                        <td className="px-4 py-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-[#f5c518] font-bold text-xs sm:text-sm">KES {payout.amount}</td>
+                        <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs hidden sm:table-cell">{payout.phone}</td>
+                        <td className="px-2 sm:px-4 py-1.5 sm:py-2">
+                          <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-xs font-medium ${
                             payout.status === 'processed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
                           }`}>
                             {payout.status === 'processed' ? '✅ Paid' : '⏳ Pending'}
                           </span>
                         </td>
-                        <td className="px-4 py-2 text-gray-400">
+                        <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-gray-400 text-xs hidden xs:table-cell">
                           {new Date(payout.requested_at).toLocaleDateString()}
                         </td>
                       </tr>
