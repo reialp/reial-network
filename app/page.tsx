@@ -206,7 +206,7 @@ export default function HomePage() {
     }
   }
 
-  const renderFilmCard = (film: Film, isLarge: boolean = false) => {
+  const renderFilmCard = (film: Film) => {
     const isPurchased = purchasedIds.has(film.id)
     const token = purchaseTokens[film.id]
     
@@ -223,9 +223,7 @@ export default function HomePage() {
       <Link
         key={film.id}
         href={watchUrl}
-        className={`group flex-shrink-0 bg-[#1a1a1a] rounded-xl overflow-hidden hover:scale-[1.03] transition-all duration-500 hover:shadow-2xl hover:shadow-[#f5c518]/10 border border-white/5 hover:border-[#f5c518]/20 ${
-          isLarge ? 'w-[160px] sm:w-[200px] md:w-[240px]' : 'w-[140px] sm:w-[180px] md:w-[220px]'
-        }`}
+        className="group bg-[#1a1a1a] rounded-xl sm:rounded-2xl overflow-hidden hover:scale-[1.03] transition-all duration-500 hover:shadow-2xl hover:shadow-[#f5c518]/10 border border-white/5 hover:border-[#f5c518]/20"
       >
         <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
           {film.thumbnail_url ? (
@@ -271,31 +269,8 @@ export default function HomePage() {
     )
   }
 
-  // Group films by category for rows
-  const filmsByCategory = useMemo(() => {
-    const grouped: Record<string, Film[]> = {}
-    const all = filteredFilms
-    
-    if (selectedCategory === 'All' || !selectedCategory) {
-      return { 'All Content': all }
-    }
-    
-    all.forEach(film => {
-      const cat = film.category || 'Uncategorized'
-      if (!grouped[cat]) grouped[cat] = []
-      grouped[cat].push(film)
-    })
-    return grouped
-  }, [filteredFilms, selectedCategory])
-
   // Featured films for carousel (first 5)
   const featuredFilms = allFilms.slice(0, 5)
-
-  // Top picks (next 8)
-  const topPicks = allFilms.slice(5, 13)
-
-  // Recently added (next 8)
-  const recentFilms = allFilms.slice(13, 21)
 
   if (loading) {
     return (
@@ -303,25 +278,6 @@ export default function HomePage() {
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">Loading premium content...</p>
-        </div>
-      </div>
-    )
-  }
-
-  const renderRow = (title: string, films: Film[], isLarge: boolean = false) => {
-    if (films.length === 0) return null
-    return (
-      <div className="mb-6 sm:mb-8">
-        <div className="flex justify-between items-center mb-3 sm:mb-4 px-4 sm:px-0">
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold">{title}</h2>
-          <Link href={`/explore?category=${title}`} className="text-[#f5c518] text-xs sm:text-sm hover:underline">
-            See All →
-          </Link>
-        </div>
-        <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
-          <div className="flex gap-3 sm:gap-4 pb-4">
-            {films.map(film => renderFilmCard(film, isLarge))}
-          </div>
         </div>
       </div>
     )
@@ -489,7 +445,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CATEGORY FILTERS */}
+      {/* CATEGORY FILTERS - Horizontal scroll on mobile */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
           {categories.map((category) => (
@@ -508,21 +464,30 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* CONTENT ROWS - Streaming Style */}
-      <div className="max-w-7xl mx-auto py-4 sm:py-6">
-        {/* Top Picks */}
-        {renderRow('Top Picks', topPicks)}
-        
-        {/* Recently Added */}
-        {renderRow('Recently Added', recentFilms)}
-        
-        {/* Category-based rows */}
-        {Object.entries(filmsByCategory).map(([category, films]) => {
-          if (category === 'All Content') return null
-          if (category === 'Featured' || category === 'Top Picks' || category === 'Recently Added') return null
-          return renderRow(category, films)
-        })}
-      </div>
+      {/* ✅ FEATURED CONTENT GRID - 2 columns on mobile, 4 on desktop */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6">
+          <div className="text-center sm:text-left w-full">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold">Featured Content</h2>
+            <p className="text-gray-500 text-xs sm:text-sm mt-1">
+              {filteredFilms.length} {filteredFilms.length === 1 ? 'item' : 'items'} available
+            </p>
+          </div>
+        </div>
+
+        {filteredFilms.length === 0 ? (
+          <div className="bg-[#1a1a1a] rounded-2xl p-8 sm:p-16 text-center border border-white/5">
+            <div className="text-4xl sm:text-6xl mb-4">🎬</div>
+            <p className="text-lg sm:text-xl text-gray-400">No content found.</p>
+            <p className="text-gray-600 text-xs sm:text-sm mt-2">Check back soon for new content.</p>
+          </div>
+        ) : (
+          /* ✅ FIXED: 2 columns on mobile, 3 on tablet, 4 on desktop, 5 on large screens */
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
+            {filteredFilms.map((film) => renderFilmCard(film))}
+          </div>
+        )}
+      </section>
 
       {/* FOOTER */}
       <footer className="border-t border-white/5 mt-4 sm:mt-8 px-4 sm:px-6 py-8 sm:py-12">
