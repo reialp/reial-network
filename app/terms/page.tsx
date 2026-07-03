@@ -80,32 +80,32 @@ export default function TermsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#0a0a0a] text-white px-4 py-6 sm:py-8 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-[#1a1a1a] rounded-2xl p-8 border border-white/10">
-          <h1 className="text-3xl font-bold mb-6 text-center">Creator Terms</h1>
-          <p className="text-gray-400 text-center mb-8">
+        <div className="bg-[#1a1a1a] rounded-xl sm:rounded-2xl p-6 sm:p-8 border border-white/10">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center">Creator Terms</h1>
+          <p className="text-gray-400 text-center text-sm sm:text-base mb-6 sm:mb-8">
             Please read these terms before uploading content.
           </p>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm mb-4">
+            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm mb-4">
               {error}
             </div>
           )}
 
-          <div className="space-y-6 text-gray-300 text-sm leading-relaxed">
-            <div className="bg-[#0a0a0a] rounded-xl p-6 border border-white/5">
-              <h2 className="text-lg font-semibold text-[#f5c518] mb-3">Content Ownership</h2>
+          <div className="space-y-4 sm:space-y-6 text-gray-300 text-xs sm:text-sm leading-relaxed">
+            <div className="bg-[#0a0a0a] rounded-xl p-4 sm:p-6 border border-white/5">
+              <h2 className="text-base sm:text-lg font-semibold text-[#f5c518] mb-2 sm:mb-3">Content Ownership</h2>
               <p>You retain full ownership of all content you upload.</p>
             </div>
-            <div className="bg-[#0a0a0a] rounded-xl p-6 border border-white/5">
-              <h2 className="text-lg font-semibold text-[#f5c518] mb-3">Revenue Share</h2>
+            <div className="bg-[#0a0a0a] rounded-xl p-4 sm:p-6 border border-white/5">
+              <h2 className="text-base sm:text-lg font-semibold text-[#f5c518] mb-2 sm:mb-3">Revenue Share</h2>
               <p>You earn <span className="text-[#f5c518] font-bold">85%</span> of all sales. Reial Network retains <span className="text-yellow-400 font-bold">15%</span>.</p>
             </div>
-            <div className="bg-[#0a0a0a] rounded-xl p-6 border border-white/5">
-              <h2 className="text-lg font-semibold text-[#f5c518] mb-3">Content Guidelines</h2>
-              <ul className="list-disc list-inside mt-2 space-y-2 ml-4">
+            <div className="bg-[#0a0a0a] rounded-xl p-4 sm:p-6 border border-white/5">
+              <h2 className="text-base sm:text-lg font-semibold text-[#f5c518] mb-2 sm:mb-3">Content Guidelines</h2>
+              <ul className="list-disc list-inside mt-2 space-y-1 sm:space-y-2 ml-2 sm:ml-4">
                 <li>Content must be original or properly licensed</li>
                 <li>Content must comply with all applicable laws</li>
                 <li>Content must not contain hate speech or illegal material</li>
@@ -113,17 +113,17 @@ export default function TermsPage() {
             </div>
           </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row gap-4">
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
             <button
               onClick={acceptTerms}
               disabled={loading}
-              className="flex-1 bg-[#f5c518] text-black py-3 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50"
+              className="flex-1 bg-[#f5c518] text-black py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50 text-sm sm:text-base"
             >
               {loading ? 'Accepting...' : 'I Agree'}
             </button>
             <Link
               href="/dashboard"
-              className="flex-1 border border-white/20 py-3 rounded-lg font-semibold hover:bg-white/5 transition text-center"
+              className="flex-1 border border-white/20 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-white/5 transition text-center text-sm sm:text-base"
             >
               Cancel
             </Link>
