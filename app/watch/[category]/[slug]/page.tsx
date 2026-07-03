@@ -40,7 +40,6 @@ type WatchData = {
 async function getVideoAndFilmBySlug(slug: string, userId: string): Promise<WatchData | null> {
   const supabase = await createClient()
 
-  // ✅ First, find the content by slug
   const { data: contentData, error: contentError } = await supabase
     .from('content')
     .select(`
@@ -69,7 +68,6 @@ async function getVideoAndFilmBySlug(slug: string, userId: string): Promise<Watc
     return null
   }
 
-  // ✅ Then, check if the user has purchased it
   const { data: purchase, error: purchaseError } = await supabase
     .from('purchases')
     .select('*')
@@ -86,7 +84,6 @@ async function getVideoAndFilmBySlug(slug: string, userId: string): Promise<Watc
   const content = contentData as any
   const creator = content.profiles as any
 
-  // Other films by same creator
   const { data: otherFilms } = await supabase
     .from('content')
     .select('id, title, thumbnail_url, price, slug, category')
@@ -96,7 +93,6 @@ async function getVideoAndFilmBySlug(slug: string, userId: string): Promise<Watc
     .order('created_at', { ascending: false })
     .limit(6)
 
-  // Recommendations: other approved films in same category
   const { data: recs } = await supabase
     .from('content')
     .select('id, title, thumbnail_url, price, slug, category, profiles(full_name)')
@@ -169,7 +165,6 @@ export default async function WatchPage({ params }: { params: Promise<{ category
 
   const supabase = await createClient()
   
-  // ✅ Get the user session
   const { data: { session }, error: sessionError } = await supabase.auth.getSession()
   
   if (sessionError || !session) {
@@ -180,7 +175,6 @@ export default async function WatchPage({ params }: { params: Promise<{ category
 
   console.log('✅ User is logged in:', session.user.email)
 
-  // ✅ Get the data by slug
   const data = await getVideoAndFilmBySlug(slug, session.user.id)
 
   if (!data) {
@@ -188,7 +182,6 @@ export default async function WatchPage({ params }: { params: Promise<{ category
     notFound()
   }
 
-  // ✅ Verify the category matches
   const contentCategory = data.category ? data.category.toLowerCase() : 'film'
   if (contentCategory !== category) {
     console.error('❌ Category mismatch:', contentCategory, category)
@@ -212,84 +205,106 @@ export default async function WatchPage({ params }: { params: Promise<{ category
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
-          <div className="flex items-center gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6 lg:py-8">
+        
+        {/* Header - Mobile optimized */}
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4 md:mb-6">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/library"
-              className="text-gray-400 hover:text-white transition text-sm flex items-center gap-2"
+              className="text-gray-400 hover:text-white transition text-xs sm:text-sm flex items-center gap-1 sm:gap-2"
             >
-              ← Library
+              ← <span className="hidden xs:inline">Library</span>
             </Link>
-            <span className="bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full border border-green-500/20">
+            <span className="bg-green-500/20 text-green-400 text-[8px] sm:text-xs px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-green-500/20">
               ✓ Purchased
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold truncate">{data.title}</h1>
+          <h1 className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold truncate max-w-[140px] xs:max-w-[200px] sm:max-w-[300px] md:max-w-[400px]">
+            {data.title}
+          </h1>
         </div>
 
-        {/* Main content: video + sidebar */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+          
           {/* Left column: video + description */}
-          <div className="lg:col-span-2 space-y-6">
-            <WatchPlayer embedUrl={embedUrl} title={data.title} />
+          <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
+            {/* Video Player - Full width on mobile */}
+            <div className="relative w-full aspect-video bg-[#0a0a0a] rounded-lg sm:rounded-xl overflow-hidden border border-white/5">
+              <WatchPlayer embedUrl={embedUrl} title={data.title} />
+            </div>
 
-            <div>
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">About this film</h3>
-              <p className="text-gray-300 text-sm leading-relaxed">
+            {/* Description - Mobile optimized */}
+            <div className="px-1 sm:px-0">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1 sm:mb-2">About this film</h3>
+              <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
                 {data.description || 'No description provided.'}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            {/* Details grid - Mobile optimized */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm px-1 sm:px-0">
               {data.category && (
-                <div><span className="text-gray-500">Category</span> <span className="text-white block">{data.category}</span></div>
+                <div>
+                  <span className="text-gray-500 text-[10px] sm:text-xs block">Category</span>
+                  <span className="text-white text-xs sm:text-sm">{data.category}</span>
+                </div>
               )}
               {data.releaseYear && (
-                <div><span className="text-gray-500">Release</span> <span className="text-white block">{data.releaseYear}</span></div>
+                <div>
+                  <span className="text-gray-500 text-[10px] sm:text-xs block">Release</span>
+                  <span className="text-white text-xs sm:text-sm">{data.releaseYear}</span>
+                </div>
               )}
               {data.language && (
-                <div><span className="text-gray-500">Language</span> <span className="text-white block">{data.language}</span></div>
+                <div>
+                  <span className="text-gray-500 text-[10px] sm:text-xs block">Language</span>
+                  <span className="text-white text-xs sm:text-sm">{data.language}</span>
+                </div>
               )}
               {data.subtitles && (
-                <div><span className="text-gray-500">Subtitles</span> <span className="text-white block">{data.subtitles}</span></div>
+                <div>
+                  <span className="text-gray-500 text-[10px] sm:text-xs block">Subtitles</span>
+                  <span className="text-white text-xs sm:text-sm">{data.subtitles}</span>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Right sidebar: creator info + more from this creator */}
-          <div className="space-y-6">
-            {/* Creator Info */}
-            <div className="bg-[#1a1a1a] rounded-xl p-6 border border-white/5">
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Creator</h3>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-[#2a2a2a] overflow-hidden flex-shrink-0">
+          {/* Right sidebar */}
+          <div className="space-y-4 sm:space-y-5 md:space-y-6">
+            
+            {/* Creator Info - Mobile optimized */}
+            <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 lg:p-6 border border-white/5">
+              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 sm:mb-3 md:mb-4">Creator</h3>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-[#2a2a2a] overflow-hidden flex-shrink-0">
                   {data.creator.avatar_url ? (
                     <Image
                       src={data.creator.avatar_url}
                       alt={data.creator.full_name}
-                      width={64}
-                      height={64}
+                      width={56}
+                      height={56}
                       className="object-cover w-full h-full"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-2xl text-gray-500">👤</div>
+                    <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl text-gray-500">👤</div>
                   )}
                 </div>
                 <div>
-                  <h4 className="font-semibold">{data.creator.full_name}</h4>
-                  <p className="text-gray-400 text-xs mt-1 line-clamp-2">{data.creator.bio || 'Creator'}</p>
+                  <h4 className="text-sm sm:text-base font-semibold">{data.creator.full_name}</h4>
+                  <p className="text-gray-400 text-[10px] sm:text-xs mt-0.5 line-clamp-2">{data.creator.bio || 'Creator'}</p>
                 </div>
               </div>
             </div>
 
-            {/* More from this creator */}
+            {/* More from this creator - Mobile optimized */}
             {data.otherFilms.length > 0 && (
-              <div className="bg-[#1a1a1a] rounded-xl p-6 border border-white/5">
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">More from this creator</h3>
-                <div className="space-y-4">
-                  {data.otherFilms.map((film) => {
+              <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 lg:p-6 border border-white/5">
+                <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 sm:mb-3 md:mb-4">More from this creator</h3>
+                <div className="space-y-2 sm:space-y-3">
+                  {data.otherFilms.slice(0, 4).map((film) => {
                     const categoryPath = film.category ? film.category.toLowerCase() : 'film'
                     const slug = film.slug || film.id
                     const filmUrl = `/${categoryPath}/${slug}`
@@ -298,26 +313,26 @@ export default async function WatchPage({ params }: { params: Promise<{ category
                       <Link
                         key={film.id}
                         href={filmUrl}
-                        className="flex items-center gap-3 hover:bg-white/5 p-2 rounded-lg transition group"
+                        className="flex items-center gap-2 sm:gap-3 hover:bg-white/5 p-1.5 sm:p-2 rounded-lg transition group"
                       >
-                        <div className="w-16 h-16 rounded-lg bg-[#2a2a2a] overflow-hidden flex-shrink-0">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg bg-[#2a2a2a] overflow-hidden flex-shrink-0">
                           {film.thumbnail_url ? (
                             <Image
                               src={film.thumbnail_url}
                               alt={film.title}
-                              width={64}
-                              height={64}
+                              width={56}
+                              height={56}
                               className="object-cover w-full h-full group-hover:scale-105 transition"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-2xl opacity-20">🎬</div>
+                            <div className="w-full h-full flex items-center justify-center text-xl opacity-20">🎬</div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium truncate group-hover:text-[#f5c518] transition">
+                          <h4 className="text-xs sm:text-sm font-medium truncate group-hover:text-[#f5c518] transition">
                             {film.title}
                           </h4>
-                          <p className="text-[#f5c518] text-sm font-semibold">KES {film.price}</p>
+                          <p className="text-[#f5c518] text-xs sm:text-sm font-semibold">KES {film.price}</p>
                         </div>
                       </Link>
                     )
@@ -328,11 +343,11 @@ export default async function WatchPage({ params }: { params: Promise<{ category
           </div>
         </div>
 
-        {/* Recommendations section below */}
+        {/* Recommendations section - Mobile optimized */}
         {data.recommendations.length > 0 && (
-          <div className="mt-12 border-t border-white/5 pt-8">
-            <h2 className="text-xl font-bold mb-6">You might also like</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="mt-6 sm:mt-8 md:mt-10 lg:mt-12 border-t border-white/5 pt-6 sm:pt-8">
+            <h2 className="text-base sm:text-lg md:text-xl font-bold mb-3 sm:mb-4 md:mb-6">You might also like</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
               {data.recommendations.map((film) => {
                 const categoryPath = film.category ? film.category.toLowerCase() : 'film'
                 const slug = film.slug || film.id
@@ -342,7 +357,7 @@ export default async function WatchPage({ params }: { params: Promise<{ category
                   <Link
                     key={film.id}
                     href={filmUrl}
-                    className="group bg-[#1a1a1a] rounded-xl overflow-hidden hover:scale-[1.02] transition border border-white/5 hover:border-[#f5c518]/20"
+                    className="group bg-[#1a1a1a] rounded-lg sm:rounded-xl overflow-hidden hover:scale-[1.02] transition border border-white/5 hover:border-[#f5c518]/20"
                   >
                     <div className="aspect-[2/3] bg-[#2a2a2a] relative">
                       {film.thumbnail_url ? (
@@ -353,15 +368,15 @@ export default async function WatchPage({ params }: { params: Promise<{ category
                           className="object-cover group-hover:scale-105 transition duration-500"
                         />
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-20">🎬</div>
+                        <div className="absolute inset-0 flex items-center justify-center text-3xl sm:text-4xl opacity-20">🎬</div>
                       )}
                     </div>
-                    <div className="p-3">
-                      <h3 className="text-sm font-semibold line-clamp-1 group-hover:text-[#f5c518] transition">
+                    <div className="p-1.5 sm:p-2 md:p-3">
+                      <h3 className="text-[10px] sm:text-xs md:text-sm font-semibold line-clamp-1 group-hover:text-[#f5c518] transition">
                         {film.title}
                       </h3>
-                      <p className="text-gray-400 text-xs">{film.creator_name}</p>
-                      <p className="text-[#f5c518] font-bold text-sm mt-1">KES {film.price}</p>
+                      <p className="text-gray-400 text-[8px] sm:text-[10px] md:text-xs">{film.creator_name}</p>
+                      <p className="text-[#f5c518] font-bold text-[10px] sm:text-xs md:text-sm mt-0.5">KES {film.price}</p>
                     </div>
                   </Link>
                 )
@@ -370,8 +385,8 @@ export default async function WatchPage({ params }: { params: Promise<{ category
           </div>
         )}
 
-        {/* Security notice */}
-        <div className="mt-8 flex items-center gap-2 text-xs text-gray-500 border-t border-white/5 pt-4">
+        {/* Security notice - Mobile optimized */}
+        <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-1.5 sm:gap-2 text-[8px] sm:text-xs text-gray-500 border-t border-white/5 pt-3 sm:pt-4">
           <span>🔒</span>
           <span>Private viewing session – do not share this link</span>
         </div>
