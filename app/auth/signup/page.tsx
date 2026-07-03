@@ -109,10 +109,14 @@ function SignupForm() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center px-4 py-8">
       <div className="max-w-md w-full space-y-6 sm:space-y-8">
+        {/* Logo & Header */}
         <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold">
-            Reial<span className="text-[#f5c518]">.</span>
-          </h1>
+          <div className="inline-block">
+            <h1 className="text-3xl sm:text-4xl font-bold">
+              Reial<span className="text-[#f5c518]">.</span>
+            </h1>
+            <div className="h-0.5 w-8 mx-auto mt-1 bg-[#f5c518]/50 rounded-full" />
+          </div>
           <h2 className="mt-4 sm:mt-6 text-xl sm:text-2xl font-semibold">Create your account</h2>
           <p className="mt-2 text-gray-400 text-xs sm:text-sm">
             {redirectTo ? (
@@ -125,16 +129,17 @@ function SignupForm() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
+            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm">
               {error}
             </div>
           )}
 
           <div>
             <label htmlFor="fullName" className="block text-xs sm:text-sm font-medium text-gray-300">
-              Full Name
+              Full Name <span className="text-red-400">*</span>
             </label>
             <input
               id="fullName"
@@ -142,14 +147,14 @@ function SignupForm() {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm sm:text-base"
-              placeholder="Your name"
+              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm sm:text-base transition"
+              placeholder="Your full name"
             />
           </div>
 
           <div>
             <label htmlFor="email" className="block text-xs sm:text-sm font-medium text-gray-300">
-              Email address
+              Email address <span className="text-red-400">*</span>
             </label>
             <input
               id="email"
@@ -157,30 +162,30 @@ function SignupForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm sm:text-base"
+              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm sm:text-base transition"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-xs sm:text-sm font-medium text-gray-300">
-              Password
+              Password <span className="text-red-400">*</span>
             </label>
-            <div className="relative">
+            <div className="relative mt-1">
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 pr-10 sm:pr-12 text-sm sm:text-base"
-                placeholder="••••••••"
+                className="block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 pr-10 sm:pr-12 text-sm sm:text-base transition"
+                placeholder="Create a password"
                 minLength={6}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
               >
                 {showPassword ? (
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,7 +199,7 @@ function SignupForm() {
                 )}
               </button>
             </div>
-            <p className="text-gray-500 text-[10px] sm:text-xs mt-1">Must be at least 6 characters.</p>
+            <p className="text-gray-500 text-[10px] sm:text-xs mt-1">Must be at least 6 characters</p>
           </div>
 
           <button
@@ -206,12 +211,13 @@ function SignupForm() {
           </button>
         </form>
 
-        <div className="text-center mt-4 sm:mt-6">
+        {/* Sign in link */}
+        <div className="text-center">
           <p className="text-gray-400 text-xs sm:text-sm">
             Already have an account?{' '}
             <Link
               href={`/auth/login?redirectTo=${encodeURIComponent(finalRedirect)}${intent ? `&intent=${intent}` : ''}`}
-              className="text-[#f5c518] hover:underline font-medium"
+              className="text-[#f5c518] hover:underline font-medium transition"
             >
               Sign in
             </Link>
@@ -226,7 +232,10 @@ export default function SignupPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-center">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-gray-400 text-sm">Loading...</p>
+        </div>
       </div>
     }>
       <SignupForm />
