@@ -132,7 +132,10 @@ function ProfileForm() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-center">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-gray-400 text-sm">Loading profile...</p>
+        </div>
       </div>
     )
   }
@@ -140,7 +143,8 @@ function ProfileForm() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white px-4 sm:px-6 py-6 sm:py-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Profile Settings</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Profile Settings</h1>
+        <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6">Manage your creator profile and settings.</p>
 
         {intent === 'creator' && !profile.is_creator && (
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
@@ -151,75 +155,91 @@ function ProfileForm() {
         )}
 
         {profile.is_creator && (
-          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
-            <p className="text-green-400 text-xs sm:text-sm">You are a creator.</p>
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2.5 sm:p-3 mb-3 sm:mb-4">
+            <p className="text-green-400 text-xs sm:text-sm flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full inline-block" />
+              You are a creator
+            </p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
+            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm">
               {error}
             </div>
           )}
           {success && (
-            <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
+            <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm">
               Profile saved successfully.
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-300">Full Name</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-300">
+              Full Name <span className="text-red-400">*</span>
+            </label>
             <input
               type="text"
               value={profile.full_name}
               onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm sm:text-base"
+              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm sm:text-base"
+              placeholder="Your full name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300">Bio</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-300">Bio</label>
             <textarea
               value={profile.bio}
               onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
               rows={3}
-              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm sm:text-base resize-none"
+              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm sm:text-base resize-none"
+              placeholder="Tell your audience about yourself..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300">Avatar URL</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-300">Avatar URL</label>
             <input
               type="url"
               value={profile.avatar_url}
               onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
-              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm sm:text-base"
+              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm sm:text-base"
               placeholder="https://example.com/avatar.jpg"
             />
+            <p className="text-gray-500 text-[10px] sm:text-xs mt-1">URL to your profile picture</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300">Payout Phone</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-300">
+              Payout Phone <span className="text-gray-500">(M-Pesa)</span>
+            </label>
             <input
               type="text"
               value={profile.payout_phone}
               onChange={(e) => setProfile({ ...profile, payout_phone: e.target.value })}
-              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm sm:text-base"
+              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm sm:text-base"
               placeholder="0712345678"
             />
+            <p className="text-gray-500 text-[10px] sm:text-xs mt-1">Used for payout requests</p>
           </div>
 
-          <div className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg border ${intent === 'creator' ? 'bg-[#f5c518]/10 border-[#f5c518]' : 'bg-[#1a1a1a] border-white/10'}`}>
+          <div className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg border ${
+            intent === 'creator' 
+              ? 'bg-[#f5c518]/10 border-[#f5c518]' 
+              : 'bg-[#1a1a1a] border-white/10'
+          }`}>
             <input
               type="checkbox"
               id="is_creator"
               checked={profile.is_creator}
               onChange={(e) => setProfile({ ...profile, is_creator: e.target.checked })}
-              className="w-4 h-4 sm:w-5 sm:h-5 accent-[#f5c518] flex-shrink-0"
+              className="w-4 h-4 sm:w-5 sm:h-5 accent-[#f5c518] flex-shrink-0 rounded border-white/20"
             />
-            <label htmlFor="is_creator" className="text-xs sm:text-sm font-medium text-gray-300 cursor-pointer">
+            <label htmlFor="is_creator" className="text-xs sm:text-sm font-medium text-gray-300 cursor-pointer select-none">
               Become a Creator
+              <span className="block text-gray-500 text-[10px] sm:text-xs font-normal">Upload and sell your content</span>
             </label>
           </div>
 
@@ -240,7 +260,10 @@ export default function ProfilePage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-center">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-gray-400 text-sm">Loading...</p>
+        </div>
       </div>
     }>
       <ProfileForm />
