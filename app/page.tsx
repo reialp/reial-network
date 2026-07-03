@@ -278,12 +278,10 @@ export default function HomePage() {
     const grouped: Record<string, Film[]> = {}
     const all = filteredFilms
     
-    // If "All" is selected or no category, show all in one row
     if (selectedCategory === 'All' || !selectedCategory) {
       return { 'All Content': all }
     }
     
-    // Group by category
     all.forEach(film => {
       const cat = film.category || 'Uncategorized'
       if (!grouped[cat]) grouped[cat] = []
@@ -333,109 +331,57 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
-      {/* HERO CAROUSEL - Full width featured content */}
-      <section className="relative h-[50vh] sm:h-[60vh] md:h-[70vh] lg:h-[80vh] w-full overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent z-10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-transparent to-transparent z-10 w-1/3" />
-        
-        {featuredFilms.length > 0 && (
-          <div
-            className="relative h-full w-full"
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-          >
-            {featuredFilms.map((film, idx) => {
-              const isPurchased = purchasedIds.has(film.id)
-              const token = purchaseTokens[film.id]
-              
-              const contentSlug = film.slug || film.id
-              const categoryPath = film.category ? film.category.toLowerCase() : 'film'
-              let linkUrl = `/${categoryPath}/${contentSlug}`
-              if (isPurchased && token) {
-                linkUrl = `/watch/${token}`
-              } else if (isPurchased && !token) {
-                linkUrl = `/watch/${film.id}`
-              }
-              
-              return (
-                <Link
-                  key={film.id}
-                  href={linkUrl}
-                  className={`absolute inset-0 transition-all duration-1000 ease-in-out cursor-pointer ${
-                    idx === carouselIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'
-                  }`}
-                >
-                  {film.thumbnail_url ? (
-                    <Image
-                      src={film.thumbnail_url}
-                      alt={film.title}
-                      fill
-                      className="object-cover"
-                      priority={idx === 0}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-6xl bg-[#1a1a1a]">🎬</div>
-                  )}
-                  
-                  <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 md:p-16 z-20 bg-gradient-to-t from-[#0a0a0a] to-transparent">
-                    <div className="max-w-7xl mx-auto">
-                      <div className="max-w-lg">
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2">{film.title}</h2>
-                        <p className="text-gray-300 text-xs sm:text-sm md:text-base line-clamp-2 mb-3 sm:mb-4">
-                          {film.creator_name || 'Unknown Creator'}
-                        </p>
-                        <div className="flex items-center gap-3">
-                          {isPurchased ? (
-                            <span className="bg-green-500/90 text-white text-xs sm:text-sm font-bold px-3 py-1.5 rounded-full">
-                              ✓ Purchased
-                            </span>
-                          ) : (
-                            <span className="bg-[#f5c518] text-black text-xs sm:text-sm font-bold px-3 py-1.5 rounded-full">
-                              KES {film.price}
-                            </span>
-                          )}
-                          <span className="text-white text-xs sm:text-sm font-semibold bg-white/10 px-3 py-1.5 rounded-full">
-                            {isPurchased ? '▶ Watch Now' : 'View Details →'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
-            
-            {/* Carousel dots */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
-              {featuredFilms.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCarouselIndex(idx)}
-                  className={`w-2 h-2 rounded-full transition ${
-                    idx === carouselIndex ? 'bg-[#f5c518] w-6' : 'bg-white/30 hover:bg-white/50'
-                  }`}
-                />
-              ))}
+      
+      {/* ✅ HERO SECTION - App Description + Buttons (Restored!) */}
+      <section className="relative min-h-[60vh] sm:min-h-[70vh] flex items-center px-4 sm:px-6 overflow-hidden bg-grid-pattern">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-[#1a0a0a] to-[#0a0a0a]">
+          <div className="absolute top-1/4 left-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-[#f5c518]/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/3 right-1/4 w-[250px] sm:w-[400px] h-[250px] sm:h-[400px] bg-[#f5c518]/5 rounded-full blur-3xl" />
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10 w-full">
+          <div className="text-center">
+            <div className="inline-block px-3 sm:px-4 py-1.5 rounded-full bg-[#f5c518]/10 border border-[#f5c518]/20 text-[#f5c518] text-xs sm:text-sm font-medium mb-4 sm:mb-6">
+              Premium Content Marketplace
+            </div>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] mb-4 sm:mb-6">
+              Premium Stories.
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f5c518] via-[#ffd700] to-[#f5c518]">
+                Directly from Creators.
+              </span>
+            </h1>
+            <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-6 sm:mb-10 leading-relaxed">
+              Discover and buy exclusive films, documentaries, series and more from amazing creators.
+              <span className="block text-gray-500 text-xs sm:text-sm mt-2">Thousands of stories, one platform.</span>
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <Link
+                href="/explore"
+                className="group bg-[#f5c518] text-black px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-[#f5c518]/25 flex items-center justify-center gap-2 text-sm sm:text-base"
+              >
+                <span>Explore Content</span>
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </Link>
+              <button
+                onClick={handleBecomeCreatorClick}
+                className="px-6 sm:px-8 py-3 sm:py-4 border border-white/20 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 text-center cursor-pointer text-sm sm:text-base"
+                type="button"
+              >
+                Become a Creator
+              </button>
             </div>
           </div>
-        )}
-        
-        <button
-          onClick={() => setCarouselIndex((prev) => (prev - 1 + featuredFilms.length) % featuredFilms.length)}
-          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition hidden md:block"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </div>
+
+        <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-gray-500 animate-bounce">
+          <span className="text-[8px] sm:text-xs uppercase tracking-widest">Scroll</span>
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
           </svg>
-        </button>
-        <button
-          onClick={() => setCarouselIndex((prev) => (prev + 1) % featuredFilms.length)}
-          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition hidden md:block"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+        </div>
       </section>
 
       {/* CATEGORY FILTERS */}
@@ -457,11 +403,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* CONTENT ROWS */}
+      {/* CONTENT ROWS - Streaming Style */}
       <div className="max-w-7xl mx-auto py-4 sm:py-6">
-        {/* Hero/Featured row */}
-        {renderRow('Featured', featuredFilms, true)}
-        
         {/* Top Picks */}
         {renderRow('Top Picks', topPicks)}
         
@@ -470,9 +413,7 @@ export default function HomePage() {
         
         {/* Category-based rows */}
         {Object.entries(filmsByCategory).map(([category, films]) => {
-          // Skip if it's the "All Content" row (already shown)
           if (category === 'All Content') return null
-          // Skip if it's a category already shown
           if (category === 'Featured' || category === 'Top Picks' || category === 'Recently Added') return null
           return renderRow(category, films)
         })}
