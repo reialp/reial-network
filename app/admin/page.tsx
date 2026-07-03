@@ -333,7 +333,7 @@ export default function AdminPage() {
           <p className="text-gray-400 text-xs sm:text-sm mt-0.5">Manage content, approvals, and payouts.</p>
         </div>
 
-        {/* Stats Grid - Mobile optimized */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
           <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-white/5">
             <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Films</p>
@@ -369,12 +369,12 @@ export default function AdminPage() {
         {stats.pendingSubmissions > 0 && (
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
             <p className="text-yellow-400 text-xs sm:text-sm">
-              📤 <span className="font-bold">{stats.pendingSubmissions}</span> project{stats.pendingSubmissions > 1 ? 's' : ''} awaiting approval.
+              <span className="font-bold">{stats.pendingSubmissions}</span> project{stats.pendingSubmissions > 1 ? 's' : ''} awaiting approval.
             </p>
           </div>
         )}
 
-        {/* Filters - Mobile optimized */}
+        {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center mb-4 sm:mb-6">
           <div className="flex gap-1.5 sm:gap-2 flex-wrap">
             {(['all', 'pending', 'approved', 'rejected'] as ContentStatus[]).map((status) => (
@@ -407,7 +407,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Content Table - Mobile optimized */}
+        {/* Content Table */}
         <div className="bg-[#1a1a1a] rounded-xl sm:rounded-2xl border border-white/5 overflow-hidden mb-8 sm:mb-12">
           <div className="overflow-x-auto">
             <table className="w-full text-xs sm:text-sm">
@@ -475,7 +475,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Payouts Section - Mobile optimized */}
+        {/* Payouts Section */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
           <h2 className="text-lg sm:text-xl md:text-2xl font-bold">Payout Requests</h2>
           <select 
@@ -531,7 +531,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Transactions Section - Mobile optimized */}
+        {/* Transactions Section */}
         <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4">Transaction History</h2>
         <div className="bg-[#1a1a1a] rounded-xl sm:rounded-2xl border border-white/5 overflow-hidden">
           <div className="overflow-x-auto">
@@ -572,7 +572,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Preview Modal - Mobile optimized */}
+        {/* Preview Modal */}
         {isPreviewOpen && previewFilm && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
             <div className="bg-[#1a1a1a] rounded-xl sm:rounded-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto border border-white/10">
@@ -591,4 +591,69 @@ export default function AdminPage() {
                     <h3 className="text-xs sm:text-sm text-gray-400">Description</h3>
                     <p className="mt-1 text-xs sm:text-sm">{previewFilm.description || 'No description.'}</p>
                   </div>
-                  <div
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <div><span className="text-xs sm:text-sm text-gray-400">Creator:</span> <span className="ml-2 text-xs sm:text-sm">{previewFilm.creator_name || 'Unknown'}</span></div>
+                    <div><span className="text-xs sm:text-sm text-gray-400">Price:</span> <span className="ml-2 text-[#f5c518] font-bold text-xs sm:text-sm">KES {previewFilm.price}</span></div>
+                    <div><span className="text-xs sm:text-sm text-gray-400">Status:</span> <span className="ml-2 text-xs sm:text-sm">{previewFilm.status}</span></div>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-white/10">
+                  {previewFilm.status === 'pending' && (
+                    <>
+                      <button onClick={() => { handleApprove(previewFilm.id); closePreview(); }} className="flex-1 bg-green-500 text-white py-1.5 sm:py-2 rounded-lg text-sm font-semibold hover:bg-green-600 transition">Approve</button>
+                      <button onClick={() => { handleReject(previewFilm.id); closePreview(); }} className="flex-1 bg-red-500 text-white py-1.5 sm:py-2 rounded-lg text-sm font-semibold hover:bg-red-600 transition">Reject</button>
+                    </>
+                  )}
+                  <button onClick={closePreview} className="flex-1 border border-white/20 py-1.5 sm:py-2 rounded-lg text-sm font-semibold hover:bg-white/5 transition">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Confirmation Modal */}
+        {isConfirmModalOpen && selectedTransaction && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-[#1a1a1a] rounded-xl sm:rounded-2xl max-w-md w-full border border-white/10 p-4 sm:p-5 md:p-6">
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Confirm Transaction</h2>
+              <div className="space-y-3 sm:space-y-4">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-1">Confirmation Code</label>
+                  <input
+                    type="text"
+                    value={confirmationCode}
+                    onChange={(e) => setConfirmationCode(e.target.value)}
+                    placeholder="e.g. UFSJB94EZQ"
+                    className="w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-[#0a0a0a] border border-white/10 rounded-lg outline-none text-white text-sm"
+                  />
+                </div>
+                {confirmMessage && (
+                  <div className={`p-2.5 sm:p-3 rounded-lg text-xs sm:text-sm ${
+                    confirmMessage.includes('✅') ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                  }`}>
+                    {confirmMessage}
+                  </div>
+                )}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-4">
+                  <button 
+                    onClick={() => setIsConfirmModalOpen(false)} 
+                    className="flex-1 border border-white/20 py-1.5 sm:py-2 rounded-lg font-semibold transition text-sm hover:bg-white/5 order-2 sm:order-1"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleConfirmTransaction} 
+                    disabled={confirmLoading} 
+                    className="flex-1 bg-[#f5c518] text-black py-1.5 sm:py-2 rounded-lg font-semibold transition disabled:opacity-50 text-sm order-1 sm:order-2"
+                  >
+                    {confirmLoading ? 'Confirming...' : 'Confirm'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
