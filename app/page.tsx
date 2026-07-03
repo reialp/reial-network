@@ -362,7 +362,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
       
-      {/* ✅ HERO SECTION - Full width carousel BEHIND text */}
+      {/* ✅ HERO SECTION - Full width carousel WITH app info overlay */}
       <section className="relative h-[80vh] sm:h-[85vh] md:h-[90vh] w-full overflow-hidden">
         {/* Carousel Background */}
         <div className="absolute inset-0">
@@ -391,7 +391,7 @@ export default function HomePage() {
             </div>
           ))}
           
-          {/* Carousel dots - bottom left */}
+          {/* Carousel dots */}
           <div className="absolute bottom-24 sm:bottom-32 left-4 sm:left-8 md:left-16 flex gap-2 z-20">
             {carouselFilms.map((_, idx) => (
               <button
@@ -405,46 +405,67 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Hero Text Overlay */}
-        <div className="relative z-10 h-full flex items-center px-4 sm:px-8 md:px-16">
-          <div className="max-w-2xl">
-            {/* Featured badge */}
-            <div className="inline-block px-3 sm:px-4 py-1.5 rounded-full bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] text-xs sm:text-sm font-medium mb-4 sm:mb-6">
-              {carouselFilms[carouselIndex]?.category || 'Featured'}
+        {/* ✅ OVERLAY CONTENT - App Info + CTA */}
+        <div className="relative z-10 h-full flex flex-col justify-between">
+          {/* Top - App info */}
+          <div className="pt-6 sm:pt-8 px-4 sm:px-8 md:px-16">
+            <div className="flex items-center gap-4">
+              <span className="text-xl sm:text-2xl font-bold">Reial<span className="text-[#f5c518]">.</span></span>
+              <span className="text-gray-400 text-xs sm:text-sm hidden sm:inline">Premium Stories</span>
             </div>
-            
-            {/* Title */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] mb-3 sm:mb-4">
-              {carouselFilms[carouselIndex]?.title || 'Premium Stories'}
-            </h1>
-            
-            {/* Creator name */}
-            <p className="text-gray-300 text-sm sm:text-base md:text-lg mb-4 sm:mb-6">
-              {carouselFilms[carouselIndex]?.creator_name || 'Unknown Creator'}
-            </p>
-            
-            {/* Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <Link
-                href={`/${carouselFilms[carouselIndex]?.category?.toLowerCase() || 'film'}/${carouselFilms[carouselIndex]?.slug || carouselFilms[carouselIndex]?.id}`}
-                className="bg-[#f5c518] text-black px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-[#f5c518]/25 flex items-center justify-center gap-2 text-sm sm:text-base"
+          </div>
+
+          {/* Center - Featured content info */}
+          <div className="px-4 sm:px-8 md:px-16 pb-32 sm:pb-40">
+            <div className="max-w-2xl">
+              <div className="inline-block px-3 sm:px-4 py-1.5 rounded-full bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] text-xs sm:text-sm font-medium mb-4">
+                {carouselFilms[carouselIndex]?.category || 'Featured'}
+              </div>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] mb-2">
+                {carouselFilms[carouselIndex]?.title || 'Premium Stories'}
+              </h1>
+              <p className="text-gray-300 text-sm sm:text-base mb-4">
+                {carouselFilms[carouselIndex]?.creator_name || 'Unknown Creator'}
+              </p>
+              
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-3 sm:gap-4">
+                <Link
+                  href={`/${carouselFilms[carouselIndex]?.category?.toLowerCase() || 'film'}/${carouselFilms[carouselIndex]?.slug || carouselFilms[carouselIndex]?.id}`}
+                  className="bg-[#f5c518] text-black px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-[#f5c518]/25 flex items-center justify-center gap-2 text-sm sm:text-base"
+                >
+                  <span>▶ Watch Now</span>
+                </Link>
+                <Link
+                  href="/explore"
+                  className="border border-white/30 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm sm:text-base"
+                >
+                  <span>Explore All</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom - App description + Become a Creator */}
+          <div className="absolute bottom-8 sm:bottom-12 left-0 right-0 px-4 sm:px-8 md:px-16 z-20">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
+              <p className="text-gray-400 text-xs sm:text-sm text-center sm:text-left">
+                Discover and buy exclusive films, documentaries, series and more from amazing creators.
+              </p>
+              <button
+                onClick={handleBecomeCreatorClick}
+                className="bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] px-4 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all duration-300 hover:scale-105 whitespace-nowrap"
               >
-                <span>▶ Watch Now</span>
-              </Link>
-              <Link
-                href="/explore"
-                className="border border-white/30 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm sm:text-base"
-              >
-                <span>Explore All</span>
-              </Link>
+                Become a Creator
+              </button>
             </div>
           </div>
         </div>
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-gray-400 animate-bounce z-10">
-          <span className="text-[8px] sm:text-xs uppercase tracking-widest">Scroll</span>
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-gray-500 animate-bounce z-10">
+          <span className="text-[6px] sm:text-[8px] uppercase tracking-widest">Scroll</span>
+          <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
           </svg>
         </div>
