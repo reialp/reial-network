@@ -363,8 +363,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
       
-      {/* ✅ HERO SECTION - Fixed flow */}
-      <section className="relative h-[75vh] sm:h-[80vh] md:h-[85vh] lg:h-[90vh] w-full overflow-hidden">
+      {/* ✅ HERO SECTION - Clean mobile layout */}
+      <section className="relative h-[65vh] sm:h-[75vh] md:h-[85vh] lg:h-[90vh] w-full overflow-hidden">
         {/* Carousel Background */}
         <div className="absolute inset-0">
           {carouselFilms.map((film, idx) => (
@@ -393,7 +393,7 @@ export default function HomePage() {
           ))}
           
           {/* Carousel dots */}
-          <div className="absolute bottom-20 sm:bottom-24 md:bottom-28 left-4 sm:left-8 md:left-16 flex gap-2 z-20">
+          <div className="absolute bottom-16 sm:bottom-20 md:bottom-28 left-4 sm:left-8 md:left-16 flex gap-2 z-20">
             {carouselFilms.map((_, idx) => (
               <button
                 key={idx}
@@ -407,17 +407,17 @@ export default function HomePage() {
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 h-full flex flex-col">
+        <div className="relative z-10 h-full flex flex-col justify-between">
           {/* Top - Logo */}
-          <div className="pt-4 sm:pt-6 md:pt-8 px-4 sm:px-8 md:px-16 flex-shrink-0">
+          <div className="pt-3 sm:pt-4 md:pt-8 px-4 sm:px-8 md:px-16 flex-shrink-0">
             <div className="flex items-center gap-2 sm:gap-4">
               <span className="text-lg sm:text-xl md:text-2xl font-bold">Reial<span className="text-[#f5c518]">.</span></span>
               <span className="text-gray-400 text-[10px] sm:text-xs md:text-sm hidden xs:inline">Premium Stories</span>
             </div>
           </div>
 
-          {/* Center - Main content - FLEXIBLE */}
-          <div className="flex-1 flex items-center px-4 sm:px-8 md:px-16 py-2 sm:py-4">
+          {/* Center - Content */}
+          <div className="flex-1 flex items-center px-4 sm:px-8 md:px-16 py-2">
             <div className="max-w-2xl w-full">
               <div className="inline-block px-2 sm:px-3 md:px-4 py-0.5 sm:py-1 rounded-full bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] text-[10px] sm:text-xs md:text-sm font-medium mb-2 sm:mb-3">
                 {carouselFilms[carouselIndex]?.category || 'Featured'}
@@ -446,15 +446,15 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Bottom - Fixed position */}
-          <div className="flex-shrink-0 pb-3 sm:pb-4 md:pb-6 px-4 sm:px-8 md:px-16 z-20">
-            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3">
-              <p className="text-gray-400 text-[10px] sm:text-xs md:text-sm text-center sm:text-left">
-                Discover and buy exclusive films, documentaries, series and more from amazing creators.
+          {/* Bottom - App description + Become a Creator */}
+          <div className="flex-shrink-0 pb-2 sm:pb-3 md:pb-6 px-4 sm:px-8 md:px-16 z-20 bg-gradient-to-t from-[#0a0a0a]/80 to-transparent pt-4">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
+              <p className="text-gray-300 text-[10px] sm:text-xs md:text-sm text-center sm:text-left">
+                Discover and buy exclusive films, documentaries, series and more.
               </p>
               <button
                 onClick={handleBecomeCreatorClick}
-                className="bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] px-3 sm:px-4 md:px-6 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold transition-all duration-300 hover:scale-105 whitespace-nowrap"
+                className="bg-[#f5c518] text-black px-4 sm:px-5 md:px-6 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs md:text-sm font-semibold hover:scale-105 transition-all duration-300 whitespace-nowrap"
               >
                 Become a Creator
               </button>
@@ -471,10 +471,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ✅ SEARCH BAR - Fixed */}
+      {/* ✅ SEARCH + CATEGORIES - Single bar */}
       <div className="sticky top-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-white/5 py-2 sm:py-3 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row gap-2 sm:gap-3 items-center">
-          {/* Search Input */}
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row gap-2 sm:gap-3">
+          {/* Search Input - Only ONE */}
           <div className="relative w-full sm:flex-1">
             <input
               type="text"
@@ -489,7 +489,7 @@ export default function HomePage() {
           </div>
           
           {/* Category Filters */}
-          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide w-full sm:w-auto">
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide">
             {categories.map((category) => (
               <button
                 key={category}
