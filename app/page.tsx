@@ -155,11 +155,18 @@ export default function HomePage() {
     }
   }, [allFilms, isPaused])
 
-  const categories = ['All', ...new Set(allFilms.map(f => f.category).filter((c): c is string => c !== null))]
+  // ✅ Categories: "Featured" first, then "All", then the rest
+  const categories = useMemo(() => {
+    const uniqueCategories = ['Featured', 'All', ...new Set(allFilms.map(f => f.category).filter((c): c is string => c !== null))]
+    return uniqueCategories
+  }, [allFilms])
 
   const filteredFilms = useMemo(() => {
     let result = allFilms
-    if (selectedCategory !== 'All') {
+    if (selectedCategory === 'Featured') {
+      // Show first 12 films as "Featured"
+      result = allFilms.slice(0, 12)
+    } else if (selectedCategory !== 'All' && selectedCategory !== 'Featured') {
       result = result.filter(f => f.category === selectedCategory)
     }
     if (searchTerm.trim()) {
@@ -362,9 +369,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
       
-      {/* ✅ HERO SECTION - Full width carousel WITH app info overlay */}
+      {/* HERO SECTION */}
       <section className="relative h-[80vh] sm:h-[85vh] md:h-[90vh] w-full overflow-hidden">
-        {/* Carousel Background */}
         <div className="absolute inset-0">
           {carouselFilms.map((film, idx) => (
             <div
@@ -391,7 +397,6 @@ export default function HomePage() {
             </div>
           ))}
           
-          {/* Carousel dots */}
           <div className="absolute bottom-24 sm:bottom-32 left-4 sm:left-8 md:left-16 flex gap-2 z-20">
             {carouselFilms.map((_, idx) => (
               <button
@@ -405,9 +410,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ✅ OVERLAY CONTENT - App Info + CTA */}
         <div className="relative z-10 h-full flex flex-col justify-between">
-          {/* Top - App info */}
           <div className="pt-6 sm:pt-8 px-4 sm:px-8 md:px-16">
             <div className="flex items-center gap-4">
               <span className="text-xl sm:text-2xl font-bold">Reial<span className="text-[#f5c518]">.</span></span>
@@ -415,7 +418,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Center - Featured content info */}
           <div className="px-4 sm:px-8 md:px-16 pb-32 sm:pb-40">
             <div className="max-w-2xl">
               <div className="inline-block px-3 sm:px-4 py-1.5 rounded-full bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] text-xs sm:text-sm font-medium mb-4">
@@ -428,7 +430,6 @@ export default function HomePage() {
                 {carouselFilms[carouselIndex]?.creator_name || 'Unknown Creator'}
               </p>
               
-              {/* Action buttons */}
               <div className="flex flex-wrap gap-3 sm:gap-4">
                 <Link
                   href={`/${carouselFilms[carouselIndex]?.category?.toLowerCase() || 'film'}/${carouselFilms[carouselIndex]?.slug || carouselFilms[carouselIndex]?.id}`}
@@ -446,7 +447,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Bottom - App description + Become a Creator */}
           <div className="absolute bottom-8 sm:bottom-12 left-0 right-0 px-4 sm:px-8 md:px-16 z-20">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
               <p className="text-gray-400 text-xs sm:text-sm text-center sm:text-left">
@@ -462,7 +462,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Scroll indicator */}
         <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-gray-500 animate-bounce z-10">
           <span className="text-[6px] sm:text-[8px] uppercase tracking-widest">Scroll</span>
           <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -471,21 +470,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ✅ CATEGORY FILTERS - Sticky */}
+      {/* ✅ CATEGORY FILTERS - "Featured" first */}
       <div className="sticky top-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-white/5 py-3 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            <button
-              onClick={() => setSelectedCategory('All')}
-              className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-300 flex-shrink-0 ${
-                selectedCategory === 'All'
-                  ? 'bg-[#f5c518] text-black'
-                  : 'text-gray-400 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              All
-            </button>
-            {categories.filter(c => c !== 'All').map((category) => (
+            {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
@@ -513,7 +502,7 @@ export default function HomePage() {
         })}
       </div>
 
-      {/* ✅ FOOTER */}
+      {/* FOOTER */}
       <footer className="border-t border-white/5 mt-4 sm:mt-8 px-4 sm:px-6 py-8 sm:py-12">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
           <div className="flex items-center gap-2 sm:gap-3">
