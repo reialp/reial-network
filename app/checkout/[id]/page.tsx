@@ -12,28 +12,26 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
+  const [isCreator, setIsCreator] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [isOwnFilm, setIsOwnFilm] = useState(false)
 
   useEffect(() => {
     async function loadData() {
-      // ✅ Step 1: Check if user is logged in
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session) {
-        // ✅ NOT logged in → redirect to login with return URL
         const currentPath = window.location.pathname
-        console.log('🔒 Not logged in, redirecting to login with return URL:', currentPath)
         router.push(`/auth/login?redirectTo=${currentPath}`)
         return
       }
 
       setUser(session.user)
 
-      // ✅ Step 2: Get film ID from URL
+      // Get film ID from URL
       const path = window.location.pathname
       const segments = path.split('/')
       const id = segments[segments.length - 1]
-
-      console.log('🔍 Checkout - ID from URL:', id)
 
       if (!id || id === 'undefined' || id === 'null' || id === 'checkout' || id === '') {
         setError('Invalid film ID. Please go back and try again.')
@@ -41,7 +39,7 @@ export default function CheckoutPage() {
         return
       }
 
-      // ✅ Step 3: Load film
+      // Load film
       const { data, error } = await supabase
         .from('content')
         .select('*')
@@ -56,6 +54,22 @@ export default function CheckoutPage() {
         return
       }
       setFilm(data)
+
+      // ✅ Check if user is the creator of this film
+      setIsOwnFilm(data.creator_id === session.user.id)
+
+      // ✅ Check if user is a creator or admin
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_creator, is_admin')
+        .eq('id', session.user.id)
+        .single()
+
+      if (profile) {
+        setIsCreator(profile.is_creator || false)
+        setIsAdmin(profile.is_admin || false)
+      }
+
       setLoading(false)
     }
     loadData()
@@ -80,7 +94,6 @@ export default function CheckoutPage() {
     try {
       console.log('🎬 Starting purchase for:', film.title)
 
-      // Step 1: Create purchase record (status = pending)
       const purchaseResponse = await fetch('/api/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,7 +117,6 @@ export default function CheckoutPage() {
         return
       }
 
-      // Step 2: Get user profile for billing info
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name, email')
@@ -113,9 +125,6 @@ export default function CheckoutPage() {
 
       const fullName = profile?.full_name || 'Customer'
       const email = profile?.email || session.user.email || 'customer@example.com'
-
-      // Step 3: Initiate PesaPal payment
-      console.log('💳 Initiating PesaPal payment for:', purchaseResult.purchaseId)
 
       const paymentResponse = await fetch('/api/pesapal/initiate', {
         method: 'POST',
@@ -131,10 +140,7 @@ export default function CheckoutPage() {
         }),
       })
 
-      console.log('📡 Payment response status:', paymentResponse.status)
-
       const paymentResult = await paymentResponse.json()
-      console.log('💰 Payment result:', paymentResult)
 
       if (!paymentResponse.ok) {
         setError(paymentResult.error || 'Payment initiation failed.')
@@ -142,9 +148,7 @@ export default function CheckoutPage() {
         return
       }
 
-      // Redirect to PesaPal payment page
       if (paymentResult.redirect_url) {
-        console.log('🔀 Redirecting to PesaPal:', paymentResult.redirect_url)
         window.location.href = paymentResult.redirect_url
       } else {
         setError('No redirect URL received from payment provider.')
@@ -161,7 +165,10 @@ export default function CheckoutPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-center">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-gray-400 text-sm">Loading...</p>
+        </div>
       </div>
     )
   }
@@ -191,42 +198,61 @@ export default function CheckoutPage() {
   const platformFee = Math.round(total * 0.15)
   const creatorEarnings = Math.round(total * 0.85)
 
+  // ✅ Only show revenue breakdown to creator of the film OR admin
+  const showRevenueBreakdown = isOwnFilm || isAdmin
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white px-6 py-8">
+    <div className="min-h-screen bg-[#0a0a0a] text-white px-4 sm:px-6 py-6 sm:py-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Checkout</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Checkout</h1>
 
-        <div className="bg-[#1a1a1a] rounded-xl border border-white/10 p-6 space-y-4">
-          <div className="flex justify-between">
-            <span className="text-gray-400">Film</span>
-            <span className="font-semibold">{film.title}</span>
+        <div className="bg-[#1a1a1a] rounded-xl border border-white/10 p-4 sm:p-6 space-y-3 sm:space-y-4">
+          {/* Film Info */}
+          <div className="flex justify-between items-center">
+            <span className="text-gray-400 text-sm sm:text-base">Film</span>
+            <span className="font-semibold text-sm sm:text-base">{film.title}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Price</span>
-            <span>KES {film.price}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Platform Fee (15%)</span>
-            <span className="text-gray-400">KES {platformFee}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Creator Earnings (85%)</span>
-            <span className="text-[#f5c518]">KES {creatorEarnings}</span>
-          </div>
-          <div className="border-t border-white/10 pt-4 flex justify-between text-lg font-bold">
-            <span>Total</span>
-            <span className="text-[#f5c518]">KES {total}</span>
+          
+          {/* Price */}
+          <div className="flex justify-between items-center">
+            <span className="text-gray-400 text-sm sm:text-base">Price</span>
+            <span className="text-sm sm:text-base">KES {film.price}</span>
           </div>
 
+          {/* ✅ Revenue Breakdown - Only for Creator or Admin */}
+          {showRevenueBreakdown && (
+            <>
+              <div className="border-t border-white/10 pt-3 sm:pt-4 space-y-2">
+                <p className="text-xs text-gray-500 mb-2">Revenue Breakdown</p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Platform Fee (15%)</span>
+                  <span className="text-gray-400">KES {platformFee}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Creator Earnings (85%)</span>
+                  <span className="text-[#f5c518] font-semibold">KES {creatorEarnings}</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Total */}
+          <div className="border-t border-white/10 pt-3 sm:pt-4 flex justify-between items-center">
+            <span className="font-bold text-sm sm:text-base">Total</span>
+            <span className="text-[#f5c518] font-bold text-lg sm:text-xl">KES {total}</span>
+          </div>
+
+          {/* Purchase Button */}
           <button
             onClick={handlePurchase}
             disabled={loading}
-            className="w-full bg-[#f5c518] text-black py-3 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50"
+            className="w-full bg-[#f5c518] text-black py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50 text-sm sm:text-base"
           >
             {loading ? 'Processing...' : 'Pay with Pesapal'}
           </button>
 
-          <p className="text-xs text-gray-500 text-center">
+          {/* Footer Text */}
+          <p className="text-[10px] sm:text-xs text-gray-500 text-center">
             You will be redirected to Pesapal for secure payment.
             No refunds after purchase.
           </p>
