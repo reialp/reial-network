@@ -155,18 +155,11 @@ export default function HomePage() {
     }
   }, [allFilms, isPaused])
 
-  // ✅ Categories: "Featured" first, then "All", then the rest
-  const categories = useMemo(() => {
-    const uniqueCategories = ['Featured', 'All', ...new Set(allFilms.map(f => f.category).filter((c): c is string => c !== null))]
-    return uniqueCategories
-  }, [allFilms])
+  const categories = ['All', ...new Set(allFilms.map(f => f.category).filter((c): c is string => c !== null))]
 
   const filteredFilms = useMemo(() => {
     let result = allFilms
-    if (selectedCategory === 'Featured') {
-      // Show first 12 films as "Featured"
-      result = allFilms.slice(0, 12)
-    } else if (selectedCategory !== 'All' && selectedCategory !== 'Featured') {
+    if (selectedCategory !== 'All') {
       result = result.filter(f => f.category === selectedCategory)
     }
     if (searchTerm.trim()) {
@@ -342,8 +335,10 @@ export default function HomePage() {
     )
   }
 
-  const topPicks = allFilms.slice(5, 13)
-  const recentFilms = allFilms.slice(13, 21)
+  // ✅ ROW DATA - "Featured" is first
+  const featuredFilms = allFilms.slice(0, 8)      // First 8 as Featured
+  const topPicks = allFilms.slice(8, 16)          // Next 8 as Top Picks
+  const recentFilms = allFilms.slice(16, 24)      // Next 8 as Recently Added
 
   const categoryRows = useMemo(() => {
     const grouped: Record<string, Film[]> = {}
@@ -470,7 +465,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ✅ CATEGORY FILTERS - "Featured" first */}
+      {/* CATEGORY FILTERS */}
       <div className="sticky top-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-white/5 py-3 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
@@ -491,13 +486,17 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ✅ CONTENT ROWS */}
+      {/* ✅ CONTENT ROWS - Featured row FIRST */}
       <div className="max-w-7xl mx-auto py-4 sm:py-6">
+        {/* ✅ Featured row - displayed first */}
+        {renderRow('Featured', featuredFilms, 'featured')}
+        
+        {/* Other rows */}
         {renderRow('Top Picks', topPicks, 'top-picks')}
         {renderRow('Recently Added', recentFilms, 'recently-added')}
         
         {Object.entries(categoryRows).map(([category, films]) => {
-          if (category === 'Top Picks' || category === 'Recently Added') return null
+          if (category === 'Featured' || category === 'Top Picks' || category === 'Recently Added') return null
           return renderRow(category, films, `category-${category}`)
         })}
       </div>
