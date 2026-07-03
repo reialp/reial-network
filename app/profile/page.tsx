@@ -119,7 +119,6 @@ function ProfileForm() {
     setSuccess(true)
     setSaving(false)
 
-    // ✅ If user became a creator, redirect to terms then dashboard
     if (intent === 'creator' && currentProfile.is_creator && !wasCreator) {
       setTimeout(() => {
         router.push('/terms')
@@ -127,7 +126,6 @@ function ProfileForm() {
       return
     }
 
-    // ✅ If just saving profile (no creator change), stay on profile
     setTimeout(() => setSuccess(false), 2000)
   }
 
@@ -140,32 +138,32 @@ function ProfileForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white px-6 py-8">
+    <div className="min-h-screen bg-[#0a0a0a] text-white px-4 sm:px-6 py-6 sm:py-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Profile Settings</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Profile Settings</h1>
 
         {intent === 'creator' && !profile.is_creator && (
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
-            <p className="text-yellow-400 text-sm">
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <p className="text-yellow-400 text-xs sm:text-sm">
               Check the box below to become a creator and start uploading content.
             </p>
           </div>
         )}
 
         {profile.is_creator && (
-          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-4">
-            <p className="text-green-400 text-sm">You are a creator.</p>
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
+            <p className="text-green-400 text-xs sm:text-sm">You are a creator.</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
               {error}
             </div>
           )}
           {success && (
-            <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm">
               Profile saved successfully.
             </div>
           )}
@@ -176,7 +174,7 @@ function ProfileForm() {
               type="text"
               value={profile.full_name}
               onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-              className="mt-1 block w-full px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white"
+              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm sm:text-base"
             />
           </div>
 
@@ -186,7 +184,7 @@ function ProfileForm() {
               value={profile.bio}
               onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
               rows={3}
-              className="mt-1 block w-full px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white resize-none"
+              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm sm:text-base resize-none"
             />
           </div>
 
@@ -196,7 +194,7 @@ function ProfileForm() {
               type="url"
               value={profile.avatar_url}
               onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
-              className="mt-1 block w-full px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white"
+              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm sm:text-base"
               placeholder="https://example.com/avatar.jpg"
             />
           </div>
@@ -207,20 +205,20 @@ function ProfileForm() {
               type="text"
               value={profile.payout_phone}
               onChange={(e) => setProfile({ ...profile, payout_phone: e.target.value })}
-              className="mt-1 block w-full px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white"
+              className="mt-1 block w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm sm:text-base"
               placeholder="0712345678"
             />
           </div>
 
-          <div className={`flex items-center gap-3 p-4 rounded-lg border ${intent === 'creator' ? 'bg-[#f5c518]/10 border-[#f5c518]' : 'bg-[#1a1a1a] border-white/10'}`}>
+          <div className={`flex items-center gap-3 p-3 sm:p-4 rounded-lg border ${intent === 'creator' ? 'bg-[#f5c518]/10 border-[#f5c518]' : 'bg-[#1a1a1a] border-white/10'}`}>
             <input
               type="checkbox"
               id="is_creator"
               checked={profile.is_creator}
               onChange={(e) => setProfile({ ...profile, is_creator: e.target.checked })}
-              className="w-5 h-5 accent-[#f5c518]"
+              className="w-4 h-4 sm:w-5 sm:h-5 accent-[#f5c518] flex-shrink-0"
             />
-            <label htmlFor="is_creator" className="text-sm font-medium text-gray-300 cursor-pointer">
+            <label htmlFor="is_creator" className="text-xs sm:text-sm font-medium text-gray-300 cursor-pointer">
               Become a Creator
             </label>
           </div>
@@ -228,7 +226,7 @@ function ProfileForm() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full bg-[#f5c518] text-black py-3 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50"
+            className="w-full bg-[#f5c518] text-black py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50 text-sm sm:text-base"
           >
             {saving ? 'Saving...' : 'Save Profile'}
           </button>
