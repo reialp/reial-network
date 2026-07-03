@@ -208,7 +208,7 @@ export default function HomePage() {
     }
   }
 
-  const renderFilmCard = (film: Film) => {
+  const renderFilmCard = (film: Film, isLarge: boolean = false) => {
     const isPurchased = purchasedIds.has(film.id)
     const token = purchaseTokens[film.id]
     
@@ -225,7 +225,9 @@ export default function HomePage() {
       <Link
         key={film.id}
         href={watchUrl}
-        className="group bg-[#1a1a1a] rounded-2xl overflow-hidden hover:scale-[1.03] transition-all duration-500 hover:shadow-2xl hover:shadow-[#f5c518]/10 border border-white/5 hover:border-[#f5c518]/20"
+        className={`group flex-shrink-0 bg-[#1a1a1a] rounded-xl overflow-hidden hover:scale-[1.03] transition-all duration-500 hover:shadow-2xl hover:shadow-[#f5c518]/10 border border-white/5 hover:border-[#f5c518]/20 ${
+          isLarge ? 'w-[160px] sm:w-[200px] md:w-[240px]' : 'w-[140px] sm:w-[180px] md:w-[220px]'
+        }`}
       >
         <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
           {film.thumbnail_url ? (
@@ -236,40 +238,68 @@ export default function HomePage() {
               className="object-cover transition-transform duration-700 group-hover:scale-110"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-20">🎬</div>
+            <div className="absolute inset-0 flex items-center justify-center text-4xl sm:text-6xl opacity-20">🎬</div>
           )}
           {film.category && (
-            <div className="absolute top-3 right-3 bg-[#f5c518]/90 text-black text-xs px-3 py-1 rounded-full font-semibold">
+            <div className="absolute top-2 right-2 bg-[#f5c518]/90 text-black text-[8px] sm:text-xs px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full font-semibold">
               {film.category}
             </div>
           )}
-          <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+          <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
             {isPurchased ? (
-              <span className="bg-green-500/90 text-white text-sm font-bold px-3 py-1 rounded-full">✓ Owned</span>
+              <span className="bg-green-500/90 text-white text-[8px] sm:text-sm font-bold px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full">✓ Owned</span>
             ) : (
-              <span className="bg-black/80 text-[#f5c518] text-sm font-bold px-3 py-1 rounded-full">KES {film.price}</span>
+              <span className="bg-black/80 text-[#f5c518] text-[8px] sm:text-sm font-bold px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full">KES {film.price}</span>
             )}
           </div>
         </div>
-        <div className="p-4">
-          <h3 className="font-semibold text-sm group-hover:text-[#f5c518] transition-colors line-clamp-1">
+        <div className="p-2 sm:p-3">
+          <h3 className="font-semibold text-xs sm:text-sm group-hover:text-[#f5c518] transition-colors line-clamp-1">
             {film.title}
           </h3>
-          <p className="text-gray-500 text-xs mt-1">
+          <p className="text-gray-500 text-[8px] sm:text-xs mt-0.5 truncate">
             {film.creator_name || 'Unknown Creator'}
           </p>
-          <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center justify-between mt-1.5">
             {isPurchased ? (
-              <span className="text-green-400 font-bold text-sm">✓ Purchased</span>
+              <span className="text-green-400 font-bold text-[8px] sm:text-xs">✓ Purchased</span>
             ) : (
-              <span className="text-[#f5c518] font-bold text-sm">KES {film.price}</span>
+              <span className="text-[#f5c518] font-bold text-[8px] sm:text-xs">KES {film.price}</span>
             )}
-            <span className="text-gray-600 text-xs">{isPurchased ? '▶ Watch' : '🎬 Watch'}</span>
+            <span className="text-gray-600 text-[8px] sm:text-xs">{isPurchased ? '▶ Watch' : '🎬'}</span>
           </div>
         </div>
       </Link>
     )
   }
+
+  // Group films by category for rows
+  const filmsByCategory = useMemo(() => {
+    const grouped: Record<string, Film[]> = {}
+    const all = filteredFilms
+    
+    // If "All" is selected or no category, show all in one row
+    if (selectedCategory === 'All' || !selectedCategory) {
+      return { 'All Content': all }
+    }
+    
+    // Group by category
+    all.forEach(film => {
+      const cat = film.category || 'Uncategorized'
+      if (!grouped[cat]) grouped[cat] = []
+      grouped[cat].push(film)
+    })
+    return grouped
+  }, [filteredFilms, selectedCategory])
+
+  // Featured films (first 5 for hero carousel)
+  const featuredFilms = allFilms.slice(0, 5)
+
+  // Top picks (next 8)
+  const topPicks = allFilms.slice(5, 13)
+
+  // Recently added (next 8)
+  const recentFilms = allFilms.slice(13, 21)
 
   if (loading) {
     return (
@@ -282,174 +312,140 @@ export default function HomePage() {
     )
   }
 
+  const renderRow = (title: string, films: Film[], isLarge: boolean = false) => {
+    if (films.length === 0) return null
+    return (
+      <div className="mb-6 sm:mb-8">
+        <div className="flex justify-between items-center mb-3 sm:mb-4 px-4 sm:px-0">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold">{title}</h2>
+          <Link href={`/explore?category=${title}`} className="text-[#f5c518] text-xs sm:text-sm hover:underline">
+            See All →
+          </Link>
+        </div>
+        <div className="overflow-x-auto scrollbar-hide px-4 sm:px-0">
+          <div className="flex gap-3 sm:gap-4 pb-4">
+            {films.map(film => renderFilmCard(film, isLarge))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
-      {/* HERO SECTION - Mobile Optimized */}
-      <section className="relative min-h-screen flex items-center px-4 sm:px-6 overflow-hidden bg-grid-pattern">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-[#1a0a0a] to-[#0a0a0a]">
-          <div className="absolute top-1/4 left-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-[#f5c518]/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/3 right-1/4 w-[250px] sm:w-[400px] h-[250px] sm:h-[400px] bg-[#f5c518]/5 rounded-full blur-3xl" />
-        </div>
-
-        <div className="max-w-7xl mx-auto relative z-10 w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-          <div className="text-center lg:text-left">
-            <div className="inline-block px-3 sm:px-4 py-1.5 rounded-full bg-[#f5c518]/10 border border-[#f5c518]/20 text-[#f5c518] text-xs sm:text-sm font-medium mb-4 sm:mb-6">
-              Premium Content Marketplace
-            </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] mb-4 sm:mb-6">
-              Premium Stories.
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f5c518] via-[#ffd700] to-[#f5c518]">
-                Directly from Creators.
-              </span>
-            </h1>
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto lg:mx-0 mb-6 sm:mb-10 leading-relaxed">
-              Discover and buy exclusive films, documentaries, series and more from amazing creators.
-              <span className="block text-gray-500 text-xs sm:text-sm mt-2">Thousands of stories, one platform.</span>
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
-              <Link
-                href="/explore"
-                className="group bg-[#f5c518] text-black px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-[#f5c518]/25 flex items-center justify-center gap-2 text-sm sm:text-base"
-              >
-                <span>Explore Content</span>
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </Link>
-              <button
-                onClick={handleBecomeCreatorClick}
-                className="px-6 sm:px-8 py-3 sm:py-4 border border-white/20 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 hover:scale-105 text-center cursor-pointer text-sm sm:text-base"
-                type="button"
-              >
-                Become a Creator
-              </button>
-            </div>
-          </div>
-
-          {/* Carousel - Mobile Optimized */}
-          {carouselFilms.length > 0 && (
-            <div
-              className="relative aspect-[4/3] max-h-[50vh] sm:max-h-[60vh] w-full rounded-xl sm:rounded-2xl overflow-hidden border border-white/10 shadow-2xl mt-6 lg:mt-0"
-              onMouseEnter={() => setIsPaused(true)}
-              onMouseLeave={() => setIsPaused(false)}
-            >
-              {carouselFilms.map((film, idx) => {
-                const isPurchased = purchasedIds.has(film.id)
-                const token = purchaseTokens[film.id]
-                
-                const contentSlug = film.slug || film.id
-                const categoryPath = film.category ? film.category.toLowerCase() : 'film'
-                let linkUrl = `/${categoryPath}/${contentSlug}`
-                if (isPurchased && token) {
-                  linkUrl = `/watch/${token}`
-                } else if (isPurchased && !token) {
-                  linkUrl = `/watch/${film.id}`
-                }
-                
-                return (
-                  <Link
-                    key={film.id}
-                    href={linkUrl}
-                    className={`absolute inset-0 transition-all duration-700 ease-in-out cursor-pointer group ${
-                      idx === carouselIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
-                    }`}
-                  >
-                    {film.thumbnail_url ? (
-                      <Image
-                        src={film.thumbnail_url}
-                        alt={film.title}
-                        fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-20 bg-[#1a1a1a]">🎬</div>
-                    )}
-                    
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                    
-                    <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 pointer-events-none">
-                      <h3 className="text-base sm:text-xl font-bold group-hover:text-[#f5c518] transition-colors line-clamp-1">
-                        {film.title}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-gray-300">
-                        {film.creator_name || 'Unknown Creator'}
-                      </p>
-                      <div className="flex items-center gap-3 sm:gap-4 mt-2">
-                        {isPurchased ? (
-                          <>
-                            <span className="bg-green-500/90 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 rounded-full">
-                              ✓ Owned
+      {/* HERO CAROUSEL - Full width featured content */}
+      <section className="relative h-[50vh] sm:h-[60vh] md:h-[70vh] lg:h-[80vh] w-full overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-transparent to-transparent z-10 w-1/3" />
+        
+        {featuredFilms.length > 0 && (
+          <div
+            className="relative h-full w-full"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+          >
+            {featuredFilms.map((film, idx) => {
+              const isPurchased = purchasedIds.has(film.id)
+              const token = purchaseTokens[film.id]
+              
+              const contentSlug = film.slug || film.id
+              const categoryPath = film.category ? film.category.toLowerCase() : 'film'
+              let linkUrl = `/${categoryPath}/${contentSlug}`
+              if (isPurchased && token) {
+                linkUrl = `/watch/${token}`
+              } else if (isPurchased && !token) {
+                linkUrl = `/watch/${film.id}`
+              }
+              
+              return (
+                <Link
+                  key={film.id}
+                  href={linkUrl}
+                  className={`absolute inset-0 transition-all duration-1000 ease-in-out cursor-pointer ${
+                    idx === carouselIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'
+                  }`}
+                >
+                  {film.thumbnail_url ? (
+                    <Image
+                      src={film.thumbnail_url}
+                      alt={film.title}
+                      fill
+                      className="object-cover"
+                      priority={idx === 0}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-6xl bg-[#1a1a1a]">🎬</div>
+                  )}
+                  
+                  <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 md:p-16 z-20 bg-gradient-to-t from-[#0a0a0a] to-transparent">
+                    <div className="max-w-7xl mx-auto">
+                      <div className="max-w-lg">
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2">{film.title}</h2>
+                        <p className="text-gray-300 text-xs sm:text-sm md:text-base line-clamp-2 mb-3 sm:mb-4">
+                          {film.creator_name || 'Unknown Creator'}
+                        </p>
+                        <div className="flex items-center gap-3">
+                          {isPurchased ? (
+                            <span className="bg-green-500/90 text-white text-xs sm:text-sm font-bold px-3 py-1.5 rounded-full">
+                              ✓ Purchased
                             </span>
-                            <span className="text-white text-xs sm:text-sm font-semibold">
-                              ▶ Watch Now
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="bg-[#f5c518] text-black text-[10px] sm:text-sm font-bold px-2 sm:px-3 py-1 rounded-full">
+                          ) : (
+                            <span className="bg-[#f5c518] text-black text-xs sm:text-sm font-bold px-3 py-1.5 rounded-full">
                               KES {film.price}
                             </span>
-                            <span className="text-gray-300 text-xs sm:text-sm group-hover:text-white transition-colors">
-                              View Details →
-                            </span>
-                          </>
-                        )}
+                          )}
+                          <span className="text-white text-xs sm:text-sm font-semibold bg-white/10 px-3 py-1.5 rounded-full">
+                            {isPurchased ? '▶ Watch Now' : 'View Details →'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-black/30 pointer-events-none">
-                      <div className="w-12 h-12 sm:w-20 sm:h-20 bg-[#f5c518] rounded-full flex items-center justify-center transform scale-90 group-hover:scale-100 transition-transform duration-300">
-                        <svg className="w-6 h-6 sm:w-10 sm:h-10 text-black ml-0.5 sm:ml-1" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                      </div>
-                    </div>
-                    
-                    {film.category && (
-                      <div className="absolute top-3 right-3 bg-[#f5c518]/90 text-black text-[8px] sm:text-xs px-2 sm:px-3 py-1 rounded-full font-semibold pointer-events-none">
-                        {film.category}
-                      </div>
-                    )}
-                    
-                    <div className="absolute bottom-16 sm:bottom-20 left-4 flex gap-2 z-10">
-                      {carouselFilms.map((_, dotIdx) => (
-                        <button
-                          key={dotIdx}
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            setCarouselIndex(dotIdx)
-                          }}
-                          className={`w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full transition ${
-                            dotIdx === carouselIndex ? 'bg-[#f5c518]' : 'bg-white/30 hover:bg-white/50'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </Link>
-                )
-              })}
+                  </div>
+                </Link>
+              )
+            })}
+            
+            {/* Carousel dots */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+              {featuredFilms.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCarouselIndex(idx)}
+                  className={`w-2 h-2 rounded-full transition ${
+                    idx === carouselIndex ? 'bg-[#f5c518] w-6' : 'bg-white/30 hover:bg-white/50'
+                  }`}
+                />
+              ))}
             </div>
-          )}
-        </div>
-
-        <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-gray-500 animate-bounce">
-          <span className="text-[8px] sm:text-xs uppercase tracking-widest">Scroll</span>
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </div>
+        )}
+        
+        <button
+          onClick={() => setCarouselIndex((prev) => (prev - 1 + featuredFilms.length) % featuredFilms.length)}
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition hidden md:block"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-        </div>
+        </button>
+        <button
+          onClick={() => setCarouselIndex((prev) => (prev + 1) % featuredFilms.length)}
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition hidden md:block"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </section>
 
-      {/* CATEGORY FILTERS - Mobile Optimized */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-3 sm:pb-4">
-        <div className="flex gap-2 sm:gap-3 flex-wrap justify-center sm:justify-start">
+      {/* CATEGORY FILTERS */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
           {categories.map((category) => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105 ${
+              className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all duration-300 hover:scale-105 flex-shrink-0 ${
                 selectedCategory === category
                   ? 'bg-[#f5c518] text-black shadow-lg shadow-[#f5c518]/25'
                   : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#2a2a2a] hover:text-white'
@@ -461,32 +457,29 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* FEATURED CONTENT GRID - Mobile Optimized */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-8">
-          <div className="text-center sm:text-left">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">Featured Content</h2>
-            <p className="text-gray-500 text-xs sm:text-sm mt-1">
-              {filteredFilms.length} {filteredFilms.length === 1 ? 'item' : 'items'} available
-            </p>
-          </div>
-        </div>
+      {/* CONTENT ROWS */}
+      <div className="max-w-7xl mx-auto py-4 sm:py-6">
+        {/* Hero/Featured row */}
+        {renderRow('Featured', featuredFilms, true)}
+        
+        {/* Top Picks */}
+        {renderRow('Top Picks', topPicks)}
+        
+        {/* Recently Added */}
+        {renderRow('Recently Added', recentFilms)}
+        
+        {/* Category-based rows */}
+        {Object.entries(filmsByCategory).map(([category, films]) => {
+          // Skip if it's the "All Content" row (already shown)
+          if (category === 'All Content') return null
+          // Skip if it's a category already shown
+          if (category === 'Featured' || category === 'Top Picks' || category === 'Recently Added') return null
+          return renderRow(category, films)
+        })}
+      </div>
 
-        {filteredFilms.length === 0 ? (
-          <div className="bg-[#1a1a1a] rounded-2xl p-8 sm:p-16 text-center border border-white/5">
-            <div className="text-4xl sm:text-6xl mb-4">🎬</div>
-            <p className="text-lg sm:text-xl text-gray-400">No content found.</p>
-            <p className="text-gray-600 text-xs sm:text-sm mt-2">Check back soon for new content.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {filteredFilms.map((film) => renderFilmCard(film))}
-          </div>
-        )}
-      </section>
-
-      {/* FOOTER - Mobile Optimized */}
-      <footer className="border-t border-white/5 mt-8 sm:mt-16 px-4 sm:px-6 py-8 sm:py-12">
+      {/* FOOTER */}
+      <footer className="border-t border-white/5 mt-4 sm:mt-8 px-4 sm:px-6 py-8 sm:py-12">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-6">
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="text-xl sm:text-2xl font-bold">Reial<span className="text-[#f5c518]">.</span></span>
