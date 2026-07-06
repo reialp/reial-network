@@ -36,8 +36,10 @@ function ProfileForm() {
   const [success, setSuccess] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [showScrollHint, setShowScrollHint] = useState(false)
   const [projects, setProjects] = useState<{ id: string; title: string }[]>([])
   const [featuredProjectTitle, setFeaturedProjectTitle] = useState<string>('')
+  const editFormRef = useRef<HTMLDivElement>(null)
   
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
@@ -169,6 +171,17 @@ function ProfileForm() {
     loadProfile()
   }, [router, supabase])
 
+  // Scroll to edit form when editing starts
+  useEffect(() => {
+    if (isEditing && editFormRef.current) {
+      setShowScrollHint(true)
+      setTimeout(() => {
+        editFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        setTimeout(() => setShowScrollHint(false), 3000)
+      }, 300)
+    }
+  }, [isEditing])
+
   const uploadImage = async (file: File, folder: string): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop()
@@ -284,6 +297,7 @@ function ProfileForm() {
     setSaving(false)
     setOriginalProfile({ ...currentProfile })
     setIsEditing(false)
+    setShowScrollHint(false)
 
     if (intent === 'creator' && currentProfile.is_creator && !wasCreator) {
       setTimeout(() => {
@@ -298,6 +312,7 @@ function ProfileForm() {
   const handleCancel = () => {
     setProfile({ ...originalProfile })
     setIsEditing(false)
+    setShowScrollHint(false)
   }
 
   const handleEdit = () => {
@@ -331,436 +346,487 @@ function ProfileForm() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       {/* Cover Image */}
-      {profile.cover_image && (
-        <div className="relative w-full h-[180px] sm:h-[240px] md:h-[300px] overflow-hidden">
+      {profile.cover_image ? (
+        <div className="relative w-full h-[200px] sm:h-[280px] md:h-[350px] overflow-hidden">
           <Image
             src={profile.cover_image}
             alt="Cover"
             fill
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/20 to-transparent" />
+        </div>
+      ) : (
+        <div className="relative w-full h-[150px] sm:h-[200px] md:h-[250px] bg-gradient-to-r from-[#f5c518]/10 to-[#f5c518]/5 overflow-hidden">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-[#f5c518]/10 flex items-center justify-center mx-auto">
+                <span className="text-3xl">🎬</span>
+              </div>
+              <p className="text-gray-500 text-sm mt-2">Add a cover image</p>
+            </div>
+          </div>
         </div>
       )}
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-16 sm:-mt-20 relative z-10">
         
-        {/* Profile Header - Clean Card */}
-        <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-            {/* Avatar */}
-            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#2a2a2a] border-4 border-[#0a0a0a] overflow-hidden flex-shrink-0">
-              {profile.avatar_url ? (
-                <Image
-                  src={profile.avatar_url}
-                  alt={profile.full_name || 'Profile'}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl text-gray-500">
-                  {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : '👤'}
-                </div>
-              )}
-            </div>
-
-            {/* User Info */}
-            <div className="flex-1 text-center sm:text-left">
-              <h1 className="text-2xl sm:text-3xl font-bold">
-                {profile.full_name || 'Set up your profile'}
-              </h1>
-              {profile.tagline && (
-                <p className="text-gray-300 text-sm mt-0.5">{profile.tagline}</p>
-              )}
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1">
-                {profile.is_creator && (
-                  <span className="text-xs bg-green-500/20 text-green-400 px-3 py-0.5 rounded-full border border-green-500/20">
-                    Creator
-                  </span>
-                )}
-                {profile.location && (
-                  <span className="text-xs text-gray-400 flex items-center gap-1">
-                    <span>📍</span> {profile.location}
-                  </span>
+        {/* Profile Card */}
+        <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+          <div className="p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              {/* Avatar */}
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#2a2a2a] border-4 border-[#0a0a0a] overflow-hidden flex-shrink-0">
+                {profile.avatar_url ? (
+                  <Image
+                    src={profile.avatar_url}
+                    alt={profile.full_name || 'Profile'}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-4xl text-gray-500">
+                    {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : '👤'}
+                  </div>
                 )}
               </div>
-              {profile.bio && (
-                <p className="text-gray-400 text-sm mt-3 max-w-2xl">{profile.bio}</p>
-              )}
-            </div>
 
-            {/* Actions */}
-            <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-              {profile.is_creator && userId && (
-                <Link
-                  href={`/creator/${userId}/analytics`}
-                  className="px-4 py-2 bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] rounded-lg text-sm font-medium transition"
+              {/* User Info */}
+              <div className="flex-1 text-center sm:text-left">
+                <h1 className="text-2xl sm:text-3xl font-bold">
+                  {profile.full_name || 'Set up your profile'}
+                </h1>
+                {profile.tagline && (
+                  <p className="text-gray-300 text-sm mt-0.5 italic">"{profile.tagline}"</p>
+                )}
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1.5">
+                  {profile.is_creator && (
+                    <span className="text-xs bg-green-500/20 text-green-400 px-3 py-0.5 rounded-full border border-green-500/20">
+                      Creator
+                    </span>
+                  )}
+                  {profile.location && (
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {profile.location}
+                    </span>
+                  )}
+                </div>
+                {profile.bio && (
+                  <p className="text-gray-400 text-sm mt-3 leading-relaxed">{profile.bio}</p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                {profile.is_creator && userId && (
+                  <Link
+                    href={`/creator/${userId}/analytics`}
+                    className="px-4 py-2 bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] rounded-lg text-sm font-medium transition"
+                  >
+                    Analytics
+                  </Link>
+                )}
+                <button
+                  onClick={handleEdit}
+                  className="px-4 py-2 bg-[#f5c518] text-black rounded-lg text-sm font-medium hover:bg-[#e0b010] transition flex items-center gap-2 shadow-lg shadow-[#f5c518]/20"
                 >
-                  Analytics
-                </Link>
-              )}
-              <button
-                onClick={handleEdit}
-                className="px-4 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg text-sm font-medium hover:bg-white/5 transition flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Edit
-              </button>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Profile
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Skills Tags */}
-          {profile.skills && profile.skills.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/5">
-              {profile.skills.map((skill, i) => (
-                <span key={i} className="bg-[#0a0a0a] px-3 py-1 rounded-full text-xs text-gray-300 border border-white/5">
-                  {skill}
-                </span>
-              ))}
-            </div>
-          )}
+            {/* Skills Tags */}
+            {profile.skills && profile.skills.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-5 pt-5 border-t border-white/5">
+                <span className="text-xs text-gray-500 font-medium mr-2">Skills:</span>
+                {profile.skills.map((skill, i) => (
+                  <span key={i} className="bg-[#0a0a0a] px-3 py-1 rounded-full text-xs text-gray-300 border border-white/5">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            )}
 
-          {/* Social Links */}
-          {(profile.social_instagram || profile.social_twitter || profile.social_youtube || profile.social_website) && (
-            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/5">
-              {profile.social_instagram && (
-                <a href={profile.social_instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm">
-                  Instagram
-                </a>
-              )}
-              {profile.social_twitter && (
-                <a href={profile.social_twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm">
-                  Twitter
-                </a>
-              )}
-              {profile.social_youtube && (
-                <a href={profile.social_youtube} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm">
-                  YouTube
-                </a>
-              )}
-              {profile.social_website && (
-                <a href={profile.social_website} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm">
-                  Website
-                </a>
-              )}
-            </div>
-          )}
+            {/* Social Links */}
+            {(profile.social_instagram || profile.social_twitter || profile.social_youtube || profile.social_website) && (
+              <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/5">
+                {profile.social_instagram && (
+                  <a href={profile.social_instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-1.5">
+                    <span>Instagram</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                )}
+                {profile.social_twitter && (
+                  <a href={profile.social_twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-1.5">
+                    <span>Twitter</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                )}
+                {profile.social_youtube && (
+                  <a href={profile.social_youtube} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-1.5">
+                    <span>YouTube</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                )}
+                {profile.social_website && (
+                  <a href={profile.social_website} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-1.5">
+                    <span>Website</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                )}
+              </div>
+            )}
 
-          {/* Featured Project */}
-          {featuredProjectTitle && (
-            <div className="mt-4 pt-4 border-t border-white/5">
-              <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Featured Project</p>
-              <p className="text-white font-medium text-sm mt-1">{featuredProjectTitle}</p>
-            </div>
-          )}
+            {/* Featured Project */}
+            {featuredProjectTitle && (
+              <div className="mt-4 pt-4 border-t border-white/5">
+                <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Featured Project</p>
+                <p className="text-[#f5c518] font-medium text-sm mt-1">{featuredProjectTitle}</p>
+              </div>
+            )}
 
-          {/* Bottom Row: Payout + WhatsApp + Logout */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-white/5">
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <span className="text-xs text-gray-500">Payout:</span>
-              <span className="font-mono">{profile.payout_phone || 'Not set'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <a
-                href="https://wa.me/254704908255"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
-              >
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                </svg>
-                WhatsApp
-              </a>
-              <button
-                onClick={handleLogout}
-                className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Logout
-              </button>
+            {/* Bottom Bar: Payout + WhatsApp + Logout */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-5 pt-4 border-t border-white/5">
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <span className="text-xs text-gray-500">Payout:</span>
+                <span className="font-mono text-sm">{profile.payout_phone || 'Not set'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://wa.me/254704908255"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                >
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                  </svg>
+                  WhatsApp
+                </a>
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Logout
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Edit Mode - Only shows when editing */}
+        {/* Edit Form - Appears below with smooth scroll */}
         {isEditing && (
-          <div className="mt-6 bg-[#1a1a1a] rounded-2xl border border-white/10 p-6 sm:p-8">
-            <h2 className="text-lg font-bold mb-4">Edit Profile</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
-                  {error}
+          <>
+            {/* Scroll Hint Notification */}
+            {showScrollHint && (
+              <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+                <div className="bg-[#f5c518] text-black px-6 py-3 rounded-full font-semibold shadow-2xl flex items-center gap-3">
+                  <span>⬇️</span>
+                  <span>Scroll down to edit your profile</span>
+                  <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
                 </div>
-              )}
-              {success && (
-                <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-                  <span>Profile saved successfully.</span>
-                </div>
-              )}
+              </div>
+            )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div ref={editFormRef} className="mt-6 bg-[#1a1a1a] rounded-2xl border border-[#f5c518]/20 shadow-2xl p-6 sm:p-8 scroll-mt-24">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-[#f5c518]">✏️ Edit Profile</h2>
+                <span className="text-xs text-gray-500">All fields are optional except Full Name</span>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {error && (
+                  <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
+                    {error}
+                  </div>
+                )}
+                {success && (
+                  <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                    <span>✅ Profile saved successfully.</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300">
+                      Full Name <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={profile.full_name}
+                      onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                      className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
+                      placeholder="Your full name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300">Tagline</label>
+                    <input
+                      type="text"
+                      value={profile.tagline}
+                      onChange={(e) => setProfile({ ...profile, tagline: e.target.value })}
+                      className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
+                      placeholder="e.g. Award-winning filmmaker"
+                    />
+                    <p className="text-gray-500 text-[10px] mt-1">Short description under your name</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">Bio</label>
+                  <textarea
+                    value={profile.bio}
+                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                    rows={3}
+                    className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm resize-none transition"
+                    placeholder="Tell your audience about yourself..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300">Location</label>
+                    <input
+                      type="text"
+                      value={profile.location}
+                      onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                      className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
+                      placeholder="e.g. Nairobi, Kenya"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300">Skills / Genres</label>
+                    <input
+                      type="text"
+                      value={profile.skills.join(', ')}
+                      onChange={handleSkillsChange}
+                      className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
+                      placeholder="e.g. Documentary, Film, Music"
+                    />
+                    <p className="text-gray-500 text-[10px] mt-1">Comma-separated list</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300">Avatar</label>
+                    <div className="mt-1.5 flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-[#0a0a0a] overflow-hidden border border-white/10 flex-shrink-0">
+                        {profile.avatar_url ? (
+                          <Image
+                            src={profile.avatar_url}
+                            alt="Avatar"
+                            width={48}
+                            height={48}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">None</div>
+                        )}
+                      </div>
+                      <label className="cursor-pointer bg-[#0a0a0a] border border-white/10 px-3 py-1.5 rounded-lg text-sm hover:bg-white/5 transition">
+                        {uploadingAvatar ? 'Uploading...' : 'Upload Avatar'}
+                        <input
+                          ref={avatarInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="hidden"
+                          disabled={uploadingAvatar}
+                        />
+                      </label>
+                      {profile.avatar_url && (
+                        <button
+                          type="button"
+                          onClick={() => setProfile({ ...profile, avatar_url: '' })}
+                          className="text-red-400 text-sm hover:text-red-300 transition"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300">Cover Image</label>
+                    <div className="mt-1.5 flex items-center gap-3">
+                      <div className="w-16 h-10 bg-[#0a0a0a] overflow-hidden border border-white/10 rounded flex-shrink-0">
+                        {profile.cover_image ? (
+                          <Image
+                            src={profile.cover_image}
+                            alt="Cover"
+                            width={64}
+                            height={40}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">None</div>
+                        )}
+                      </div>
+                      <label className="cursor-pointer bg-[#0a0a0a] border border-white/10 px-3 py-1.5 rounded-lg text-sm hover:bg-white/5 transition">
+                        {uploadingCover ? 'Uploading...' : 'Upload Cover'}
+                        <input
+                          ref={coverInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleCoverUpload}
+                          className="hidden"
+                          disabled={uploadingCover}
+                        />
+                      </label>
+                      {profile.cover_image && (
+                        <button
+                          type="button"
+                          onClick={() => setProfile({ ...profile, cover_image: '' })}
+                          className="text-red-400 text-sm hover:text-red-300 transition"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-gray-300">Social Links</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-500">Instagram</label>
+                      <input
+                        type="url"
+                        value={profile.social_instagram}
+                        onChange={(e) => setProfile({ ...profile, social_instagram: e.target.value })}
+                        className="mt-1 block w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
+                        placeholder="https://instagram.com/yourhandle"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500">Twitter</label>
+                      <input
+                        type="url"
+                        value={profile.social_twitter}
+                        onChange={(e) => setProfile({ ...profile, social_twitter: e.target.value })}
+                        className="mt-1 block w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
+                        placeholder="https://twitter.com/yourhandle"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500">YouTube</label>
+                      <input
+                        type="url"
+                        value={profile.social_youtube}
+                        onChange={(e) => setProfile({ ...profile, social_youtube: e.target.value })}
+                        className="mt-1 block w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
+                        placeholder="https://youtube.com/@yourhandle"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500">Website</label>
+                      <input
+                        type="url"
+                        value={profile.social_website}
+                        onChange={(e) => setProfile({ ...profile, social_website: e.target.value })}
+                        className="mt-1 block w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
+                        placeholder="https://yourwebsite.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {profile.is_creator && projects.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300">Featured Project</label>
+                    <select
+                      value={profile.featured_project_id || ''}
+                      onChange={(e) => setProfile({ ...profile, featured_project_id: e.target.value || null })}
+                      className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm"
+                    >
+                      <option value="">No featured project</option>
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>{p.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300">
-                    Full Name <span className="text-red-400">*</span>
+                    Payout Phone <span className="text-gray-500">(M-Pesa)</span>
                   </label>
                   <input
                     type="text"
-                    value={profile.full_name}
-                    onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                    value={profile.payout_phone}
+                    onChange={(e) => setProfile({ ...profile, payout_phone: e.target.value })}
                     className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                    placeholder="Your full name"
+                    placeholder="0712345678"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300">Tagline</label>
-                  <input
-                    type="text"
-                    value={profile.tagline}
-                    onChange={(e) => setProfile({ ...profile, tagline: e.target.value })}
-                    className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                    placeholder="e.g. Award-winning filmmaker"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300">Bio</label>
-                <textarea
-                  value={profile.bio}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  rows={3}
-                  className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm resize-none transition"
-                  placeholder="Tell your audience about yourself..."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300">Location</label>
-                  <input
-                    type="text"
-                    value={profile.location}
-                    onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                    className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                    placeholder="e.g. Nairobi, Kenya"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300">Skills / Genres</label>
-                  <input
-                    type="text"
-                    value={profile.skills.join(', ')}
-                    onChange={handleSkillsChange}
-                    className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                    placeholder="e.g. Documentary, Film, Music"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300">Avatar</label>
-                  <div className="mt-1.5 flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-[#0a0a0a] overflow-hidden border border-white/10 flex-shrink-0">
-                      {profile.avatar_url ? (
-                        <Image
-                          src={profile.avatar_url}
-                          alt="Avatar"
-                          width={48}
-                          height={48}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">None</div>
-                      )}
+                <div className={`rounded-xl p-4 border transition ${
+                  intent === 'creator' 
+                    ? 'bg-[#f5c518]/10 border-[#f5c518]' 
+                    : 'bg-[#0a0a0a] border-white/10'
+                }`}>
+                  <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      id="is_creator"
+                      checked={profile.is_creator}
+                      onChange={(e) => setProfile({ ...profile, is_creator: e.target.checked })}
+                      className="w-5 h-5 accent-[#f5c518] flex-shrink-0 rounded border-white/20"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-gray-300">Become a Creator</p>
+                      <p className="text-xs text-gray-500">Upload and sell your content to earn 85% of every sale</p>
                     </div>
-                    <label className="cursor-pointer bg-[#0a0a0a] border border-white/10 px-3 py-1.5 rounded-lg text-sm hover:bg-white/5 transition">
-                      {uploadingAvatar ? 'Uploading...' : 'Upload Avatar'}
-                      <input
-                        ref={avatarInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarUpload}
-                        className="hidden"
-                        disabled={uploadingAvatar}
-                      />
-                    </label>
-                    {profile.avatar_url && (
-                      <button
-                        type="button"
-                        onClick={() => setProfile({ ...profile, avatar_url: '' })}
-                        className="text-red-400 text-sm hover:text-red-300 transition"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
+                  </label>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300">Cover Image</label>
-                  <div className="mt-1.5 flex items-center gap-3">
-                    <div className="w-16 h-10 bg-[#0a0a0a] overflow-hidden border border-white/10 rounded flex-shrink-0">
-                      {profile.cover_image ? (
-                        <Image
-                          src={profile.cover_image}
-                          alt="Cover"
-                          width={64}
-                          height={40}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">None</div>
-                      )}
-                    </div>
-                    <label className="cursor-pointer bg-[#0a0a0a] border border-white/10 px-3 py-1.5 rounded-lg text-sm hover:bg-white/5 transition">
-                      {uploadingCover ? 'Uploading...' : 'Upload Cover'}
-                      <input
-                        ref={coverInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleCoverUpload}
-                        className="hidden"
-                        disabled={uploadingCover}
-                      />
-                    </label>
-                    {profile.cover_image && (
-                      <button
-                        type="button"
-                        onClick={() => setProfile({ ...profile, cover_image: '' })}
-                        className="text-red-400 text-sm hover:text-red-300 transition"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
 
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-gray-300">Social Links</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-gray-500">Instagram</label>
-                    <input
-                      type="url"
-                      value={profile.social_instagram}
-                      onChange={(e) => setProfile({ ...profile, social_instagram: e.target.value })}
-                      className="mt-1 block w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                      placeholder="https://instagram.com/yourhandle"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500">Twitter</label>
-                    <input
-                      type="url"
-                      value={profile.social_twitter}
-                      onChange={(e) => setProfile({ ...profile, social_twitter: e.target.value })}
-                      className="mt-1 block w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                      placeholder="https://twitter.com/yourhandle"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500">YouTube</label>
-                    <input
-                      type="url"
-                      value={profile.social_youtube}
-                      onChange={(e) => setProfile({ ...profile, social_youtube: e.target.value })}
-                      className="mt-1 block w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                      placeholder="https://youtube.com/@yourhandle"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500">Website</label>
-                    <input
-                      type="url"
-                      value={profile.social_website}
-                      onChange={(e) => setProfile({ ...profile, social_website: e.target.value })}
-                      className="mt-1 block w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                      placeholder="https://yourwebsite.com"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {profile.is_creator && projects.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300">Featured Project</label>
-                  <select
-                    value={profile.featured_project_id || ''}
-                    onChange={(e) => setProfile({ ...profile, featured_project_id: e.target.value || null })}
-                    className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm"
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 bg-[#f5c518] text-black py-3 rounded-xl font-semibold hover:bg-[#e0b010] transition disabled:opacity-50 text-sm sm:text-base flex items-center justify-center gap-2"
                   >
-                    <option value="">No featured project</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>{p.title}</option>
-                    ))}
-                  </select>
+                    {saving ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Profile'
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="px-6 py-3 border border-white/20 rounded-xl font-semibold hover:bg-white/5 transition text-sm"
+                  >
+                    Cancel
+                  </button>
                 </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300">
-                  Payout Phone <span className="text-gray-500">(M-Pesa)</span>
-                </label>
-                <input
-                  type="text"
-                  value={profile.payout_phone}
-                  onChange={(e) => setProfile({ ...profile, payout_phone: e.target.value })}
-                  className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                  placeholder="0712345678"
-                />
-              </div>
-
-              <div className={`rounded-xl p-4 border transition ${
-                intent === 'creator' 
-                  ? 'bg-[#f5c518]/10 border-[#f5c518]' 
-                  : 'bg-[#0a0a0a] border-white/10'
-              }`}>
-                <label className="flex items-center gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    id="is_creator"
-                    checked={profile.is_creator}
-                    onChange={(e) => setProfile({ ...profile, is_creator: e.target.checked })}
-                    className="w-5 h-5 accent-[#f5c518] flex-shrink-0 rounded border-white/20"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-gray-300">Become a Creator</p>
-                    <p className="text-xs text-gray-500">Upload and sell your content to earn 85% of every sale</p>
-                  </div>
-                </label>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 bg-[#f5c518] text-black py-3 rounded-xl font-semibold hover:bg-[#e0b010] transition disabled:opacity-50 text-sm sm:text-base flex items-center justify-center gap-2"
-                >
-                  {saving ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    'Save Profile'
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="px-6 py-3 border border-white/20 rounded-xl font-semibold hover:bg-white/5 transition text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
+              </form>
+            </div>
+          </>
         )}
       </div>
 
