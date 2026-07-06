@@ -4,7 +4,6 @@ import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
-import Link from 'next/link'
 
 interface Profile {
   full_name: string
@@ -158,6 +157,12 @@ function ProfileForm() {
     setIsEditing(true)
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+    router.refresh()
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -206,6 +211,17 @@ function ProfileForm() {
               )}
             </p>
           </div>
+          {!isEditing && hasProfile && (
+            <button
+              onClick={handleEdit}
+              className="px-4 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg text-sm font-medium hover:bg-white/5 transition flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Edit
+            </button>
+          )}
         </div>
 
         {/* Status Banners */}
@@ -239,7 +255,7 @@ function ProfileForm() {
           {/* Left: Profile Info (2/3 on desktop) */}
           <div className="lg:col-span-2">
             {!isEditing && hasProfile ? (
-              // ✅ VIEW MODE - Clean Cards
+              // VIEW MODE - Clean Cards
               <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-white/5">
                   <div className="bg-[#1a1a1a] p-4 sm:p-5">
@@ -249,7 +265,7 @@ function ProfileForm() {
                   <div className="bg-[#1a1a1a] p-4 sm:p-5">
                     <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Creator Status</p>
                     <p className={`text-base font-medium mt-1 ${profile.is_creator ? 'text-green-400' : 'text-gray-500'}`}>
-                      {profile.is_creator ? '✅ Active' : 'Not a creator'}
+                      {profile.is_creator ? 'Active' : 'Not a creator'}
                     </p>
                   </div>
                   <div className="bg-[#1a1a1a] p-4 sm:p-5 sm:col-span-2">
@@ -275,7 +291,7 @@ function ProfileForm() {
                 </div>
               </div>
             ) : (
-              // ✅ EDIT MODE - Form
+              // EDIT MODE - Form
               <form onSubmit={handleSubmit} className="bg-[#1a1a1a] rounded-xl border border-white/5 p-4 sm:p-6 space-y-4 sm:space-y-5">
                 {error && (
                   <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
@@ -385,9 +401,8 @@ function ProfileForm() {
             )}
           </div>
 
-          {/* ✅ Right: Contact Section (1/3 on desktop) */}
+          {/* Right: Contact Section (1/3 on desktop) */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Contact Card */}
             <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-5">
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Contact Us</h3>
               
@@ -431,31 +446,20 @@ function ProfileForm() {
                 </a>
               </div>
             </div>
-
-            {/* Quick Links */}
-            <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-5">
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Links</h3>
-              <div className="space-y-2">
-                <Link href="/" className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition text-sm text-gray-300 hover:text-white">
-                  <span>🏠</span> Home
-                </Link>
-                <Link href="/explore" className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition text-sm text-gray-300 hover:text-white">
-                  <span>🔍</span> Explore
-                </Link>
-                {profile.is_creator && (
-                  <Link href="/upload" className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition text-sm text-gray-300 hover:text-white">
-                    <span>📤</span> Upload
-                  </Link>
-                )}
-                <Link href="/library" className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition text-sm text-gray-300 hover:text-white">
-                  <span>📚</span> My Library
-                </Link>
-                <Link href="/dashboard" className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition text-sm text-gray-300 hover:text-white">
-                  <span>📊</span> Dashboard
-                </Link>
-              </div>
-            </div>
           </div>
+        </div>
+
+        {/* ✅ Logout Button at Bottom */}
+        <div className="mt-8 pt-6 border-t border-white/5">
+          <button
+            onClick={handleLogout}
+            className="w-full sm:w-auto px-6 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl font-medium transition flex items-center justify-center gap-2 text-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Logout
+          </button>
         </div>
       </div>
 
