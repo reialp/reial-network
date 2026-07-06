@@ -37,6 +37,7 @@ function ProfileForm() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [projects, setProjects] = useState<{ id: string; title: string }[]>([])
+  const [featuredProjectTitle, setFeaturedProjectTitle] = useState<string>('')
   
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
@@ -138,6 +139,18 @@ function ProfileForm() {
         setProfile(loadedProfile)
         setOriginalProfile(loadedProfile)
         
+        // Find featured project title
+        if (data.featured_project_id) {
+          const { data: featured } = await supabase
+            .from('content')
+            .select('title')
+            .eq('id', data.featured_project_id)
+            .single()
+          if (featured) {
+            setFeaturedProjectTitle(featured.title)
+          }
+        }
+        
         if (!loadedProfile.full_name && !loadedProfile.bio) {
           setIsEditing(true)
         }
@@ -228,7 +241,6 @@ function ProfileForm() {
     const wasCreator = profile.is_creator
     const currentProfile = { ...profile }
 
-    // ✅ Fix: Convert empty string to null for featured_project_id
     const featuredProjectId = currentProfile.featured_project_id === '' ? null : currentProfile.featured_project_id
 
     const { error: updateError } = await supabase
@@ -255,6 +267,20 @@ function ProfileForm() {
       setError('Failed to save: ' + updateError.message)
       setSaving(false)
       return
+    }
+
+    // Update featured project title
+    if (currentProfile.featured_project_id) {
+      const { data: featured } = await supabase
+        .from('content')
+        .select('title')
+        .eq('id', currentProfile.featured_project_id)
+        .single()
+      if (featured) {
+        setFeaturedProjectTitle(featured.title)
+      }
+    } else {
+      setFeaturedProjectTitle('')
     }
 
     setSuccess(true)
@@ -406,12 +432,13 @@ function ProfileForm() {
           </div>
         )}
 
-        {/* Main Content */}
+        {/* Main Content - View Mode with All Fields */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Left: Profile Info */}
           <div className="lg:col-span-2">
             {!isEditing && hasProfile ? (
+              // ✅ VIEW MODE - All fields displayed
               <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-white/5">
                   <div className="bg-[#1a1a1a] p-4 sm:p-5">
@@ -428,7 +455,76 @@ function ProfileForm() {
                     <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Bio</p>
                     <p className="text-white text-sm mt-1">{profile.bio || 'Not set'}</p>
                   </div>
+                  
+                  {/* ✅ NEW: Tagline */}
                   <div className="bg-[#1a1a1a] p-4 sm:p-5 sm:col-span-2">
+                    <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Tagline</p>
+                    <p className="text-white text-sm mt-1">{profile.tagline || 'Not set'}</p>
+                  </div>
+                  
+                  {/* ✅ NEW: Location */}
+                  <div className="bg-[#1a1a1a] p-4 sm:p-5">
+                    <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Location</p>
+                    <p className="text-white text-sm mt-1">{profile.location || 'Not set'}</p>
+                  </div>
+                  
+                  {/* ✅ NEW: Skills */}
+                  <div className="bg-[#1a1a1a] p-4 sm:p-5">
+                    <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Skills</p>
+                    <p className="text-white text-sm mt-1">
+                      {profile.skills && profile.skills.length > 0 ? (
+                        <span className="flex flex-wrap gap-1">
+                          {profile.skills.map((skill, i) => (
+                            <span key={i} className="bg-[#0a0a0a] px-2 py-0.5 rounded-full text-xs border border-white/5">
+                              {skill}
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
+                        'Not set'
+                      )}
+                    </p>
+                  </div>
+                  
+                  {/* ✅ NEW: Social Links */}
+                  <div className="bg-[#1a1a1a] p-4 sm:p-5 sm:col-span-2">
+                    <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Social Links</p>
+                    <div className="flex flex-wrap gap-3 mt-1">
+                      {profile.social_instagram && (
+                        <a href={profile.social_instagram} target="_blank" rel="noopener noreferrer" className="text-[#f5c518] hover:underline text-sm">
+                          Instagram
+                        </a>
+                      )}
+                      {profile.social_twitter && (
+                        <a href={profile.social_twitter} target="_blank" rel="noopener noreferrer" className="text-[#f5c518] hover:underline text-sm">
+                          Twitter
+                        </a>
+                      )}
+                      {profile.social_youtube && (
+                        <a href={profile.social_youtube} target="_blank" rel="noopener noreferrer" className="text-[#f5c518] hover:underline text-sm">
+                          YouTube
+                        </a>
+                      )}
+                      {profile.social_website && (
+                        <a href={profile.social_website} target="_blank" rel="noopener noreferrer" className="text-[#f5c518] hover:underline text-sm">
+                          Website
+                        </a>
+                      )}
+                      {!profile.social_instagram && !profile.social_twitter && !profile.social_youtube && !profile.social_website && (
+                        <span className="text-gray-500 text-sm">No social links set</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* ✅ NEW: Featured Project */}
+                  {profile.featured_project_id && featuredProjectTitle && (
+                    <div className="bg-[#1a1a1a] p-4 sm:p-5 sm:col-span-2 border-t border-white/5">
+                      <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Featured Project</p>
+                      <p className="text-white text-sm mt-1 font-medium">{featuredProjectTitle}</p>
+                    </div>
+                  )}
+                  
+                  <div className="bg-[#1a1a1a] p-4 sm:p-5 sm:col-span-2 border-t border-white/5">
                     <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Payout Phone</p>
                     <p className="text-white font-mono text-sm mt-1">{profile.payout_phone || 'Not set'}</p>
                   </div>
