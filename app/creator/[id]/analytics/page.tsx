@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -64,16 +64,26 @@ interface AnalyticsData {
   }
 }
 
-export default function CreatorAnalyticsPage({ params }: { params: { id: string } }) {
+export default function CreatorAnalyticsPage() {
   const router = useRouter()
+  const params = useParams()
   const supabase = createClient()
+  const creatorId = params?.id as string
+  
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<AnalyticsData | null>(null)
-  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadAnalytics() {
+      if (!creatorId) {
+        setError('No creator ID provided')
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
+      setError(null)
 
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
@@ -82,22 +92,38 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
       }
 
       // Get creator profile
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url, is_creator, bio')
-        .eq('id', params.id)
+        .eq('id', creatorId)
         .single()
 
-      if (!profile) {
-        router.push('/dashboard')
+      if (profileError || !profile) {
+        setError('Creator not found')
+        setLoading(false)
         return
+      }
+
+      // Check if current user is the creator or admin
+      if (session.user.id !== creatorId) {
+        const { data: adminCheck } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single()
+        
+        if (!adminCheck?.is_admin) {
+          setError('You do not have permission to view this analytics')
+          setLoading(false)
+          return
+        }
       }
 
       // Load all approved projects by this creator
       const { data: projects } = await supabase
         .from('content')
         .select('*')
-        .eq('creator_id', params.id)
+        .eq('creator_id', creatorId)
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
 
@@ -122,10 +148,10 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
       const totalRevenue = projectList.reduce((sum, p) => sum + (p.price * (p.purchase_count || 0)), 0)
       const totalSales = projectList.reduce((sum, p) => sum + (p.purchase_count || 0), 0)
       const totalViews = projectList.reduce((sum, p) => sum + (p.views || 0), 0)
-      const avgPrice = projectList.length > 0 ? totalRevenue / totalSales : 0
+      const avgPrice = totalSales > 0 ? totalRevenue / totalSales : 0
       const conversionRate = totalViews > 0 ? (totalSales / totalViews) * 100 : 0
 
-      // Calculate growth (compare last 30 days vs previous 30 days)
+      // Calculate growth
       const now = new Date()
       const thirtyDaysAgo = new Date(now)
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
@@ -152,7 +178,7 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
       const { data: payouts } = await supabase
         .from('payout_requests')
         .select('*')
-        .eq('creator_id', params.id)
+        .eq('creator_id', creatorId)
 
       const pendingPayouts = payouts?.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0) || 0
       const processedPayouts = payouts?.filter(p => p.status === 'processed').reduce((sum, p) => sum + p.amount, 0) || 0
@@ -182,7 +208,7 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
         status: p.status || 'completed',
       }))
 
-      // Chart data (last 30 days)
+      // Chart data
       const labels: string[] = []
       const revenueData: number[] = []
       const salesData: number[] = []
@@ -198,7 +224,6 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
           return pDate.toDateString() === date.toDateString()
         })
         
-        // Get views for that day from projects
         const dayViews = projectList.reduce((sum, p) => {
           const pDate = new Date(p.created_at)
           return sum + (pDate.toDateString() === date.toDateString() ? (p.views || 0) : 0)
@@ -225,8 +250,8 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
           ? `📉 Revenue is down ${Math.round(Math.abs(revenueGrowth))}% compared to last month.` 
           : '📊 Revenue is steady compared to last month.'
 
-      const recommendation = totalSales > 0 
-        ? `Your best performing project "${bestProject?.title}" has generated KES ${bestProject?.revenue?.toLocaleString()}. Consider creating similar content.`
+      const recommendation = totalSales > 0 && bestProject
+        ? `Your best performing project "${bestProject.title}" has generated KES ${bestProject.revenue.toLocaleString()}. Consider creating similar content.`
         : 'Start uploading content to begin earning!'
 
       setData({
@@ -267,7 +292,7 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
     }
 
     loadAnalytics()
-  }, [supabase, router, params.id])
+  }, [supabase, router, creatorId])
 
   const formatCurrency = (amount: number) => {
     return amount.toLocaleString()
@@ -284,10 +309,15 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
     )
   }
 
-  if (!data) {
+  if (error || !data) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <p className="text-gray-400">No data available</p>
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-red-400 text-sm mb-2">{error || 'No data available'}</p>
+          <button onClick={() => router.back()} className="text-[#f5c518] hover:underline">
+            Go Back
+          </button>
+        </div>
       </div>
     )
   }
@@ -306,25 +336,15 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
           </div>
           <div className="flex items-center gap-3">
             <Link
-              href={`/profile/${profile.id}`}
+              href={`/profile`}
               className="text-sm text-gray-400 hover:text-[#f5c518] transition"
             >
               ← Back to Profile
             </Link>
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value as any)}
-              className="bg-[#1a1a1a] border border-white/10 rounded-lg px-3 py-1.5 text-sm outline-none"
-            >
-              <option value="7d">Last 7 Days</option>
-              <option value="30d">Last 30 Days</option>
-              <option value="90d">Last 90 Days</option>
-              <option value="all">All Time</option>
-            </select>
           </div>
         </div>
 
-        {/* 💡 Insights Banner */}
+        {/* Insights Banner */}
         <div className="bg-gradient-to-r from-[#f5c518]/10 to-[#f5c518]/5 border border-[#f5c518]/20 rounded-xl p-4 mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <span className="text-2xl">💡</span>
@@ -339,7 +359,7 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
           </div>
         </div>
 
-        {/* 📈 Performance Metrics */}
+        {/* Performance Metrics */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 hover:border-[#f5c518]/20 transition">
             <p className="text-gray-400 text-[10px] uppercase tracking-wider font-medium">Revenue</p>
@@ -371,7 +391,7 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
           </div>
         </div>
 
-        {/* 💰 Financial Breakdown */}
+        {/* Financial Breakdown */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Revenue Split</h3>
@@ -414,7 +434,7 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
           </div>
         </div>
 
-        {/* 📊 Chart */}
+        {/* Chart */}
         <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Performance Over Time</h3>
@@ -460,7 +480,7 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
           </div>
         </div>
 
-        {/* 🏆 Top Projects */}
+        {/* Top Projects */}
         <div className="mb-6">
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">🏆 Top Projects</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -468,11 +488,7 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
               .sort((a, b) => b.revenue - a.revenue)
               .slice(0, 3)
               .map((project, index) => (
-                <Link
-                  key={project.id}
-                  href={`/film/${project.id}`}
-                  className="group bg-[#1a1a1a] rounded-xl overflow-hidden border border-white/5 hover:border-[#f5c518]/20 transition"
-                >
+                <div key={project.id} className="bg-[#1a1a1a] rounded-xl overflow-hidden border border-white/5">
                   <div className="relative">
                     <div className="aspect-[16/9] bg-[#2a2a2a] relative overflow-hidden">
                       {project.thumbnail_url ? (
@@ -480,7 +496,7 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
                           src={project.thumbnail_url}
                           alt={project.title}
                           fill
-                          className="object-cover group-hover:scale-105 transition duration-500"
+                          className="object-cover"
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-20">🎬</div>
@@ -491,7 +507,7 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
                     </div>
                   </div>
                   <div className="p-3">
-                    <h4 className="font-semibold text-sm group-hover:text-[#f5c518] transition line-clamp-1">
+                    <h4 className="font-semibold text-sm line-clamp-1">
                       {project.title}
                     </h4>
                     <div className="grid grid-cols-3 gap-1 mt-2 text-[10px] text-gray-500">
@@ -506,12 +522,12 @@ export default function CreatorAnalyticsPage({ params }: { params: { id: string 
                       />
                     </div>
                   </div>
-                </Link>
+                </div>
               ))}
           </div>
         </div>
 
-        {/* 📋 Recent Transactions */}
+        {/* Recent Transactions */}
         <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
           <div className="px-5 py-4 border-b border-white/5">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">📋 Recent Transactions</h3>
