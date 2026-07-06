@@ -28,7 +28,6 @@ function ProfileForm() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
 
-  // ✅ Fixed: Added 'id' field to initial state
   const [profile, setProfile] = useState<Profile>({
     id: '',
     full_name: '',
@@ -420,31 +419,13 @@ function ProfileForm() {
             )}
           </div>
 
-          {/* Right: Contact + Logout Section (1/3 on desktop) */}
+          {/* Right: WhatsApp + Logout Section (1/3 on desktop) */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Contact Card */}
+            {/* WhatsApp Card - Only WhatsApp, no email */}
             <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-5">
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Contact Us</h3>
+              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Chat with us</h3>
               
               <div className="space-y-3">
-                {/* Email */}
-                <a
-                  href="mailto:reialproduction@gmail.com"
-                  className="flex items-center gap-3 p-3 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition group"
-                >
-                  <div className="w-9 h-9 rounded-full bg-[#f5c518]/10 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-[#f5c518]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Email</p>
-                    <p className="text-sm text-white group-hover:text-[#f5c518] transition truncate">
-                      reialproduction@gmail.com
-                    </p>
-                  </div>
-                </a>
-
                 {/* WhatsApp */}
                 <a
                   href="https://wa.me/254704908255"
