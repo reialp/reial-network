@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
@@ -13,11 +13,10 @@ interface Profile {
   avatar_url: string
   is_creator: boolean
   payout_phone: string
-  // ✅ NEW OPTIONAL FIELDS
   cover_image: string
   tagline: string
   location: string
-  skills: string[] // Array of genres/categories
+  skills: string[]
   social_instagram: string
   social_twitter: string
   social_youtube: string
@@ -38,6 +37,12 @@ function ProfileForm() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [projects, setProjects] = useState<{ id: string; title: string }[]>([])
+  
+  // Image upload states
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const coverInputRef = useRef<HTMLInputElement>(null)
 
   const [profile, setProfile] = useState<Profile>({
     id: '',
@@ -87,7 +92,6 @@ function ProfileForm() {
 
       setUserId(session.user.id)
 
-      // Load profile
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -154,6 +158,62 @@ function ProfileForm() {
     }
     loadProfile()
   }, [router, supabase])
+
+  // ✅ Image upload function
+  const uploadImage = async (file: File, folder: string): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`
+      const filePath = `${folder}/${fileName}`
+
+      const { error } = await supabase.storage
+        .from('profiles')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        })
+
+      if (error) {
+        console.error('Upload error:', error)
+        return null
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(filePath)
+
+      return publicUrl
+    } catch (error) {
+      console.error('Upload error:', error)
+      return null
+    }
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingAvatar(true)
+    const url = await uploadImage(file, 'avatars')
+    if (url) {
+      setProfile({ ...profile, avatar_url: url })
+    }
+    setUploadingAvatar(false)
+    if (avatarInputRef.current) avatarInputRef.current.value = ''
+  }
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingCover(true)
+    const url = await uploadImage(file, 'covers')
+    if (url) {
+      setProfile({ ...profile, cover_image: url })
+    }
+    setUploadingCover(false)
+    if (coverInputRef.current) coverInputRef.current.value = ''
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -226,7 +286,6 @@ function ProfileForm() {
     router.refresh()
   }
 
-  // Helper for skills input
   const handleSkillsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const skills = e.target.value.split(',').map(s => s.trim()).filter(Boolean)
     setProfile({ ...profile, skills })
@@ -251,7 +310,7 @@ function ProfileForm() {
         
         {/* Header with Avatar */}
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#1a1a1a] border-2 border-white/10 overflow-hidden flex-shrink-0">
+          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#1a1a1a] border-2 border-white/10 overflow-hidden flex-shrink-0 group">
             {profile.avatar_url ? (
               <Image
                 src={profile.avatar_url}
@@ -263,6 +322,19 @@ function ProfileForm() {
               <div className="w-full h-full flex items-center justify-center text-3xl sm:text-4xl text-gray-500">
                 {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : '👤'}
               </div>
+            )}
+            {isEditing && (
+              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer">
+                <span className="text-xs text-white font-medium">{uploadingAvatar ? 'Uploading...' : 'Change'}</span>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                  disabled={uploadingAvatar}
+                />
+              </label>
             )}
           </div>
           <div className="text-center sm:text-left flex-1">
@@ -290,8 +362,7 @@ function ProfileForm() {
                 href={`/creator/${userId}/analytics`}
                 className="px-4 py-2 bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] rounded-lg text-sm font-medium transition flex items-center gap-2"
               >
-                <span>📊</span>
-                <span className="hidden sm:inline">Analytics</span>
+                <span>Analytics</span>
               </Link>
             )}
             
@@ -384,7 +455,7 @@ function ProfileForm() {
                 )}
                 {success && (
                   <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-                    <span>✅</span> Profile saved successfully.
+                    <span>Profile saved successfully.</span>
                   </div>
                 )}
 
@@ -445,31 +516,86 @@ function ProfileForm() {
                     className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
                     placeholder="e.g. Documentary, Film, Music, Short Film"
                   />
-                  <p className="text-gray-500 text-xs mt-1">Comma-separated list (e.g. Documentary, Film)</p>
+                  <p className="text-gray-500 text-xs mt-1">Comma-separated list</p>
                 </div>
 
-                {/* Media */}
+                {/* Image Uploads */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">Avatar URL</label>
-                  <input
-                    type="url"
-                    value={profile.avatar_url}
-                    onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
-                    className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                    placeholder="https://example.com/avatar.jpg"
-                  />
+                  <label className="block text-sm font-medium text-gray-300">Avatar</label>
+                  <div className="mt-1.5 flex items-center gap-3">
+                    <div className="w-16 h-16 rounded-full bg-[#0a0a0a] overflow-hidden border border-white/10 flex-shrink-0">
+                      {profile.avatar_url ? (
+                        <Image
+                          src={profile.avatar_url}
+                          alt="Avatar"
+                          width={64}
+                          height={64}
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-600">No image</div>
+                      )}
+                    </div>
+                    <label className="cursor-pointer bg-[#0a0a0a] border border-white/10 px-3 py-1.5 rounded-lg text-sm hover:bg-white/5 transition">
+                      {uploadingAvatar ? 'Uploading...' : 'Upload Avatar'}
+                      <input
+                        ref={avatarInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                        disabled={uploadingAvatar}
+                      />
+                    </label>
+                    {profile.avatar_url && (
+                      <button
+                        type="button"
+                        onClick={() => setProfile({ ...profile, avatar_url: '' })}
+                        className="text-red-400 text-sm hover:text-red-300 transition"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">Cover Image URL</label>
-                  <input
-                    type="url"
-                    value={profile.cover_image}
-                    onChange={(e) => setProfile({ ...profile, cover_image: e.target.value })}
-                    className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                    placeholder="https://example.com/cover.jpg"
-                  />
-                  <p className="text-gray-500 text-xs mt-1">A banner image for your creator profile</p>
+                  <label className="block text-sm font-medium text-gray-300">Cover Image</label>
+                  <div className="mt-1.5 flex items-center gap-3">
+                    <div className="w-24 h-14 bg-[#0a0a0a] overflow-hidden border border-white/10 rounded flex-shrink-0">
+                      {profile.cover_image ? (
+                        <Image
+                          src={profile.cover_image}
+                          alt="Cover"
+                          width={96}
+                          height={56}
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">No cover</div>
+                      )}
+                    </div>
+                    <label className="cursor-pointer bg-[#0a0a0a] border border-white/10 px-3 py-1.5 rounded-lg text-sm hover:bg-white/5 transition">
+                      {uploadingCover ? 'Uploading...' : 'Upload Cover'}
+                      <input
+                        ref={coverInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverUpload}
+                        className="hidden"
+                        disabled={uploadingCover}
+                      />
+                    </label>
+                    {profile.cover_image && (
+                      <button
+                        type="button"
+                        onClick={() => setProfile({ ...profile, cover_image: '' })}
+                        className="text-red-400 text-sm hover:text-red-300 transition"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Social Links */}
