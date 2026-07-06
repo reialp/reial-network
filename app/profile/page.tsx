@@ -171,7 +171,6 @@ function ProfileForm() {
     loadProfile()
   }, [router, supabase])
 
-  // Scroll to edit form when editing starts
   useEffect(() => {
     if (isEditing && editFormRef.current) {
       setShowScrollHint(true)
@@ -335,7 +334,7 @@ function ProfileForm() {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-gray-400 text-sm">Loading profile...</p>
+          <p className="text-gray-400 text-sm">Loading profile</p>
         </div>
       </div>
     )
@@ -397,7 +396,7 @@ function ProfileForm() {
                   {profile.full_name || 'Set up your profile'}
                 </h1>
                 {profile.tagline && (
-                  <p className="text-gray-300 text-sm mt-0.5 italic">"{profile.tagline}"</p>
+                  <p className="text-gray-300 text-sm mt-0.5 italic">{profile.tagline}</p>
                 )}
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1.5">
                   {profile.is_creator && (
@@ -445,7 +444,7 @@ function ProfileForm() {
             {/* Skills Tags */}
             {profile.skills && profile.skills.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-5 pt-5 border-t border-white/5">
-                <span className="text-xs text-gray-500 font-medium mr-2">Skills:</span>
+                <span className="text-xs text-gray-500 font-medium mr-2">Skills</span>
                 {profile.skills.map((skill, i) => (
                   <span key={i} className="bg-[#0a0a0a] px-3 py-1 rounded-full text-xs text-gray-300 border border-white/5">
                     {skill}
@@ -500,10 +499,10 @@ function ProfileForm() {
               </div>
             )}
 
-            {/* Bottom Bar: Payout + WhatsApp + Logout */}
+            {/* Bottom Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 mt-5 pt-4 border-t border-white/5">
               <div className="flex items-center gap-2 text-sm text-gray-400">
-                <span className="text-xs text-gray-500">Payout:</span>
+                <span className="text-xs text-gray-500">Payout</span>
                 <span className="font-mono text-sm">{profile.payout_phone || 'Not set'}</span>
               </div>
               <div className="flex items-center gap-2">
@@ -532,14 +531,13 @@ function ProfileForm() {
           </div>
         </div>
 
-        {/* Edit Form - Appears below with smooth scroll */}
+        {/* Edit Form */}
         {isEditing && (
           <>
             {/* Scroll Hint Notification */}
             {showScrollHint && (
               <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce">
                 <div className="bg-[#f5c518] text-black px-6 py-3 rounded-full font-semibold shadow-2xl flex items-center gap-3">
-                  <span>⬇️</span>
                   <span>Scroll down to edit your profile</span>
                   <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -550,7 +548,7 @@ function ProfileForm() {
 
             <div ref={editFormRef} className="mt-6 bg-[#1a1a1a] rounded-2xl border border-[#f5c518]/20 shadow-2xl p-6 sm:p-8 scroll-mt-24">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-[#f5c518]">✏️ Edit Profile</h2>
+                <h2 className="text-xl font-bold text-[#f5c518]">Edit Profile</h2>
                 <span className="text-xs text-gray-500">All fields are optional except Full Name</span>
               </div>
 
@@ -562,7 +560,7 @@ function ProfileForm() {
                 )}
                 {success && (
                   <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-                    <span>✅ Profile saved successfully.</span>
+                    <span>Profile saved successfully</span>
                   </div>
                 )}
 
