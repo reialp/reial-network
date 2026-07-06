@@ -19,6 +19,9 @@ interface Project {
   created_at: string
   category: string
   slug: string
+  description: string
+  trailer_url: string
+  video_url: string
 }
 
 interface AnalyticsData {
@@ -195,6 +198,9 @@ export default function CreatorAnalyticsPage() {
         created_at: p.created_at,
         category: p.category || 'Film',
         slug: p.slug || p.id,
+        description: p.description || '',
+        trailer_url: p.trailer_url || '',
+        video_url: p.video_url || '',
       }))
 
       const recentTransactions = purchases.slice(0, 10).map(p => ({
@@ -322,82 +328,174 @@ export default function CreatorAnalyticsPage() {
 
   const { profile, overall, financials, projects, recentTransactions, chartData, insights } = data
 
-  // Project Detail View
+  // 🔍 PROJECT DETAIL VIEW - Full stats when clicked
   if (selectedProject) {
+    const projectPurchases = recentTransactions.filter(t => t.project_title === selectedProject.title)
+    const totalRevenue = selectedProject.revenue
+    const totalSales = selectedProject.purchase_count
+    const totalViews = selectedProject.views
+    
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           
+          {/* Back Button */}
           <button
             onClick={() => setSelectedProjectId(null)}
-            className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2 mb-6"
+            className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2 mb-6 group"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 group-hover:-translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Back to Overview
           </button>
 
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-xl bg-[#2a2a2a] overflow-hidden flex-shrink-0 border border-white/10">
+          {/* Project Header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+            <div className="w-20 h-20 rounded-xl bg-[#2a2a2a] overflow-hidden flex-shrink-0 border border-white/10">
               {selectedProject.thumbnail_url ? (
                 <Image
                   src={selectedProject.thumbnail_url}
                   alt={selectedProject.title}
-                  width={64}
-                  height={64}
+                  width={80}
+                  height={80}
                   className="object-cover w-full h-full"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-2xl text-gray-500">🎬</div>
+                <div className="w-full h-full flex items-center justify-center text-3xl text-gray-500">🎬</div>
               )}
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">{selectedProject.title}</h1>
-              <p className="text-gray-400 text-sm">{selectedProject.category}</p>
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold">{selectedProject.title}</h1>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <span className="text-sm text-gray-400">{selectedProject.category}</span>
+                <span className="w-1 h-1 rounded-full bg-gray-600" />
+                <span className="text-sm text-gray-400">KES {selectedProject.price}</span>
+              </div>
+              <p className="text-gray-500 text-sm mt-1 max-w-2xl">{selectedProject.description || 'No description'}</p>
             </div>
-            <Link
-              href={`/${selectedProject.category.toLowerCase()}/${selectedProject.slug}`}
-              className="ml-auto bg-[#f5c518] text-black px-4 py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition text-sm"
-            >
-              View Project
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={`/${selectedProject.category.toLowerCase()}/${selectedProject.slug}`}
+                className="bg-[#f5c518] text-black px-4 py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition text-sm"
+              >
+                View Project
+              </Link>
+              <Link
+                href={`/upload/${selectedProject.id}`}
+                className="bg-[#1a1a1a] border border-white/10 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/5 transition"
+              >
+                Edit Project
+              </Link>
+            </div>
           </div>
 
+          {/* Project Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
               <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Revenue</p>
-              <p className="text-xl font-bold text-green-400">KES {formatCurrency(selectedProject.revenue)}</p>
+              <p className="text-2xl font-bold text-green-400">KES {formatCurrency(totalRevenue)}</p>
             </div>
             <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
               <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Sales</p>
-              <p className="text-xl font-bold text-blue-400">{selectedProject.purchase_count}</p>
+              <p className="text-2xl font-bold text-blue-400">{totalSales}</p>
             </div>
             <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
               <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Views</p>
-              <p className="text-xl font-bold text-purple-400">{selectedProject.views}</p>
+              <p className="text-2xl font-bold text-purple-400">{totalViews}</p>
             </div>
             <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
               <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Conversion</p>
-              <p className="text-xl font-bold text-orange-400">{selectedProject.conversionRate.toFixed(1)}%</p>
+              <p className="text-2xl font-bold text-orange-400">{selectedProject.conversionRate.toFixed(1)}%</p>
             </div>
           </div>
 
-          <Link
-            href={`/upload/${selectedProject.id}`}
-            className="inline-flex items-center gap-2 bg-[#1a1a1a] border border-white/10 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/5 transition"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            Edit Project
-          </Link>
+          {/* Detailed Project Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Project Details</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                  <span className="text-gray-400 text-sm">Created</span>
+                  <span className="text-sm">{new Date(selectedProject.created_at).toLocaleDateString()}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                  <span className="text-gray-400 text-sm">Category</span>
+                  <span className="text-sm">{selectedProject.category}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                  <span className="text-gray-400 text-sm">Price</span>
+                  <span className="text-sm font-semibold">KES {selectedProject.price}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-sm">Status</span>
+                  <span className="text-sm px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">{selectedProject.status}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Revenue Breakdown</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                  <span className="text-gray-400 text-sm">Gross Revenue</span>
+                  <span className="text-sm font-bold">KES {formatCurrency(totalRevenue)}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                  <span className="text-gray-400 text-sm">Your Earnings (85%)</span>
+                  <span className="text-sm font-bold text-[#f5c518]">KES {formatCurrency(Math.round(totalRevenue * 0.85))}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-sm">Platform Fee (15%)</span>
+                  <span className="text-sm font-bold text-yellow-400">KES {formatCurrency(Math.round(totalRevenue * 0.15))}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Project Purchases */}
+          <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/5">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Purchase History</h3>
+              <p className="text-xs text-gray-500 mt-1">{projectPurchases.length} purchases</p>
+            </div>
+            {projectPurchases.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 text-sm">No purchases yet for this project</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-[#0a0a0a]">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider">Buyer</th>
+                      <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider">Amount</th>
+                      <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider hidden md:table-cell">Date</th>
+                      <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {projectPurchases.map((tx) => (
+                      <tr key={tx.id} className="hover:bg-white/5 transition">
+                        <td className="px-4 py-2.5 text-sm">{tx.buyer_name}</td>
+                        <td className="px-4 py-2.5 text-[#f5c518] font-semibold">KES {formatCurrency(tx.amount)}</td>
+                        <td className="px-4 py-2.5 text-gray-400 text-sm hidden md:table-cell">
+                          {new Date(tx.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">{tx.status}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     )
   }
 
-  // Overall View - Full Analytics Dashboard
+  // 📊 OVERALL VIEW - Full Analytics Dashboard
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -553,52 +651,54 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
-        {/* Projects Grid */}
-        <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden mb-6">
-          <div className="px-5 py-4 border-b border-white/5 flex justify-between items-center">
+        {/* ✅ PROJECT GRID - Click to view details */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-4">
             <div>
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Projects</h3>
-              <p className="text-xs text-gray-500 mt-1">Click a project to view detailed analytics</p>
+              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Your Projects</h3>
+              <p className="text-xs text-gray-500 mt-1">Click a project card to view detailed analytics</p>
             </div>
             <span className="text-xs text-gray-500">{projects.length} projects</span>
           </div>
-          <div className="divide-y divide-white/5">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {projects.map((project) => (
               <button
                 key={project.id}
                 onClick={() => setSelectedProjectId(project.id)}
-                className="w-full px-5 py-4 flex items-center justify-between hover:bg-white/5 transition text-left group"
+                className="group bg-[#1a1a1a] rounded-xl overflow-hidden border border-white/5 hover:border-[#f5c518]/30 transition hover:scale-[1.02] text-left"
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-[#2a2a2a] overflow-hidden flex-shrink-0 border border-white/5">
-                    {project.thumbnail_url ? (
-                      <Image
-                        src={project.thumbnail_url}
-                        alt={project.title}
-                        width={48}
-                        height={48}
-                        className="object-cover w-full h-full"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xl text-gray-500">🎬</div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium group-hover:text-[#f5c518] transition">{project.title}</p>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      <span>KES {project.price}</span>
-                      <span className="w-1 h-1 rounded-full bg-gray-600" />
-                      <span>{project.views} views</span>
-                      <span className="w-1 h-1 rounded-full bg-gray-600" />
-                      <span>{project.purchase_count} sales</span>
-                    </div>
+                <div className="aspect-[16/9] bg-[#2a2a2a] relative overflow-hidden">
+                  {project.thumbnail_url ? (
+                    <Image
+                      src={project.thumbnail_url}
+                      alt={project.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition duration-500"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-4xl text-gray-600">🎬</div>
+                  )}
+                  <div className="absolute top-2 right-2 bg-black/60 text-xs px-2 py-0.5 rounded-full text-white">
+                    KES {project.price}
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-semibold text-green-400">KES {formatCurrency(project.revenue)}</span>
-                  <svg className="w-4 h-4 text-gray-500 group-hover:text-[#f5c518] transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                <div className="p-4">
+                  <h4 className="font-semibold group-hover:text-[#f5c518] transition">
+                    {project.title}
+                  </h4>
+                  <p className="text-gray-500 text-xs mt-1">{project.category}</p>
+                  <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                    <span>👁 {project.views}</span>
+                    <span>📦 {project.purchase_count}</span>
+                    <span className="text-green-400 font-semibold">KES {formatCurrency(project.revenue)}</span>
+                  </div>
+                  <div className="mt-2 text-[10px] text-gray-600 group-hover:text-[#f5c518] transition flex items-center gap-1">
+                    Click for details
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
                 </div>
               </button>
             ))}
