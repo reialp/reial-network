@@ -27,9 +27,10 @@ function ProfileForm() {
   const [success, setSuccess] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
-  const [profileData, setProfileData] = useState<Profile | null>(null)
 
+  // ✅ Fixed: Added 'id' field to initial state
   const [profile, setProfile] = useState<Profile>({
+    id: '',
     full_name: '',
     bio: '',
     avatar_url: '',
@@ -38,6 +39,7 @@ function ProfileForm() {
   })
 
   const [originalProfile, setOriginalProfile] = useState<Profile>({
+    id: '',
     full_name: '',
     bio: '',
     avatar_url: '',
@@ -85,6 +87,7 @@ function ProfileForm() {
 
       if (data) {
         const loadedProfile = {
+          id: data.id,
           full_name: data.full_name || '',
           bio: data.bio || '',
           avatar_url: data.avatar_url || '',
@@ -93,7 +96,6 @@ function ProfileForm() {
         }
         setProfile(loadedProfile)
         setOriginalProfile(loadedProfile)
-        setProfileData(data)
         
         if (!loadedProfile.full_name && !loadedProfile.bio) {
           setIsEditing(true)
@@ -215,9 +217,8 @@ function ProfileForm() {
             </p>
           </div>
           
-          {/* ✅ Action Buttons */}
+          {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* 📊 Analytics - Only for creators */}
             {profile.is_creator && userId && (
               <Link
                 href={`/creator/${userId}/analytics`}
@@ -419,7 +420,7 @@ function ProfileForm() {
             )}
           </div>
 
-          {/* ✅ Right: Contact + Logout Section (1/3 on desktop) */}
+          {/* Right: Contact + Logout Section (1/3 on desktop) */}
           <div className="lg:col-span-1 space-y-4">
             {/* Contact Card */}
             <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-5">
