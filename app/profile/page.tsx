@@ -21,7 +21,7 @@ interface Profile {
   social_twitter: string
   social_youtube: string
   social_website: string
-  featured_project_id: string
+  featured_project_id: string | null
 }
 
 function ProfileForm() {
@@ -38,7 +38,6 @@ function ProfileForm() {
   const [isEditing, setIsEditing] = useState(false)
   const [projects, setProjects] = useState<{ id: string; title: string }[]>([])
   
-  // Image upload states
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
@@ -59,7 +58,7 @@ function ProfileForm() {
     social_twitter: '',
     social_youtube: '',
     social_website: '',
-    featured_project_id: '',
+    featured_project_id: null,
   })
 
   const [originalProfile, setOriginalProfile] = useState<Profile>({
@@ -77,7 +76,7 @@ function ProfileForm() {
     social_twitter: '',
     social_youtube: '',
     social_website: '',
-    featured_project_id: '',
+    featured_project_id: null,
   })
 
   useEffect(() => {
@@ -134,7 +133,7 @@ function ProfileForm() {
           social_twitter: data.social_twitter || '',
           social_youtube: data.social_youtube || '',
           social_website: data.social_website || '',
-          featured_project_id: data.featured_project_id || '',
+          featured_project_id: data.featured_project_id || null,
         }
         setProfile(loadedProfile)
         setOriginalProfile(loadedProfile)
@@ -145,7 +144,7 @@ function ProfileForm() {
       }
 
       // Load creator's projects for featured selection
-      if (profile.is_creator) {
+      if (session?.user) {
         const { data: projectsData } = await supabase
           .from('content')
           .select('id, title')
@@ -159,7 +158,6 @@ function ProfileForm() {
     loadProfile()
   }, [router, supabase])
 
-  // Image upload function
   const uploadImage = async (file: File, folder: string): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop()
@@ -230,6 +228,9 @@ function ProfileForm() {
     const wasCreator = profile.is_creator
     const currentProfile = { ...profile }
 
+    // ✅ Fix: Convert empty string to null for featured_project_id
+    const featuredProjectId = currentProfile.featured_project_id === '' ? null : currentProfile.featured_project_id
+
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
@@ -246,7 +247,7 @@ function ProfileForm() {
         social_twitter: currentProfile.social_twitter,
         social_youtube: currentProfile.social_youtube,
         social_website: currentProfile.social_website,
-        featured_project_id: currentProfile.featured_project_id,
+        featured_project_id: featuredProjectId,
       })
       .eq('id', userId)
 
@@ -482,7 +483,7 @@ function ProfileForm() {
                     className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
                     placeholder="e.g. Award-winning filmmaker"
                   />
-                  <p className="text-gray-500 text-xs mt-1">Short description that appears under your name</p>
+                  <p className="text-gray-500 text-xs mt-1">Short description under your name</p>
                 </div>
 
                 <div>
@@ -533,7 +534,7 @@ function ProfileForm() {
                           className="object-cover w-full h-full"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-600">No image</div>
+                        <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">No image</div>
                       )}
                     </div>
                     <label className="cursor-pointer bg-[#0a0a0a] border border-white/10 px-3 py-1.5 rounded-lg text-sm hover:bg-white/5 transition">
@@ -648,8 +649,8 @@ function ProfileForm() {
                   <div>
                     <label className="block text-sm font-medium text-gray-300">Featured Project</label>
                     <select
-                      value={profile.featured_project_id}
-                      onChange={(e) => setProfile({ ...profile, featured_project_id: e.target.value })}
+                      value={profile.featured_project_id || ''}
+                      onChange={(e) => setProfile({ ...profile, featured_project_id: e.target.value || null })}
                       className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm"
                     >
                       <option value="">No featured project</option>
