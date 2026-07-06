@@ -159,7 +159,7 @@ function ProfileForm() {
     loadProfile()
   }, [router, supabase])
 
-  // ✅ Image upload function
+  // Image upload function
   const uploadImage = async (file: File, folder: string): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop()
@@ -362,7 +362,7 @@ function ProfileForm() {
                 href={`/creator/${userId}/analytics`}
                 className="px-4 py-2 bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] rounded-lg text-sm font-medium transition flex items-center gap-2"
               >
-                <span>Analytics</span>
+                Analytics
               </Link>
             )}
             
