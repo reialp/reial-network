@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
+import Link from 'next/link'
 
 interface Profile {
   full_name: string
@@ -91,7 +92,7 @@ function ProfileForm() {
         setProfile(loadedProfile)
         setOriginalProfile(loadedProfile)
         
-        // ✅ If profile is empty, auto-enter edit mode
+        // ✅ Auto-enter edit mode if profile is empty
         if (!loadedProfile.full_name && !loadedProfile.bio) {
           setIsEditing(true)
         }
@@ -174,7 +175,7 @@ function ProfileForm() {
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-10">
         
-        {/* Header with Avatar */}
+        {/* ✅ HEADER with Avatar */}
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#1a1a1a] border-2 border-white/10 overflow-hidden flex-shrink-0">
             {profile.avatar_url ? (
@@ -218,7 +219,7 @@ function ProfileForm() {
           )}
         </div>
 
-        {/* Status Banners */}
+        {/* ✅ STATUS BANNERS */}
         {intent === 'creator' && !profile.is_creator && (
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3.5 sm:p-4 mb-4 sm:mb-6">
             <div className="flex items-center gap-3">
@@ -243,51 +244,47 @@ function ProfileForm() {
           </div>
         )}
 
-        {/* View Mode */}
+        {/* ✅ VIEW MODE - Clean, not a form */}
         {!isEditing && hasProfile ? (
-          <div className="bg-[#1a1a1a] rounded-xl p-6 border border-white/5 space-y-4">
-            {/* Full Name */}
-            <div className="flex justify-between items-center border-b border-white/5 pb-3">
-              <span className="text-gray-400 text-sm">Full Name</span>
-              <span className="text-white font-medium">{profile.full_name || 'Not set'}</span>
-            </div>
-            {/* Bio */}
-            <div className="flex justify-between items-start border-b border-white/5 pb-3">
-              <span className="text-gray-400 text-sm">Bio</span>
-              <span className="text-white text-sm text-right max-w-[60%]">{profile.bio || 'Not set'}</span>
-            </div>
-            {/* Avatar URL */}
-            <div className="flex justify-between items-center border-b border-white/5 pb-3">
-              <span className="text-gray-400 text-sm">Avatar</span>
-              <span className="text-white text-sm truncate max-w-[60%]">{profile.avatar_url ? 'Set ✅' : 'Not set'}</span>
-            </div>
-            {/* Payout Phone */}
-            <div className="flex justify-between items-center border-b border-white/5 pb-3">
-              <span className="text-gray-400 text-sm">Payout Phone</span>
-              <span className="text-white font-mono text-sm">{profile.payout_phone || 'Not set'}</span>
-            </div>
-            {/* Creator Status */}
-            <div className="flex justify-between items-center pt-1">
-              <span className="text-gray-400 text-sm">Creator Status</span>
-              <span className={`text-sm font-medium ${profile.is_creator ? 'text-green-400' : 'text-gray-500'}`}>
-                {profile.is_creator ? '✅ Active' : 'Not a creator'}
-              </span>
+          <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
+            {/* Profile Stats / Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-white/5">
+              <div className="bg-[#1a1a1a] p-4 sm:p-5">
+                <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Full Name</p>
+                <p className="text-white text-base font-medium mt-1">{profile.full_name || 'Not set'}</p>
+              </div>
+              <div className="bg-[#1a1a1a] p-4 sm:p-5">
+                <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Creator Status</p>
+                <p className={`text-base font-medium mt-1 ${profile.is_creator ? 'text-green-400' : 'text-gray-500'}`}>
+                  {profile.is_creator ? '✅ Active' : 'Not a creator'}
+                </p>
+              </div>
+              <div className="bg-[#1a1a1a] p-4 sm:p-5">
+                <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Bio</p>
+                <p className="text-white text-sm mt-1">{profile.bio || 'Not set'}</p>
+              </div>
+              <div className="bg-[#1a1a1a] p-4 sm:p-5">
+                <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Payout Phone</p>
+                <p className="text-white font-mono text-sm mt-1">{profile.payout_phone || 'Not set'}</p>
+              </div>
             </div>
 
-            {/* Edit button at bottom */}
-            <button
-              onClick={handleEdit}
-              className="w-full mt-2 bg-[#f5c518] text-black py-2.5 rounded-lg font-semibold hover:bg-[#e0b010] transition flex items-center justify-center gap-2 text-sm"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              Edit Profile
-            </button>
+            {/* Edit Button at bottom */}
+            <div className="p-4 sm:p-5 border-t border-white/5">
+              <button
+                onClick={handleEdit}
+                className="w-full bg-[#f5c518] text-black py-2.5 rounded-lg font-semibold hover:bg-[#e0b010] transition flex items-center justify-center gap-2 text-sm"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Profile
+              </button>
+            </div>
           </div>
         ) : (
-          /* Edit Mode - Form */
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+          /* ✅ EDIT MODE - Only shows when editing */
+          <form onSubmit={handleSubmit} className="bg-[#1a1a1a] rounded-xl border border-white/5 p-4 sm:p-6 space-y-4 sm:space-y-5">
             {error && (
               <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
                 {error}
@@ -299,63 +296,61 @@ function ProfileForm() {
               </div>
             )}
 
-            <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5 space-y-4 sm:space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-300">
-                  Full Name <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={profile.full_name}
-                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                  className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                  placeholder="Your full name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300">Bio</label>
-                <textarea
-                  value={profile.bio}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                  rows={3}
-                  className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm resize-none transition"
-                  placeholder="Tell your audience about yourself..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300">Avatar URL</label>
-                <input
-                  type="url"
-                  value={profile.avatar_url}
-                  onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
-                  className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                  placeholder="https://example.com/avatar.jpg"
-                />
-                <p className="text-gray-500 text-xs mt-1.5">URL to your profile picture</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300">
-                  Payout Phone <span className="text-gray-500">(M-Pesa)</span>
-                </label>
-                <input
-                  type="text"
-                  value={profile.payout_phone}
-                  onChange={(e) => setProfile({ ...profile, payout_phone: e.target.value })}
-                  className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                  placeholder="0712345678"
-                />
-                <p className="text-gray-500 text-xs mt-1.5">Used for payout requests</p>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300">
+                Full Name <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={profile.full_name}
+                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
+                placeholder="Your full name"
+              />
             </div>
 
-            {/* Creator Checkbox - Card Style */}
-            <div className={`rounded-xl p-4 sm:p-5 border transition ${
+            <div>
+              <label className="block text-sm font-medium text-gray-300">Bio</label>
+              <textarea
+                value={profile.bio}
+                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                rows={3}
+                className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm resize-none transition"
+                placeholder="Tell your audience about yourself..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300">Avatar URL</label>
+              <input
+                type="url"
+                value={profile.avatar_url}
+                onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
+                className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
+                placeholder="https://example.com/avatar.jpg"
+              />
+              <p className="text-gray-500 text-xs mt-1.5">URL to your profile picture</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300">
+                Payout Phone <span className="text-gray-500">(M-Pesa)</span>
+              </label>
+              <input
+                type="text"
+                value={profile.payout_phone}
+                onChange={(e) => setProfile({ ...profile, payout_phone: e.target.value })}
+                className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
+                placeholder="0712345678"
+              />
+              <p className="text-gray-500 text-xs mt-1.5">Used for payout requests</p>
+            </div>
+
+            {/* Creator Checkbox */}
+            <div className={`rounded-xl p-4 border transition ${
               intent === 'creator' 
-                ? 'bg-[#f5c518]/10 border-[#f5c518] hover:border-[#f5c518]/60' 
-                : 'bg-[#1a1a1a] border-white/5 hover:border-white/20'
+                ? 'bg-[#f5c518]/10 border-[#f5c518]' 
+                : 'bg-[#0a0a0a] border-white/10'
             }`}>
               <label className="flex items-center gap-3 cursor-pointer select-none">
                 <input
@@ -373,7 +368,7 @@ function ProfileForm() {
             </div>
 
             {/* Form Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="submit"
                 disabled={saving}
