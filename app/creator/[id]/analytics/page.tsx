@@ -322,7 +322,7 @@ export default function CreatorAnalyticsPage() {
 
   const { profile, overall, financials, projects, recentTransactions, chartData, insights } = data
 
-  // If a project is selected, show project-specific stats
+  // Project Detail View
   if (selectedProject) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -332,11 +332,14 @@ export default function CreatorAnalyticsPage() {
             onClick={() => setSelectedProjectId(null)}
             className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2 mb-6"
           >
-            ← Back to Overview
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Overview
           </button>
 
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-lg bg-[#2a2a2a] overflow-hidden flex-shrink-0">
+            <div className="w-16 h-16 rounded-xl bg-[#2a2a2a] overflow-hidden flex-shrink-0 border border-white/10">
               {selectedProject.thumbnail_url ? (
                 <Image
                   src={selectedProject.thumbnail_url}
@@ -351,11 +354,11 @@ export default function CreatorAnalyticsPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold">{selectedProject.title}</h1>
-              <p className="text-gray-400 text-sm">Project Analytics</p>
+              <p className="text-gray-400 text-sm">{selectedProject.category}</p>
             </div>
             <Link
               href={`/${selectedProject.category.toLowerCase()}/${selectedProject.slug}`}
-              className="ml-auto text-sm bg-[#f5c518] text-black px-4 py-1.5 rounded-lg font-semibold hover:bg-[#e0b010] transition"
+              className="ml-auto bg-[#f5c518] text-black px-4 py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition text-sm"
             >
               View Project
             </Link>
@@ -382,8 +385,11 @@ export default function CreatorAnalyticsPage() {
 
           <Link
             href={`/upload/${selectedProject.id}`}
-            className="inline-block bg-[#1a1a1a] border border-white/10 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/5 transition"
+            className="inline-flex items-center gap-2 bg-[#1a1a1a] border border-white/10 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/5 transition"
           >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             Edit Project
           </Link>
         </div>
@@ -396,19 +402,24 @@ export default function CreatorAnalyticsPage() {
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         
+        {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Analytics</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Analytics Dashboard</h1>
             <p className="text-gray-400 text-sm">{profile.full_name}</p>
           </div>
           <Link
             href={`/profile`}
-            className="text-sm text-gray-400 hover:text-[#f5c518] transition"
+            className="text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
           >
-            ← Back to Profile
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Profile
           </Link>
         </div>
 
+        {/* Insights Banner */}
         <div className="bg-gradient-to-r from-[#f5c518]/10 to-[#f5c518]/5 border border-[#f5c518]/20 rounded-xl p-4 mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="flex-1">
@@ -422,6 +433,7 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
+        {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 hover:border-[#f5c518]/20 transition">
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Revenue</p>
@@ -452,6 +464,50 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
+        {/* Financial Breakdown */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Revenue Split</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 text-sm">Your Earnings (85%)</span>
+                <span className="text-[#f5c518] font-bold">KES {formatCurrency(financials.yourEarnings)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400 text-sm">Platform Fee (15%)</span>
+                <span className="text-yellow-400 font-bold">KES {formatCurrency(financials.platformFees)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-3 border-t border-white/5">
+                <span className="text-gray-400 text-sm">Lifetime Earnings</span>
+                <span className="text-green-400 font-bold">KES {formatCurrency(financials.lifetimeEarnings)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Stats</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-gray-500 text-xs">Projects</p>
+                <p className="text-lg font-bold">{projects.length}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Avg Price</p>
+                <p className="text-lg font-bold">KES {formatCurrency(Math.round(overall.avgPrice))}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Top Category</p>
+                <p className="text-lg font-bold text-[#f5c518]">{insights.topCategory}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Best Project</p>
+                <p className="text-sm font-bold truncate text-[#f5c518]">{insights.bestPerforming}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Chart */}
         <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Performance Over Time</h3>
@@ -497,10 +553,14 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
+        {/* Projects Grid */}
         <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden mb-6">
-          <div className="px-5 py-4 border-b border-white/5">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Projects</h3>
-            <p className="text-xs text-gray-500 mt-1">Click a project to view detailed analytics</p>
+          <div className="px-5 py-4 border-b border-white/5 flex justify-between items-center">
+            <div>
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Projects</h3>
+              <p className="text-xs text-gray-500 mt-1">Click a project to view detailed analytics</p>
+            </div>
+            <span className="text-xs text-gray-500">{projects.length} projects</span>
           </div>
           <div className="divide-y divide-white/5">
             {projects.map((project) => (
@@ -510,7 +570,7 @@ export default function CreatorAnalyticsPage() {
                 className="w-full px-5 py-4 flex items-center justify-between hover:bg-white/5 transition text-left group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-[#2a2a2a] overflow-hidden flex-shrink-0">
+                  <div className="w-12 h-12 rounded-lg bg-[#2a2a2a] overflow-hidden flex-shrink-0 border border-white/5">
                     {project.thumbnail_url ? (
                       <Image
                         src={project.thumbnail_url}
@@ -527,9 +587,9 @@ export default function CreatorAnalyticsPage() {
                     <p className="font-medium group-hover:text-[#f5c518] transition">{project.title}</p>
                     <div className="flex items-center gap-3 text-xs text-gray-500">
                       <span>KES {project.price}</span>
-                      <span>•</span>
+                      <span className="w-1 h-1 rounded-full bg-gray-600" />
                       <span>{project.views} views</span>
-                      <span>•</span>
+                      <span className="w-1 h-1 rounded-full bg-gray-600" />
                       <span>{project.purchase_count} sales</span>
                     </div>
                   </div>
@@ -545,6 +605,7 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
+        {/* Recent Transactions */}
         <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
           <div className="px-5 py-4 border-b border-white/5">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent Transactions</h3>
