@@ -11,15 +11,6 @@ function getEmbedUrl(url: string): string {
   return url
 }
 
-async function incrementViews(contentId: string) {
-  try {
-    const supabase = await createClient()
-    await supabase.rpc('increment_views', { content_id: contentId })
-  } catch (error) {
-    console.error('View increment error:', error)
-  }
-}
-
 async function getContentByIdentifier(identifier: string, userId?: string, isAdmin?: boolean) {
   const supabase = await createClient()
   
@@ -75,25 +66,7 @@ export default async function ContentPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const { category, slug } = await params
-  const identifier = slug
   
-  console.log('🔍 ContentPage - Category:', category, 'Slug:', slug)
-
-  if (!identifier || identifier === 'undefined' || identifier === 'null') {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-400">Invalid Content</h1>
-          <p className="text-gray-400 mt-2">No content identifier provided.</p>
-          <Link href="/" className="text-[#f5c518] hover:underline mt-4 block">Return Home</Link>
-        </div>
-      </div>
-    )
-  }
-
-  const sp = await searchParams
-  const isPreview = sp.preview === 'true'
-
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
   const userId = session?.user?.id
@@ -108,11 +81,8 @@ export default async function ContentPage({
     isUserAdmin = profile?.is_admin || false
   }
 
-  const content = await getContentByIdentifier(identifier, userId, isUserAdmin)
+  const content = await getContentByIdentifier(slug, userId, isUserAdmin)
   if (!content) notFound()
-
-  // Increment views in the background
-  incrementViews(content.id).catch(err => console.error('View increment error:', err))
 
   const profile = content.profiles as any
   const isOwnContent = userId && content.creator_id === userId
@@ -124,7 +94,7 @@ export default async function ContentPage({
   }
 
   const canWatchFull = (isApproved || isOwnContent || isUserAdmin) &&
-    (hasPurchased || isOwnContent || isUserAdmin || isPreview)
+    (hasPurchased || isOwnContent || isUserAdmin)
 
   const showFeeBreakdown = isOwnContent || isUserAdmin
 
@@ -133,27 +103,10 @@ export default async function ContentPage({
 
   const checkoutId = content.id
 
-  // ✅ Get the correct category path for links
-  const categoryPath = content.category ? content.category.toLowerCase() : 'film'
-
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {isOwnContent && !isApproved && (
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
-            <p className="text-yellow-400 text-sm">
-              Preview mode – only you can see this.
-              {content.status === 'pending' && ' This content is awaiting admin approval.'}
-            </p>
-          </div>
-        )}
-        {isUserAdmin && !isApproved && (
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
-            <p className="text-blue-400 text-sm">Admin preview – this content is <strong>{content.status}</strong>.</p>
-          </div>
-        )}
-
-        {/* ✅ Category Badge at top */}
+        {/* Category Badge */}
         <div className="mb-4">
           <span className="inline-block bg-[#f5c518]/20 text-[#f5c518] text-sm font-semibold px-4 py-1.5 rounded-full border border-[#f5c518]/30">
             {content.category || 'Film'}
