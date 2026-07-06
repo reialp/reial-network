@@ -14,7 +14,7 @@ interface AnalyticsData {
     is_creator: boolean
     bio: string
   }
-  performance: {
+  overall: {
     totalRevenue: number
     totalSales: number
     totalViews: number
@@ -73,6 +73,7 @@ export default function CreatorAnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadAnalytics() {
@@ -245,18 +246,18 @@ export default function CreatorAnalyticsPage() {
         ).pop() : 'N/A'
 
       const growthMessage = revenueGrowth > 0 
-        ? `📈 Revenue is up ${Math.round(revenueGrowth)}% compared to last month!` 
+        ? `Revenue is up ${Math.round(revenueGrowth)}% compared to last month` 
         : revenueGrowth < 0 
-          ? `📉 Revenue is down ${Math.round(Math.abs(revenueGrowth))}% compared to last month.` 
-          : '📊 Revenue is steady compared to last month.'
+          ? `Revenue is down ${Math.round(Math.abs(revenueGrowth))}% compared to last month` 
+          : 'Revenue is steady compared to last month'
 
       const recommendation = totalSales > 0 && bestProject
         ? `Your best performing project "${bestProject.title}" has generated KES ${bestProject.revenue.toLocaleString()}. Consider creating similar content.`
-        : 'Start uploading content to begin earning!'
+        : 'Start uploading content to begin earning'
 
       setData({
         profile,
-        performance: {
+        overall: {
           totalRevenue,
           totalSales,
           totalViews,
@@ -298,6 +299,9 @@ export default function CreatorAnalyticsPage() {
     return amount.toLocaleString()
   }
 
+  // Get selected project details
+  const selectedProject = data?.projects.find(p => p.id === selectedProjectId)
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -322,8 +326,82 @@ export default function CreatorAnalyticsPage() {
     )
   }
 
-  const { profile, performance, financials, projects, recentTransactions, chartData, insights } = data
+  const { profile, overall, financials, projects, recentTransactions, chartData, insights } = data
 
+  // If a project is selected, show project-specific stats
+  if (selectedProject) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          
+          {/* Back Button */}
+          <button
+            onClick={() => setSelectedProjectId(null)}
+            className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2 mb-6"
+          >
+            ← Back to Overview
+          </button>
+
+          {/* Project Header */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-16 h-16 rounded-lg bg-[#2a2a2a] overflow-hidden flex-shrink-0">
+              {selectedProject.thumbnail_url ? (
+                <Image
+                  src={selectedProject.thumbnail_url}
+                  alt={selectedProject.title}
+                  width={64}
+                  height={64}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-2xl text-gray-500">🎬</div>
+              )}
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">{selectedProject.title}</h1>
+              <p className="text-gray-400 text-sm">Project Analytics</p>
+            </div>
+            <Link
+              href={`/${selectedProject.category?.toLowerCase() || 'film'}/${selectedProject.slug || selectedProject.id}`}
+              className="ml-auto text-sm bg-[#f5c518] text-black px-4 py-1.5 rounded-lg font-semibold hover:bg-[#e0b010] transition"
+            >
+              View Project
+            </Link>
+          </div>
+
+          {/* Project Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
+              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Revenue</p>
+              <p className="text-xl font-bold text-green-400">KES {formatCurrency(selectedProject.revenue)}</p>
+            </div>
+            <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
+              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Sales</p>
+              <p className="text-xl font-bold text-blue-400">{selectedProject.purchase_count}</p>
+            </div>
+            <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
+              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Views</p>
+              <p className="text-xl font-bold text-purple-400">{selectedProject.views}</p>
+            </div>
+            <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
+              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Conversion</p>
+              <p className="text-xl font-bold text-orange-400">{selectedProject.conversionRate.toFixed(1)}%</p>
+            </div>
+          </div>
+
+          {/* Edit Project Link */}
+          <Link
+            href={`/upload/${selectedProject.id}`}
+            className="inline-block bg-[#1a1a1a] border border-white/10 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/5 transition"
+          >
+            Edit Project
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Overall View - Full Analytics Dashboard
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -331,23 +409,20 @@ export default function CreatorAnalyticsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">📊 Analytics</h1>
-            <p className="text-gray-400 text-sm">{profile.full_name} • Performance Dashboard</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Analytics</h1>
+            <p className="text-gray-400 text-sm">{profile.full_name}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/profile`}
-              className="text-sm text-gray-400 hover:text-[#f5c518] transition"
-            >
-              ← Back to Profile
-            </Link>
-          </div>
+          <Link
+            href={`/profile`}
+            className="text-sm text-gray-400 hover:text-[#f5c518] transition"
+          >
+            ← Back to Profile
+          </Link>
         </div>
 
         {/* Insights Banner */}
         <div className="bg-gradient-to-r from-[#f5c518]/10 to-[#f5c518]/5 border border-[#f5c518]/20 rounded-xl p-4 mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <span className="text-2xl">💡</span>
             <div className="flex-1">
               <p className="text-sm font-medium text-[#f5c518]">Insights</p>
               <p className="text-sm text-gray-300">{insights.growthMessage}</p>
@@ -359,78 +434,34 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
-        {/* Performance Metrics */}
+        {/* Overall Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 hover:border-[#f5c518]/20 transition">
-            <p className="text-gray-400 text-[10px] uppercase tracking-wider font-medium">Revenue</p>
-            <p className="text-lg sm:text-xl font-bold text-green-400">KES {formatCurrency(performance.totalRevenue)}</p>
-            <span className={`text-xs ${performance.revenueGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {performance.revenueGrowth >= 0 ? '↑' : '↓'} {Math.abs(Math.round(performance.revenueGrowth))}%
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Revenue</p>
+            <p className="text-xl font-bold text-green-400">KES {formatCurrency(overall.totalRevenue)}</p>
+            <span className={`text-xs ${overall.revenueGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {overall.revenueGrowth >= 0 ? '↑' : '↓'} {Math.abs(Math.round(overall.revenueGrowth))}%
             </span>
           </div>
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 hover:border-blue-500/20 transition">
-            <p className="text-gray-400 text-[10px] uppercase tracking-wider font-medium">Sales</p>
-            <p className="text-lg sm:text-xl font-bold text-blue-400">{performance.totalSales}</p>
-            <span className={`text-xs ${performance.salesGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {performance.salesGrowth >= 0 ? '↑' : '↓'} {Math.abs(Math.round(performance.salesGrowth))}%
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Sales</p>
+            <p className="text-xl font-bold text-blue-400">{overall.totalSales}</p>
+            <span className={`text-xs ${overall.salesGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {overall.salesGrowth >= 0 ? '↑' : '↓'} {Math.abs(Math.round(overall.salesGrowth))}%
             </span>
           </div>
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 hover:border-purple-500/20 transition">
-            <p className="text-gray-400 text-[10px] uppercase tracking-wider font-medium">Views</p>
-            <p className="text-lg sm:text-xl font-bold text-purple-400">{performance.totalViews}</p>
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Views</p>
+            <p className="text-xl font-bold text-purple-400">{overall.totalViews}</p>
           </div>
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 hover:border-orange-500/20 transition">
-            <p className="text-gray-400 text-[10px] uppercase tracking-wider font-medium">Conversion</p>
-            <p className="text-lg sm:text-xl font-bold text-orange-400">{performance.conversionRate.toFixed(1)}%</p>
-            <span className="text-xs text-gray-500">{performance.totalSales} / {performance.totalViews} views</span>
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Conversion</p>
+            <p className="text-xl font-bold text-orange-400">{overall.conversionRate.toFixed(1)}%</p>
           </div>
           <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0a2a1a] rounded-xl p-4 border border-green-500/20">
-            <p className="text-gray-400 text-[10px] uppercase tracking-wider font-medium">Balance</p>
-            <p className="text-lg sm:text-xl font-bold text-green-400">KES {formatCurrency(financials.availableBalance)}</p>
+            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Balance</p>
+            <p className="text-xl font-bold text-green-400">KES {formatCurrency(financials.availableBalance)}</p>
             <span className="text-xs text-gray-500">Pending: KES {formatCurrency(financials.pendingPayouts)}</span>
-          </div>
-        </div>
-
-        {/* Financial Breakdown */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Revenue Split</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Your Earnings (85%)</span>
-                <span className="text-[#f5c518] font-bold">KES {formatCurrency(financials.yourEarnings)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Platform Fee (15%)</span>
-                <span className="text-yellow-400 font-bold">KES {formatCurrency(financials.platformFees)}</span>
-              </div>
-              <div className="flex justify-between items-center pt-3 border-t border-white/5">
-                <span className="text-gray-400 text-sm">Lifetime Earnings</span>
-                <span className="text-green-400 font-bold">KES {formatCurrency(financials.lifetimeEarnings)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Stats</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Projects</span>
-                <span className="font-bold">{projects.length}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Average Price</span>
-                <span className="font-bold">KES {formatCurrency(Math.round(performance.avgPrice))}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Top Category</span>
-                <span className="font-bold">{insights.topCategory}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Best Project</span>
-                <span className="font-bold text-[#f5c518] truncate max-w-[120px]">{insights.bestPerforming}</span>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -468,7 +499,7 @@ export default function CreatorAnalyticsPage() {
               })}
             </div>
           </div>
-          <div className="flex justify-center gap-4 sm:gap-6 mt-2 text-[10px] sm:text-xs text-gray-500">
+          <div className="flex justify-center gap-4 sm:gap-6 mt-2 text-xs text-gray-500">
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 bg-[#f5c518] rounded" />
               Revenue
@@ -480,57 +511,59 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
-        {/* Top Projects */}
-        <div className="mb-6">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">🏆 Top Projects</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects
-              .sort((a, b) => b.revenue - a.revenue)
-              .slice(0, 3)
-              .map((project, index) => (
-                <div key={project.id} className="bg-[#1a1a1a] rounded-xl overflow-hidden border border-white/5">
-                  <div className="relative">
-                    <div className="aspect-[16/9] bg-[#2a2a2a] relative overflow-hidden">
-                      {project.thumbnail_url ? (
-                        <Image
-                          src={project.thumbnail_url}
-                          alt={project.title}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-20">🎬</div>
-                      )}
-                      <div className="absolute top-2 left-2 bg-[#f5c518] text-black text-[10px] font-bold px-2 py-0.5 rounded">
-                        #{index + 1}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-3">
-                    <h4 className="font-semibold text-sm line-clamp-1">
-                      {project.title}
-                    </h4>
-                    <div className="grid grid-cols-3 gap-1 mt-2 text-[10px] text-gray-500">
-                      <span>💰 KES {formatCurrency(project.revenue)}</span>
-                      <span>📦 {project.purchase_count}</span>
-                      <span>👁 {project.views}</span>
-                    </div>
-                    <div className="mt-1.5 w-full bg-[#0a0a0a] rounded-full h-1.5">
-                      <div 
-                        className="bg-[#f5c518] h-1.5 rounded-full"
-                        style={{ width: `${Math.min((project.revenue / (projects[0]?.revenue || 1)) * 100, 100)}%` }}
+        {/* Projects List - Click to view project analytics */}
+        <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden mb-6">
+          <div className="px-5 py-4 border-b border-white/5">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Projects</h3>
+            <p className="text-xs text-gray-500 mt-1">Click a project to view detailed analytics</p>
+          </div>
+          <div className="divide-y divide-white/5">
+            {projects.map((project) => (
+              <button
+                key={project.id}
+                onClick={() => setSelectedProjectId(project.id)}
+                className="w-full px-5 py-4 flex items-center justify-between hover:bg-white/5 transition text-left group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-[#2a2a2a] overflow-hidden flex-shrink-0">
+                    {project.thumbnail_url ? (
+                      <Image
+                        src={project.thumbnail_url}
+                        alt={project.title}
+                        width={48}
+                        height={48}
+                        className="object-cover w-full h-full"
                       />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xl text-gray-500">🎬</div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium group-hover:text-[#f5c518] transition">{project.title}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <span>KES {project.price}</span>
+                      <span>•</span>
+                      <span>{project.views} views</span>
+                      <span>•</span>
+                      <span>{project.purchase_count} sales</span>
                     </div>
                   </div>
                 </div>
-              ))}
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-semibold text-green-400">KES {formatCurrency(project.revenue)}</span>
+                  <svg className="w-4 h-4 text-gray-500 group-hover:text-[#f5c518] transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Recent Transactions */}
         <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
           <div className="px-5 py-4 border-b border-white/5">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">📋 Recent Transactions</h3>
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent Transactions</h3>
           </div>
           {recentTransactions.length === 0 ? (
             <div className="p-8 text-center text-gray-500 text-sm">No transactions yet</div>
@@ -539,11 +572,11 @@ export default function CreatorAnalyticsPage() {
               <table className="w-full text-sm">
                 <thead className="bg-[#0a0a0a]">
                   <tr>
-                    <th className="px-4 py-2.5 text-left text-gray-500 text-[10px] uppercase tracking-wider">Project</th>
-                    <th className="px-4 py-2.5 text-left text-gray-500 text-[10px] uppercase tracking-wider hidden sm:table-cell">Buyer</th>
-                    <th className="px-4 py-2.5 text-left text-gray-500 text-[10px] uppercase tracking-wider">Amount</th>
-                    <th className="px-4 py-2.5 text-left text-gray-500 text-[10px] uppercase tracking-wider hidden md:table-cell">Date</th>
-                    <th className="px-4 py-2.5 text-left text-gray-500 text-[10px] uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider">Project</th>
+                    <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider hidden sm:table-cell">Buyer</th>
+                    <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider">Amount</th>
+                    <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider hidden md:table-cell">Date</th>
+                    <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -556,7 +589,7 @@ export default function CreatorAnalyticsPage() {
                         {new Date(tx.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-2.5">
-                        <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-[10px]">
+                        <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">
                           {tx.status}
                         </span>
                       </td>
