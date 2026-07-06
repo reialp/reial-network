@@ -91,7 +91,6 @@ function ProfileForm() {
         setProfile(loadedProfile)
         setOriginalProfile(loadedProfile)
         
-        // Auto-enter edit mode if profile is empty
         if (!loadedProfile.full_name && !loadedProfile.bio) {
           setIsEditing(true)
         }
@@ -401,8 +400,9 @@ function ProfileForm() {
             )}
           </div>
 
-          {/* Right: Contact Section (1/3 on desktop) */}
+          {/* Right: Contact + Logout Section (1/3 on desktop) */}
           <div className="lg:col-span-1 space-y-4">
+            {/* Contact Card */}
             <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-5">
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Contact Us</h3>
               
@@ -446,20 +446,18 @@ function ProfileForm() {
                 </a>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* ✅ Logout Button at Bottom */}
-        <div className="mt-8 pt-6 border-t border-white/5">
-          <button
-            onClick={handleLogout}
-            className="w-full sm:w-auto px-6 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl font-medium transition flex items-center justify-center gap-2 text-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Logout
-          </button>
+            {/* ✅ Logout Button - Below Contact Us */}
+            <button
+              onClick={handleLogout}
+              className="w-full px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl font-medium transition flex items-center justify-center gap-2 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 
