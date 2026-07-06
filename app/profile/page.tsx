@@ -407,7 +407,7 @@ function ProfileForm() {
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Contact Us</h3>
               
               <div className="space-y-3">
-                {/* Email */}
+                {/* ✅ Email - CORRECT */}
                 <a
                   href="mailto:reialproduction@gmail.com"
                   className="flex items-center gap-3 p-3 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition group"
@@ -447,7 +447,7 @@ function ProfileForm() {
               </div>
             </div>
 
-            {/* ✅ Logout Button - Below Contact Us */}
+            {/* Logout Button */}
             <button
               onClick={handleLogout}
               className="w-full px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl font-medium transition flex items-center justify-center gap-2 text-sm"
