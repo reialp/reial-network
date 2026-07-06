@@ -6,6 +6,21 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
 
+interface Project {
+  id: string
+  title: string
+  thumbnail_url: string
+  price: number
+  views: number
+  purchase_count: number
+  revenue: number
+  conversionRate: number
+  status: string
+  created_at: string
+  category: string
+  slug: string
+}
+
 interface AnalyticsData {
   profile: {
     id: string
@@ -30,18 +45,7 @@ interface AnalyticsData {
     pendingPayouts: number
     lifetimeEarnings: number
   }
-  projects: {
-    id: string
-    title: string
-    thumbnail_url: string
-    price: number
-    views: number
-    purchase_count: number
-    revenue: number
-    conversionRate: number
-    status: string
-    created_at: string
-  }[]
+  projects: Project[]
   recentTransactions: {
     id: string
     project_title: string
@@ -92,7 +96,6 @@ export default function CreatorAnalyticsPage() {
         return
       }
 
-      // Get creator profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url, is_creator, bio')
@@ -105,7 +108,6 @@ export default function CreatorAnalyticsPage() {
         return
       }
 
-      // Check if current user is the creator or admin
       if (session.user.id !== creatorId) {
         const { data: adminCheck } = await supabase
           .from('profiles')
@@ -120,7 +122,6 @@ export default function CreatorAnalyticsPage() {
         }
       }
 
-      // Load all approved projects by this creator
       const { data: projects } = await supabase
         .from('content')
         .select('*')
@@ -130,7 +131,6 @@ export default function CreatorAnalyticsPage() {
 
       const projectList = projects || []
 
-      // Get purchases for these projects
       const projectIds = projectList.map(p => p.id)
       let purchases: any[] = []
       let allPurchases: any[] = []
@@ -145,14 +145,12 @@ export default function CreatorAnalyticsPage() {
         allPurchases = purchasesData || []
       }
 
-      // Calculate performance metrics
       const totalRevenue = projectList.reduce((sum, p) => sum + (p.price * (p.purchase_count || 0)), 0)
       const totalSales = projectList.reduce((sum, p) => sum + (p.purchase_count || 0), 0)
       const totalViews = projectList.reduce((sum, p) => sum + (p.views || 0), 0)
       const avgPrice = totalSales > 0 ? totalRevenue / totalSales : 0
       const conversionRate = totalViews > 0 ? (totalSales / totalViews) * 100 : 0
 
-      // Calculate growth
       const now = new Date()
       const thirtyDaysAgo = new Date(now)
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
@@ -172,7 +170,6 @@ export default function CreatorAnalyticsPage() {
       const previousSales = previousPurchases.length
       const salesGrowth = previousSales > 0 ? ((recentSales - previousSales) / previousSales) * 100 : 0
 
-      // Financials
       const yourEarnings = Math.round(totalRevenue * 0.85)
       const platformFees = Math.round(totalRevenue * 0.15)
 
@@ -185,8 +182,7 @@ export default function CreatorAnalyticsPage() {
       const processedPayouts = payouts?.filter(p => p.status === 'processed').reduce((sum, p) => sum + p.amount, 0) || 0
       const availableBalance = yourEarnings - pendingPayouts - processedPayouts
 
-      // Projects with stats
-      const mappedProjects = projectList.map(p => ({
+      const mappedProjects: Project[] = projectList.map(p => ({
         id: p.id,
         title: p.title,
         thumbnail_url: p.thumbnail_url,
@@ -197,9 +193,10 @@ export default function CreatorAnalyticsPage() {
         conversionRate: p.views > 0 ? ((p.purchase_count || 0) / p.views) * 100 : 0,
         status: p.status,
         created_at: p.created_at,
+        category: p.category || 'Film',
+        slug: p.slug || p.id,
       }))
 
-      // Recent transactions
       const recentTransactions = purchases.slice(0, 10).map(p => ({
         id: p.id,
         project_title: p.content?.title || 'Unknown',
@@ -209,7 +206,6 @@ export default function CreatorAnalyticsPage() {
         status: p.status || 'completed',
       }))
 
-      // Chart data
       const labels: string[] = []
       const revenueData: number[] = []
       const salesData: number[] = []
@@ -235,7 +231,6 @@ export default function CreatorAnalyticsPage() {
         viewsData.push(dayViews)
       }
 
-      // Generate insights
       const bestProject = mappedProjects.length > 0 ? 
         mappedProjects.reduce((a, b) => a.revenue > b.revenue ? a : b) : null
       
@@ -299,7 +294,6 @@ export default function CreatorAnalyticsPage() {
     return amount.toLocaleString()
   }
 
-  // Get selected project details
   const selectedProject = data?.projects.find(p => p.id === selectedProjectId)
 
   if (loading) {
@@ -334,7 +328,6 @@ export default function CreatorAnalyticsPage() {
       <div className="min-h-screen bg-[#0a0a0a] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           
-          {/* Back Button */}
           <button
             onClick={() => setSelectedProjectId(null)}
             className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2 mb-6"
@@ -342,7 +335,6 @@ export default function CreatorAnalyticsPage() {
             ← Back to Overview
           </button>
 
-          {/* Project Header */}
           <div className="flex items-center gap-4 mb-6">
             <div className="w-16 h-16 rounded-lg bg-[#2a2a2a] overflow-hidden flex-shrink-0">
               {selectedProject.thumbnail_url ? (
@@ -362,14 +354,13 @@ export default function CreatorAnalyticsPage() {
               <p className="text-gray-400 text-sm">Project Analytics</p>
             </div>
             <Link
-              href={`/${selectedProject.category?.toLowerCase() || 'film'}/${selectedProject.slug || selectedProject.id}`}
+              href={`/${selectedProject.category.toLowerCase()}/${selectedProject.slug}`}
               className="ml-auto text-sm bg-[#f5c518] text-black px-4 py-1.5 rounded-lg font-semibold hover:bg-[#e0b010] transition"
             >
               View Project
             </Link>
           </div>
 
-          {/* Project Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
               <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Revenue</p>
@@ -389,7 +380,6 @@ export default function CreatorAnalyticsPage() {
             </div>
           </div>
 
-          {/* Edit Project Link */}
           <Link
             href={`/upload/${selectedProject.id}`}
             className="inline-block bg-[#1a1a1a] border border-white/10 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/5 transition"
@@ -406,7 +396,6 @@ export default function CreatorAnalyticsPage() {
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         
-        {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">Analytics</h1>
@@ -420,7 +409,6 @@ export default function CreatorAnalyticsPage() {
           </Link>
         </div>
 
-        {/* Insights Banner */}
         <div className="bg-gradient-to-r from-[#f5c518]/10 to-[#f5c518]/5 border border-[#f5c518]/20 rounded-xl p-4 mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="flex-1">
@@ -434,7 +422,6 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
-        {/* Overall Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
           <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 hover:border-[#f5c518]/20 transition">
             <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Revenue</p>
@@ -465,7 +452,6 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
-        {/* Chart */}
         <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Performance Over Time</h3>
@@ -511,7 +497,6 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
-        {/* Projects List - Click to view project analytics */}
         <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden mb-6">
           <div className="px-5 py-4 border-b border-white/5">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Projects</h3>
@@ -560,7 +545,6 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
-        {/* Recent Transactions */}
         <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
           <div className="px-5 py-4 border-b border-white/5">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent Transactions</h3>
