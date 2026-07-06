@@ -284,22 +284,22 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
           <div className="flex flex-wrap gap-3">
             {profile.social_instagram && (
               <a href={profile.social_instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2">
-                <span>Instagram</span>
+                Instagram
               </a>
             )}
             {profile.social_twitter && (
               <a href={profile.social_twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2">
-                <span>Twitter</span>
+                Twitter
               </a>
             )}
             {profile.social_youtube && (
               <a href={profile.social_youtube} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2">
-                <span>YouTube</span>
+                YouTube
               </a>
             )}
             {profile.social_website && (
               <a href={profile.social_website} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2">
-                <span>Website</span>
+                Website
               </a>
             )}
           </div>
