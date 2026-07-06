@@ -78,21 +78,25 @@ export default function CreatorAnalyticsPage() {
   const creatorId = params?.id as string
   
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
-  useEffect(() => {
-    async function loadAnalytics() {
-      if (!creatorId) {
-        setError('No creator ID provided')
-        setLoading(false)
-        return
-      }
+  const loadAnalytics = async (showRefresh = false) => {
+    if (!creatorId) {
+      setError('No creator ID provided')
+      setLoading(false)
+      return
+    }
 
-      setLoading(true)
-      setError(null)
+    if (showRefresh) setRefreshing(true)
+    else setLoading(true)
+    
+    setError(null)
 
+    try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         router.push('/auth/login')
@@ -290,9 +294,16 @@ export default function CreatorAnalyticsPage() {
         },
       })
 
+      setLastUpdated(new Date())
+    } catch (err) {
+      setError('Failed to load analytics data')
+    } finally {
       setLoading(false)
+      setRefreshing(false)
     }
+  }
 
+  useEffect(() => {
     loadAnalytics()
   }, [supabase, router, creatorId])
 
@@ -328,7 +339,7 @@ export default function CreatorAnalyticsPage() {
 
   const { profile, overall, financials, projects, recentTransactions, chartData, insights } = data
 
-  // 🔍 PROJECT DETAIL VIEW - Full stats when clicked
+  // 🔍 PROJECT DETAIL VIEW
   if (selectedProject) {
     const projectPurchases = recentTransactions.filter(t => t.project_title === selectedProject.title)
     const totalRevenue = selectedProject.revenue
@@ -339,7 +350,6 @@ export default function CreatorAnalyticsPage() {
       <div className="min-h-screen bg-[#0a0a0a] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           
-          {/* Back Button */}
           <button
             onClick={() => setSelectedProjectId(null)}
             className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2 mb-6 group"
@@ -350,7 +360,6 @@ export default function CreatorAnalyticsPage() {
             Back to Overview
           </button>
 
-          {/* Project Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
             <div className="w-20 h-20 rounded-xl bg-[#2a2a2a] overflow-hidden flex-shrink-0 border border-white/10">
               {selectedProject.thumbnail_url ? (
@@ -390,7 +399,6 @@ export default function CreatorAnalyticsPage() {
             </div>
           </div>
 
-          {/* Project Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
               <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Revenue</p>
@@ -410,7 +418,6 @@ export default function CreatorAnalyticsPage() {
             </div>
           </div>
 
-          {/* Detailed Project Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Project Details</h3>
@@ -453,7 +460,6 @@ export default function CreatorAnalyticsPage() {
             </div>
           </div>
 
-          {/* Project Purchases */}
           <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
             <div className="px-5 py-4 border-b border-white/5">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Purchase History</h3>
@@ -495,33 +501,67 @@ export default function CreatorAnalyticsPage() {
     )
   }
 
-  // 📊 OVERALL VIEW - Full Analytics Dashboard
+  // 📊 OVERALL VIEW - Performance Analytics Dashboard
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         
-        {/* Header */}
+        {/* Header with Avatar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Analytics Dashboard</h1>
-            <p className="text-gray-400 text-sm">{profile.full_name}</p>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-[#1a1a1a] border-2 border-white/10 overflow-hidden flex-shrink-0">
+              {profile.avatar_url ? (
+                <Image
+                  src={profile.avatar_url}
+                  alt={profile.full_name}
+                  width={48}
+                  height={48}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xl text-gray-500">
+                  {profile.full_name.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold">Performance Analytics</h1>
+              <p className="text-gray-400 text-sm">{profile.full_name}</p>
+            </div>
           </div>
-          <Link
-            href={`/profile`}
-            className="text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Profile
-          </Link>
+          <div className="flex items-center gap-3">
+            {lastUpdated && (
+              <span className="text-xs text-gray-500">
+                Updated: {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+            <button
+              onClick={() => loadAnalytics(true)}
+              disabled={refreshing}
+              className="text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
+            >
+              <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+            <Link
+              href={`/profile`}
+              className="text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back
+            </Link>
+          </div>
         </div>
 
         {/* Insights Banner */}
         <div className="bg-gradient-to-r from-[#f5c518]/10 to-[#f5c518]/5 border border-[#f5c518]/20 rounded-xl p-4 mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="flex-1">
-              <p className="text-sm font-medium text-[#f5c518]">Insights</p>
+              <p className="text-sm font-medium text-[#f5c518]">Key Insight</p>
               <p className="text-sm text-gray-300">{insights.growthMessage}</p>
               <p className="text-xs text-gray-400 mt-1">{insights.recommendation}</p>
             </div>
@@ -651,12 +691,12 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
-        {/* ✅ PROJECT GRID - Click to view details */}
+        {/* Project Grid */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
             <div>
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Your Projects</h3>
-              <p className="text-xs text-gray-500 mt-1">Click a project card to view detailed analytics</p>
+              <p className="text-xs text-gray-500 mt-1">Click a project to view detailed analytics</p>
             </div>
             <span className="text-xs text-gray-500">{projects.length} projects</span>
           </div>
