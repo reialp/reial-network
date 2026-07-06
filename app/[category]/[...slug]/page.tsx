@@ -11,7 +11,6 @@ function getEmbedUrl(url: string): string {
   return url
 }
 
-// ✅ Function to increment views
 async function incrementViews(contentId: string) {
   try {
     const supabase = await createClient()
@@ -22,7 +21,6 @@ async function incrementViews(contentId: string) {
   }
 }
 
-// ✅ Get content by slug (works for all categories)
 async function getContentByIdentifier(identifier: string, userId?: string, isAdmin?: boolean) {
   const supabase = await createClient()
   
@@ -74,14 +72,14 @@ export default async function ContentPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ category: string; slug: string[] }>
+  params: Promise<{ category: string; slug: string }>  // ✅ FIXED: slug is a string, not array
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  // ✅ Get category and slug from URL
+  // ✅ Get category and slug from URL - slug is now a string
   const { category, slug } = await params
-  const identifier = slug ? slug[slug.length - 1] : null
+  const identifier = slug  // ✅ slug is already the identifier
   
-  console.log('🔍 ContentPage - Category:', category, 'Identifier:', identifier)
+  console.log('🔍 ContentPage - Category:', category, 'Slug:', slug)
 
   if (!identifier || identifier === 'undefined' || identifier === 'null') {
     return (
