@@ -139,7 +139,6 @@ function ProfileForm() {
         setProfile(loadedProfile)
         setOriginalProfile(loadedProfile)
         
-        // Find featured project title
         if (data.featured_project_id) {
           const { data: featured } = await supabase
             .from('content')
@@ -156,7 +155,6 @@ function ProfileForm() {
         }
       }
 
-      // Load creator's projects for featured selection
       if (session?.user) {
         const { data: projectsData } = await supabase
           .from('content')
@@ -269,7 +267,6 @@ function ProfileForm() {
       return
     }
 
-    // Update featured project title
     if (currentProfile.featured_project_id) {
       const { data: featured } = await supabase
         .from('content')
@@ -333,67 +330,75 @@ function ProfileForm() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 md:py-10">
+      {/* Cover Image */}
+      {profile.cover_image && (
+        <div className="relative w-full h-[180px] sm:h-[240px] md:h-[300px] overflow-hidden">
+          <Image
+            src={profile.cover_image}
+            alt="Cover"
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
+        </div>
+      )}
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-16 sm:-mt-20 relative z-10">
         
-        {/* Header with Avatar */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#1a1a1a] border-2 border-white/10 overflow-hidden flex-shrink-0 group">
-            {profile.avatar_url ? (
-              <Image
-                src={profile.avatar_url}
-                alt={profile.full_name || 'Profile'}
-                fill
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-3xl sm:text-4xl text-gray-500">
-                {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : '👤'}
-              </div>
-            )}
-            {isEditing && (
-              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer">
-                <span className="text-xs text-white font-medium">{uploadingAvatar ? 'Uploading...' : 'Change'}</span>
-                <input
-                  ref={avatarInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                  disabled={uploadingAvatar}
+        {/* Profile Header - Clean Card */}
+        <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            {/* Avatar */}
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#2a2a2a] border-4 border-[#0a0a0a] overflow-hidden flex-shrink-0">
+              {profile.avatar_url ? (
+                <Image
+                  src={profile.avatar_url}
+                  alt={profile.full_name || 'Profile'}
+                  fill
+                  className="object-cover"
                 />
-              </label>
-            )}
-          </div>
-          <div className="text-center sm:text-left flex-1">
-            <h1 className="text-2xl sm:text-3xl font-bold">
-              {profile.full_name || 'Set up your profile'}
-            </h1>
-            {profile.tagline && (
-              <p className="text-gray-300 text-sm mt-0.5">{profile.tagline}</p>
-            )}
-            <p className="text-gray-400 text-sm">
-              {profile.is_creator ? (
-                <span className="flex items-center gap-1.5 justify-center sm:justify-start">
-                  <span className="w-1.5 h-1.5 bg-green-400 rounded-full inline-block" />
-                  Creator
-                </span>
               ) : (
-                'Complete your profile'
+                <div className="w-full h-full flex items-center justify-center text-4xl text-gray-500">
+                  {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : '👤'}
+                </div>
               )}
-            </p>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-2">
-            {profile.is_creator && userId && (
-              <Link
-                href={`/creator/${userId}/analytics`}
-                className="px-4 py-2 bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] rounded-lg text-sm font-medium transition flex items-center gap-2"
-              >
-                Analytics
-              </Link>
-            )}
-            
-            {!isEditing && hasProfile && (
+            </div>
+
+            {/* User Info */}
+            <div className="flex-1 text-center sm:text-left">
+              <h1 className="text-2xl sm:text-3xl font-bold">
+                {profile.full_name || 'Set up your profile'}
+              </h1>
+              {profile.tagline && (
+                <p className="text-gray-300 text-sm mt-0.5">{profile.tagline}</p>
+              )}
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1">
+                {profile.is_creator && (
+                  <span className="text-xs bg-green-500/20 text-green-400 px-3 py-0.5 rounded-full border border-green-500/20">
+                    Creator
+                  </span>
+                )}
+                {profile.location && (
+                  <span className="text-xs text-gray-400 flex items-center gap-1">
+                    <span>📍</span> {profile.location}
+                  </span>
+                )}
+              </div>
+              {profile.bio && (
+                <p className="text-gray-400 text-sm mt-3 max-w-2xl">{profile.bio}</p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+              {profile.is_creator && userId && (
+                <Link
+                  href={`/creator/${userId}/analytics`}
+                  className="px-4 py-2 bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] rounded-lg text-sm font-medium transition"
+                >
+                  Analytics
+                </Link>
+              )}
               <button
                 onClick={handleEdit}
                 className="px-4 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg text-sm font-medium hover:bg-white/5 transition flex items-center gap-2"
@@ -403,160 +408,102 @@ function ProfileForm() {
                 </svg>
                 Edit
               </button>
-            )}
+            </div>
+          </div>
+
+          {/* Skills Tags */}
+          {profile.skills && profile.skills.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/5">
+              {profile.skills.map((skill, i) => (
+                <span key={i} className="bg-[#0a0a0a] px-3 py-1 rounded-full text-xs text-gray-300 border border-white/5">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Social Links */}
+          {(profile.social_instagram || profile.social_twitter || profile.social_youtube || profile.social_website) && (
+            <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/5">
+              {profile.social_instagram && (
+                <a href={profile.social_instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm">
+                  Instagram
+                </a>
+              )}
+              {profile.social_twitter && (
+                <a href={profile.social_twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm">
+                  Twitter
+                </a>
+              )}
+              {profile.social_youtube && (
+                <a href={profile.social_youtube} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm">
+                  YouTube
+                </a>
+              )}
+              {profile.social_website && (
+                <a href={profile.social_website} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm">
+                  Website
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* Featured Project */}
+          {featuredProjectTitle && (
+            <div className="mt-4 pt-4 border-t border-white/5">
+              <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Featured Project</p>
+              <p className="text-white font-medium text-sm mt-1">{featuredProjectTitle}</p>
+            </div>
+          )}
+
+          {/* Bottom Row: Payout + WhatsApp + Logout */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-white/5">
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <span className="text-xs text-gray-500">Payout:</span>
+              <span className="font-mono">{profile.payout_phone || 'Not set'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href="https://wa.me/254704908255"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+              >
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                WhatsApp
+              </a>
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Logout
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Status Banners */}
-        {intent === 'creator' && !profile.is_creator && (
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3.5 sm:p-4 mb-4 sm:mb-6">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">🚀</span>
-              <div>
-                <p className="text-yellow-400 text-sm font-medium">Become a Creator</p>
-                <p className="text-yellow-400/70 text-xs">Check the box below to start uploading and selling your content.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {profile.is_creator && (
-          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3.5 sm:p-4 mb-4 sm:mb-6">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">✅</span>
-              <div>
-                <p className="text-green-400 text-sm font-medium">Creator Account Active</p>
-                <p className="text-green-400/70 text-xs">You can upload and sell your content.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Main Content - View Mode with All Fields */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Left: Profile Info */}
-          <div className="lg:col-span-2">
-            {!isEditing && hasProfile ? (
-              // ✅ VIEW MODE - All fields displayed
-              <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-white/5">
-                  <div className="bg-[#1a1a1a] p-4 sm:p-5">
-                    <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Full Name</p>
-                    <p className="text-white text-base font-medium mt-1">{profile.full_name || 'Not set'}</p>
-                  </div>
-                  <div className="bg-[#1a1a1a] p-4 sm:p-5">
-                    <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Creator Status</p>
-                    <p className={`text-base font-medium mt-1 ${profile.is_creator ? 'text-green-400' : 'text-gray-500'}`}>
-                      {profile.is_creator ? 'Active' : 'Not a creator'}
-                    </p>
-                  </div>
-                  <div className="bg-[#1a1a1a] p-4 sm:p-5 sm:col-span-2">
-                    <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Bio</p>
-                    <p className="text-white text-sm mt-1">{profile.bio || 'Not set'}</p>
-                  </div>
-                  
-                  {/* ✅ NEW: Tagline */}
-                  <div className="bg-[#1a1a1a] p-4 sm:p-5 sm:col-span-2">
-                    <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Tagline</p>
-                    <p className="text-white text-sm mt-1">{profile.tagline || 'Not set'}</p>
-                  </div>
-                  
-                  {/* ✅ NEW: Location */}
-                  <div className="bg-[#1a1a1a] p-4 sm:p-5">
-                    <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Location</p>
-                    <p className="text-white text-sm mt-1">{profile.location || 'Not set'}</p>
-                  </div>
-                  
-                  {/* ✅ NEW: Skills */}
-                  <div className="bg-[#1a1a1a] p-4 sm:p-5">
-                    <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Skills</p>
-                    <p className="text-white text-sm mt-1">
-                      {profile.skills && profile.skills.length > 0 ? (
-                        <span className="flex flex-wrap gap-1">
-                          {profile.skills.map((skill, i) => (
-                            <span key={i} className="bg-[#0a0a0a] px-2 py-0.5 rounded-full text-xs border border-white/5">
-                              {skill}
-                            </span>
-                          ))}
-                        </span>
-                      ) : (
-                        'Not set'
-                      )}
-                    </p>
-                  </div>
-                  
-                  {/* ✅ NEW: Social Links */}
-                  <div className="bg-[#1a1a1a] p-4 sm:p-5 sm:col-span-2">
-                    <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Social Links</p>
-                    <div className="flex flex-wrap gap-3 mt-1">
-                      {profile.social_instagram && (
-                        <a href={profile.social_instagram} target="_blank" rel="noopener noreferrer" className="text-[#f5c518] hover:underline text-sm">
-                          Instagram
-                        </a>
-                      )}
-                      {profile.social_twitter && (
-                        <a href={profile.social_twitter} target="_blank" rel="noopener noreferrer" className="text-[#f5c518] hover:underline text-sm">
-                          Twitter
-                        </a>
-                      )}
-                      {profile.social_youtube && (
-                        <a href={profile.social_youtube} target="_blank" rel="noopener noreferrer" className="text-[#f5c518] hover:underline text-sm">
-                          YouTube
-                        </a>
-                      )}
-                      {profile.social_website && (
-                        <a href={profile.social_website} target="_blank" rel="noopener noreferrer" className="text-[#f5c518] hover:underline text-sm">
-                          Website
-                        </a>
-                      )}
-                      {!profile.social_instagram && !profile.social_twitter && !profile.social_youtube && !profile.social_website && (
-                        <span className="text-gray-500 text-sm">No social links set</span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* ✅ NEW: Featured Project */}
-                  {profile.featured_project_id && featuredProjectTitle && (
-                    <div className="bg-[#1a1a1a] p-4 sm:p-5 sm:col-span-2 border-t border-white/5">
-                      <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Featured Project</p>
-                      <p className="text-white text-sm mt-1 font-medium">{featuredProjectTitle}</p>
-                    </div>
-                  )}
-                  
-                  <div className="bg-[#1a1a1a] p-4 sm:p-5 sm:col-span-2 border-t border-white/5">
-                    <p className="text-gray-500 text-xs uppercase tracking-wider font-medium">Payout Phone</p>
-                    <p className="text-white font-mono text-sm mt-1">{profile.payout_phone || 'Not set'}</p>
-                  </div>
+        {/* Edit Mode - Only shows when editing */}
+        {isEditing && (
+          <div className="mt-6 bg-[#1a1a1a] rounded-2xl border border-white/10 p-6 sm:p-8">
+            <h2 className="text-lg font-bold mb-4">Edit Profile</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
+                  {error}
                 </div>
-
-                <div className="p-4 sm:p-5 border-t border-white/5">
-                  <button
-                    onClick={handleEdit}
-                    className="w-full bg-[#f5c518] text-black py-2.5 rounded-lg font-semibold hover:bg-[#e0b010] transition flex items-center justify-center gap-2 text-sm"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Edit Profile
-                  </button>
+              )}
+              {success && (
+                <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                  <span>Profile saved successfully.</span>
                 </div>
-              </div>
-            ) : (
-              // EDIT MODE
-              <form onSubmit={handleSubmit} className="bg-[#1a1a1a] rounded-xl border border-white/5 p-4 sm:p-6 space-y-4 sm:space-y-5">
-                {error && (
-                  <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl text-sm">
-                    {error}
-                  </div>
-                )}
-                {success && (
-                  <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-                    <span>Profile saved successfully.</span>
-                  </div>
-                )}
+              )}
 
-                {/* Basic Info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300">
                     Full Name <span className="text-red-400">*</span>
@@ -569,7 +516,6 @@ function ProfileForm() {
                     placeholder="Your full name"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-300">Tagline</label>
                   <input
@@ -579,20 +525,21 @@ function ProfileForm() {
                     className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
                     placeholder="e.g. Award-winning filmmaker"
                   />
-                  <p className="text-gray-500 text-xs mt-1">Short description under your name</p>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300">Bio</label>
-                  <textarea
-                    value={profile.bio}
-                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                    rows={3}
-                    className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm resize-none transition"
-                    placeholder="Tell your audience about yourself..."
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300">Bio</label>
+                <textarea
+                  value={profile.bio}
+                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                  rows={3}
+                  className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm resize-none transition"
+                  placeholder="Tell your audience about yourself..."
+                />
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300">Location</label>
                   <input
@@ -603,7 +550,6 @@ function ProfileForm() {
                     placeholder="e.g. Nairobi, Kenya"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-300">Skills / Genres</label>
                   <input
@@ -611,26 +557,26 @@ function ProfileForm() {
                     value={profile.skills.join(', ')}
                     onChange={handleSkillsChange}
                     className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                    placeholder="e.g. Documentary, Film, Music, Short Film"
+                    placeholder="e.g. Documentary, Film, Music"
                   />
-                  <p className="text-gray-500 text-xs mt-1">Comma-separated list</p>
                 </div>
+              </div>
 
-                {/* Image Uploads */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300">Avatar</label>
                   <div className="mt-1.5 flex items-center gap-3">
-                    <div className="w-16 h-16 rounded-full bg-[#0a0a0a] overflow-hidden border border-white/10 flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-[#0a0a0a] overflow-hidden border border-white/10 flex-shrink-0">
                       {profile.avatar_url ? (
                         <Image
                           src={profile.avatar_url}
                           alt="Avatar"
-                          width={64}
-                          height={64}
+                          width={48}
+                          height={48}
                           className="object-cover w-full h-full"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">No image</div>
+                        <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">None</div>
                       )}
                     </div>
                     <label className="cursor-pointer bg-[#0a0a0a] border border-white/10 px-3 py-1.5 rounded-lg text-sm hover:bg-white/5 transition">
@@ -655,21 +601,20 @@ function ProfileForm() {
                     )}
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-300">Cover Image</label>
                   <div className="mt-1.5 flex items-center gap-3">
-                    <div className="w-24 h-14 bg-[#0a0a0a] overflow-hidden border border-white/10 rounded flex-shrink-0">
+                    <div className="w-16 h-10 bg-[#0a0a0a] overflow-hidden border border-white/10 rounded flex-shrink-0">
                       {profile.cover_image ? (
                         <Image
                           src={profile.cover_image}
                           alt="Cover"
-                          width={96}
-                          height={56}
+                          width={64}
+                          height={40}
                           className="object-cover w-full h-full"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">No cover</div>
+                        <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">None</div>
                       )}
                     </div>
                     <label className="cursor-pointer bg-[#0a0a0a] border border-white/10 px-3 py-1.5 rounded-lg text-sm hover:bg-white/5 transition">
@@ -694,10 +639,11 @@ function ProfileForm() {
                     )}
                   </div>
                 </div>
+              </div>
 
-                {/* Social Links */}
-                <div className="space-y-3">
-                  <p className="text-sm font-medium text-gray-300">Social Links</p>
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-gray-300">Social Links</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-gray-500">Instagram</label>
                     <input
@@ -739,124 +685,83 @@ function ProfileForm() {
                     />
                   </div>
                 </div>
+              </div>
 
-                {/* Featured Project */}
-                {profile.is_creator && projects.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300">Featured Project</label>
-                    <select
-                      value={profile.featured_project_id || ''}
-                      onChange={(e) => setProfile({ ...profile, featured_project_id: e.target.value || null })}
-                      className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm"
-                    >
-                      <option value="">No featured project</option>
-                      {projects.map((p) => (
-                        <option key={p.id} value={p.id}>{p.title}</option>
-                      ))}
-                    </select>
-                    <p className="text-gray-500 text-xs mt-1">Select a project to feature on your profile</p>
-                  </div>
-                )}
-
-                {/* Payout Phone */}
+              {profile.is_creator && projects.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">
-                    Payout Phone <span className="text-gray-500">(M-Pesa)</span>
-                  </label>
+                  <label className="block text-sm font-medium text-gray-300">Featured Project</label>
+                  <select
+                    value={profile.featured_project_id || ''}
+                    onChange={(e) => setProfile({ ...profile, featured_project_id: e.target.value || null })}
+                    className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white text-sm"
+                  >
+                    <option value="">No featured project</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300">
+                  Payout Phone <span className="text-gray-500">(M-Pesa)</span>
+                </label>
+                <input
+                  type="text"
+                  value={profile.payout_phone}
+                  onChange={(e) => setProfile({ ...profile, payout_phone: e.target.value })}
+                  className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
+                  placeholder="0712345678"
+                />
+              </div>
+
+              <div className={`rounded-xl p-4 border transition ${
+                intent === 'creator' 
+                  ? 'bg-[#f5c518]/10 border-[#f5c518]' 
+                  : 'bg-[#0a0a0a] border-white/10'
+              }`}>
+                <label className="flex items-center gap-3 cursor-pointer select-none">
                   <input
-                    type="text"
-                    value={profile.payout_phone}
-                    onChange={(e) => setProfile({ ...profile, payout_phone: e.target.value })}
-                    className="mt-1.5 block w-full px-4 py-2.5 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
-                    placeholder="0712345678"
+                    type="checkbox"
+                    id="is_creator"
+                    checked={profile.is_creator}
+                    onChange={(e) => setProfile({ ...profile, is_creator: e.target.checked })}
+                    className="w-5 h-5 accent-[#f5c518] flex-shrink-0 rounded border-white/20"
                   />
-                  <p className="text-gray-500 text-xs mt-1">Used for payout requests</p>
-                </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-300">Become a Creator</p>
+                    <p className="text-xs text-gray-500">Upload and sell your content to earn 85% of every sale</p>
+                  </div>
+                </label>
+              </div>
 
-                {/* Creator Checkbox */}
-                <div className={`rounded-xl p-4 border transition ${
-                  intent === 'creator' 
-                    ? 'bg-[#f5c518]/10 border-[#f5c518]' 
-                    : 'bg-[#0a0a0a] border-white/10'
-                }`}>
-                  <label className="flex items-center gap-3 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      id="is_creator"
-                      checked={profile.is_creator}
-                      onChange={(e) => setProfile({ ...profile, is_creator: e.target.checked })}
-                      className="w-5 h-5 accent-[#f5c518] flex-shrink-0 rounded border-white/20"
-                    />
-                    <div>
-                      <p className="text-sm font-medium text-gray-300">Become a Creator</p>
-                      <p className="text-xs text-gray-500">Upload and sell your content to earn 85% of every sale</p>
-                    </div>
-                  </label>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="flex-1 bg-[#f5c518] text-black py-3 rounded-xl font-semibold hover:bg-[#e0b010] transition disabled:opacity-50 text-sm sm:text-base flex items-center justify-center gap-2"
-                  >
-                    {saving ? (
-                      <>
-                        <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      'Save Profile'
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="px-6 py-3 border border-white/20 rounded-xl font-semibold hover:bg-white/5 transition text-sm"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 bg-[#f5c518] text-black py-3 rounded-xl font-semibold hover:bg-[#e0b010] transition disabled:opacity-50 text-sm sm:text-base flex items-center justify-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Profile'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-6 py-3 border border-white/20 rounded-xl font-semibold hover:bg-white/5 transition text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
-
-          {/* Right: WhatsApp + Logout */}
-          <div className="lg:col-span-1 space-y-4">
-            <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-5">
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Chat with us</h3>
-              
-              <a
-                href="https://wa.me/254704908255"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-3 bg-[#0a0a0a] rounded-lg hover:bg-green-500/10 transition group"
-              >
-                <div className="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">WhatsApp</p>
-                  <p className="text-sm text-white group-hover:text-green-400 transition">
-                    Chat with us
-                  </p>
-                </div>
-              </a>
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="w-full px-4 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl font-medium transition flex items-center justify-center gap-2 text-sm"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Logout
-            </button>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Floating WhatsApp Button */}
