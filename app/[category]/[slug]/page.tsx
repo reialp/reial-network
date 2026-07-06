@@ -15,9 +15,8 @@ async function incrementViews(contentId: string) {
   try {
     const supabase = await createClient()
     await supabase.rpc('increment_views', { content_id: contentId })
-    console.log('✅ View incremented for content:', contentId)
   } catch (error) {
-    console.error('❌ Error incrementing views:', error)
+    console.error('View increment error:', error)
   }
 }
 
@@ -134,6 +133,9 @@ export default async function ContentPage({
 
   const checkoutId = content.id
 
+  // ✅ Get the correct category path for links
+  const categoryPath = content.category ? content.category.toLowerCase() : 'film'
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -151,7 +153,7 @@ export default async function ContentPage({
           </div>
         )}
 
-        {/* Category Badge */}
+        {/* ✅ Category Badge at top */}
         <div className="mb-4">
           <span className="inline-block bg-[#f5c518]/20 text-[#f5c518] text-sm font-semibold px-4 py-1.5 rounded-full border border-[#f5c518]/30">
             {content.category || 'Film'}
