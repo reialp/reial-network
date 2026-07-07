@@ -299,7 +299,7 @@ export default function HomePage() {
   const renderRow = (title: string, films: Film[], rowId: string) => {
     if (films.length === 0) return null
     return (
-      <div className="mb-6 sm:mb-10 px-4 sm:px-6 md:px-8 group/row">
+      <div className="mb-6 sm:mb-10 px-6 sm:px-10 md:px-16 lg:px-20 group/row">
         <div className="flex justify-between items-center mb-3 sm:mb-4">
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white">
             {title}
@@ -309,6 +309,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="relative">
+          {/* Scroll buttons */}
           <button
             onClick={() => scrollRow('left', rowId)}
             className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white p-1.5 sm:p-2 rounded-full transition-all duration-300 opacity-0 group-hover/row:opacity-100 hover:scale-110 hidden sm:flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10"
@@ -326,8 +327,7 @@ export default function HomePage() {
             </svg>
           </button>
 
-          <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-r from-[#0a0a0a] to-transparent z-10 pointer-events-none hidden sm:block" />
-          <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-[#0a0a0a] to-transparent z-10 pointer-events-none hidden sm:block" />
+          {/* Gradient fades removed - no more haze! */}
 
           <div
             ref={(el) => { scrollContainerRefs.current[rowId] = el }}
