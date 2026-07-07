@@ -68,7 +68,7 @@ interface Transaction {
   status: string
   pesapal_transaction_id: string | null
   created_at: string
-  content: { title: string } | null
+  content: { title: string; creator_id: string } | null
   buyer: { email: string } | null
 }
 
@@ -110,6 +110,7 @@ export default function AdminPage() {
   const supabase = createClient()
 
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [content, setContent] = useState<Content[]>([])
   const [filteredContent, setFilteredContent] = useState<Content[]>([])
   const [payouts, setPayouts] = useState<PayoutRequest[]>([])
@@ -254,6 +255,13 @@ export default function AdminPage() {
     }
   }
 
+  // Refresh data
+  const refreshData = async () => {
+    setRefreshing(true)
+    await loadAdminData()
+    setRefreshing(false)
+  }
+
   const loadAdminData = async () => {
     setLoading(true)
     try {
@@ -291,13 +299,13 @@ export default function AdminPage() {
 
       const { data: transactionsData } = await supabase
         .from('purchases')
-        .select('*, content:content_id(title), buyer:buyer_id(email)')
+        .select('*, content:content_id(title, creator_id), buyer:buyer_id(email)')
         .order('created_at', { ascending: false })
       setTransactions(transactionsData || [])
 
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, full_name, phone_number, is_onboarded, has_phone, has_payout_method, created_at, last_seen')
+        .select('id, full_name, email, phone_number, is_onboarded, has_phone, has_payout_method, created_at, last_seen, total_earnings')
         .order('full_name')
 
       const allContent = result.content || []
@@ -311,7 +319,7 @@ export default function AdminPage() {
           total_views: 0,
           total_purchases: 0,
           total_revenue: 0,
-          total_earnings: 0,
+          total_earnings: profile.total_earnings || 0,
           pending_films: 0,
           approved_films: 0,
           rejected_films: 0,
@@ -339,11 +347,12 @@ export default function AdminPage() {
         }
       })
 
+      // Calculate creator earnings from transactions
       transactionsData?.forEach((tx: any) => {
         if (tx.content) {
           const creator = creatorMap.get(tx.content.creator_id)
           if (creator) {
-            creator.total_earnings += tx.creator_earnings || 0
+            creator.total_earnings += (tx.creator_earnings || 0)
           }
         }
       })
@@ -586,6 +595,13 @@ export default function AdminPage() {
             <p className="text-gray-400 text-xs sm:text-sm mt-0.5">Manage content, approvals, and payouts. (15% Platform Fee)</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button 
+              onClick={refreshData}
+              disabled={refreshing}
+              className="px-3 py-1.5 bg-[#1a1a1a] border border-white/10 rounded-lg text-xs sm:text-sm hover:bg-[#2a2a2a] transition disabled:opacity-50 flex items-center gap-1"
+            >
+              {refreshing ? 'Refreshing...' : 'Refresh Data'}
+            </button>
             <button 
               onClick={loadActivityLogs}
               className="px-3 py-1.5 bg-[#1a1a1a] border border-white/10 rounded-lg text-xs sm:text-sm hover:bg-[#2a2a2a] transition"
