@@ -18,7 +18,7 @@ async function getContentByIdentifier(identifier: string, userId?: string, isAdm
   
   let query = supabase
     .from('content')
-    .select(`*, profiles ( full_name, bio, avatar_url )`)
+    .select(`*, profiles!content_creator_id_fkey ( full_name, bio, avatar_url )`)
   
   if (isUUID) {
     query = query.eq('id', identifier)
@@ -66,7 +66,7 @@ export default async function ContentPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const { category, slug } = await params
-  const identifier = slug ? slug[slug.length - 1] : null
+  const identifier = Array.isArray(slug) ? slug[slug.length - 1] : slug
 
   if (!identifier || identifier === 'undefined' || identifier === 'null') {
     return (
