@@ -3,39 +3,42 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
-  const orderTrackingId = url.searchParams.get('OrderTrackingId')
   const orderMerchantReference = url.searchParams.get('OrderMerchantReference')
-  const status = url.searchParams.get('Status')
 
-  console.log('🔍 Callback received:', { orderTrackingId, orderMerchantReference, status })
+  console.log('🔍 Callback received for purchase:', orderMerchantReference)
 
-  if (status === 'Completed') {
-    try {
-      const supabase = await createClient()
+  if (!orderMerchantReference) {
+    return NextResponse.redirect(new URL('/library?payment=failed', req.url))
+  }
 
-      // ✅ Find the purchase using the merchant reference (purchase ID)
-      const { data: purchase, error } = await supabase
-        .from('purchases')
-        .select('watch_token, content_id')
-        .eq('id', orderMerchantReference)
-        .single()
+  try {
+    const supabase = await createClient()
+    const { data: purchase, error } = await supabase
+      .from('purchases')
+      .select('watch_token, status')
+      .eq('id', orderMerchantReference)
+      .single()
 
-      if (error || !purchase) {
-        console.error('❌ Purchase not found:', error)
-        return NextResponse.redirect(new URL('/library?payment=success', req.url))
-      }
+    if (error || !purchase) {
+      console.error('❌ Purchase not found:', error)
+      return NextResponse.redirect(new URL('/library?payment=failed', req.url))
+    }
 
-      // ✅ Redirect to watch page using the watch token
+    // ✅ Only the DB status (set exclusively by the verified IPN) decides this
+    if (purchase.status === 'completed') {
       const watchUrl = `/watch/${purchase.watch_token}`
       console.log('✅ Redirecting to watch:', watchUrl)
       return NextResponse.redirect(new URL(watchUrl, req.url))
-
-    } catch (error) {
-      console.error('❌ Error processing callback:', error)
-      return NextResponse.redirect(new URL('/library?payment=success', req.url))
     }
-  } else {
-    // Payment failed
+
+    // Payment may still be processing — the IPN can lag slightly behind the
+    // browser redirect. Send to a pending page rather than assuming failure.
+    console.log('⏳ Purchase not yet completed, status:', purchase.status)
+    return NextResponse.redirect(
+      new URL(`/library?payment=pending&ref=${orderMerchantReference}`, req.url)
+    )
+  } catch (error) {
+    console.error('❌ Error processing callback:', error)
     return NextResponse.redirect(new URL('/library?payment=failed', req.url))
   }
 }
