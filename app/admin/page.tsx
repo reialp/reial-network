@@ -92,6 +92,19 @@ interface CreatorStats {
   has_payout_method?: boolean
 }
 
+interface ActivityLog {
+  id: string
+  admin_id: string
+  action: string
+  target_id: string
+  target_type: string
+  details: any
+  created_at: string
+  admin: {
+    full_name: string
+  }
+}
+
 export default function AdminPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -135,6 +148,14 @@ export default function AdminPage() {
     end: ''
   })
 
+  // Activity Logs state
+  const [showActivityLogs, setShowActivityLogs] = useState(false)
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
+  const [loadingLogs, setLoadingLogs] = useState(false)
+
+  // Platform fee percentage (15%)
+  const PLATFORM_FEE_PERCENTAGE = 0.15
+
   useEffect(() => {
     loadAdminData()
   }, [])
@@ -160,6 +181,79 @@ export default function AdminPage() {
     setFilteredContent(filtered)
   }, [content, statusFilter, searchTerm, dateRange])
 
+  // Load Activity Logs
+  const loadActivityLogs = async () => {
+    setLoadingLogs(true)
+    try {
+      const { data, error } = await supabase
+        .from('admin_activity_logs')
+        .select('*, admin:admin_id(full_name)')
+        .order('created_at', { ascending: false })
+        .limit(50)
+      
+      if (error) throw error
+      setActivityLogs(data || [])
+      setShowActivityLogs(true)
+    } catch (error) {
+      console.error('Error loading activity logs:', error)
+      alert('Failed to load activity logs')
+    } finally {
+      setLoadingLogs(false)
+    }
+  }
+
+  // Log admin action
+  const logAdminAction = async (action: string, targetId: string, targetType: string, details?: any) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      await supabase
+        .from('admin_activity_logs')
+        .insert({
+          admin_id: session?.user.id,
+          action: action,
+          target_id: targetId,
+          target_type: targetType,
+          details: details || {}
+        })
+    } catch (error) {
+      console.error('Error logging action:', error)
+    }
+  }
+
+  // Export CSV
+  const exportCSV = () => {
+    try {
+      const headers = ['Title', 'Creator', 'Price', 'Status', 'Views', 'Sales', 'Created At']
+      const rows = filteredContent.map(item => [
+        `"${item.title}"`,
+        `"${item.creator_name || 'Unknown'}"`,
+        item.price,
+        item.status,
+        item.views || 0,
+        item.purchase_count || 0,
+        new Date(item.created_at).toLocaleDateString()
+      ])
+      
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n')
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `content_export_${new Date().toISOString().split('T')[0]}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error exporting CSV:', error)
+      alert('Failed to export CSV')
+    }
+  }
+
   const loadAdminData = async () => {
     setLoading(true)
     try {
@@ -180,7 +274,6 @@ export default function AdminPage() {
         return
       }
 
-      // Load content
       const result = await getAllContent()
       if (result.error) {
         console.error('Error fetching content:', result.error)
@@ -190,21 +283,18 @@ export default function AdminPage() {
         setFilteredContent(allContent)
       }
 
-      // Load payouts
       const { data: payoutData } = await supabase
         .from('payout_requests')
         .select('*, profiles(full_name)')
         .order('requested_at', { ascending: false })
       setPayouts(payoutData || [])
 
-      // Load transactions
       const { data: transactionsData } = await supabase
         .from('purchases')
         .select('*, content:content_id(title), buyer:buyer_id(email)')
         .order('created_at', { ascending: false })
       setTransactions(transactionsData || [])
 
-      // Load creator stats
       const { data: profilesData } = await supabase
         .from('profiles')
         .select('id, full_name, phone_number, is_onboarded, has_phone, has_payout_method, created_at, last_seen')
@@ -235,7 +325,6 @@ export default function AdminPage() {
         })
       })
 
-      // Process content for creators
       allContent.forEach((item: any) => {
         const creator = creatorMap.get(item.creator_id)
         if (creator) {
@@ -250,7 +339,6 @@ export default function AdminPage() {
         }
       })
 
-      // Process earnings
       transactionsData?.forEach((tx: any) => {
         if (tx.content) {
           const creator = creatorMap.get(tx.content.creator_id)
@@ -263,7 +351,6 @@ export default function AdminPage() {
       const creatorStatsArray = Array.from(creatorMap.values())
       setCreatorStats(creatorStatsArray)
 
-      // Calculate stats
       const totalFilms = allContent.length
       const totalSales = allContent.reduce((sum: number, c: any) => sum + (c.purchase_count || 0), 0)
       const totalRevenue = allContent.reduce((sum: number, c: any) => sum + (c.price * (c.purchase_count || 0)), 0)
@@ -301,6 +388,7 @@ export default function AdminPage() {
     try {
       const result = await approveContent(id)
       if (result.success) {
+        await logAdminAction('content_approve', id, 'content', { status: 'approved' })
         alert('Content approved successfully!')
         loadAdminData()
       } else {
@@ -315,6 +403,7 @@ export default function AdminPage() {
     try {
       const result = await rejectContent(id)
       if (result.success) {
+        await logAdminAction('content_reject', id, 'content', { status: 'rejected' })
         alert('Content rejected.')
         loadAdminData()
       } else {
@@ -330,6 +419,7 @@ export default function AdminPage() {
     try {
       const result = await revokeApproval(id)
       if (result.success) {
+        await logAdminAction('content_revoke', id, 'content', { status: 'revoked' })
         alert('Approval revoked.')
         loadAdminData()
       } else {
@@ -345,6 +435,7 @@ export default function AdminPage() {
     try {
       const result = await deleteContent(id)
       if (result.success) {
+        await logAdminAction('content_delete', id, 'content', { deleted: true })
         alert('Content deleted.')
         loadAdminData()
       } else {
@@ -360,6 +451,7 @@ export default function AdminPage() {
     try {
       const result = await processPayout(id)
       if (result.success) {
+        await logAdminAction('payout_processed', id, 'payout', { status: 'processed' })
         alert('Payout marked as processed.')
         loadAdminData()
       } else {
@@ -377,21 +469,51 @@ export default function AdminPage() {
     }
     setConfirmLoading(true)
     try {
-      const result = await confirmTransaction(selectedTransaction.id, confirmationCode.trim())
-      if (result.success) {
-        setConfirmMessage('Transaction confirmed successfully!')
-        setTimeout(() => {
-          setIsConfirmModalOpen(false)
-          setConfirmationCode('')
-          setSelectedTransaction(null)
-          setConfirmMessage('')
-          loadAdminData()
-        }, 1500)
-      } else {
-        setConfirmMessage('Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
-      }
+      // Get the transaction with content price
+      const { data: txData, error: txError } = await supabase
+        .from('purchases')
+        .select('*, content:content_id(price, title, creator_id)')
+        .eq('id', selectedTransaction.id)
+        .single()
+
+      if (txError) throw txError
+
+      // Calculate platform fee (15%)
+      const amountPaid = txData.amount_paid || txData.content?.price || 0
+      const platformFee = Math.round(amountPaid * PLATFORM_FEE_PERCENTAGE * 100) / 100
+      const creatorEarnings = Math.round((amountPaid - platformFee) * 100) / 100
+
+      // Update the purchase with calculated fees
+      const { error: updateError } = await supabase
+        .from('purchases')
+        .update({
+          status: 'completed',
+          platform_fee: platformFee,
+          creator_earnings: creatorEarnings,
+          pesapal_transaction_id: confirmationCode.trim()
+        })
+        .eq('id', selectedTransaction.id)
+
+      if (updateError) throw updateError
+
+      // Log the action
+      await logAdminAction('transaction_confirm', selectedTransaction.id, 'transaction', {
+        amount: amountPaid,
+        platform_fee: platformFee,
+        creator_earnings: creatorEarnings,
+        fee_percentage: '15%'
+      })
+
+      setConfirmMessage('Transaction confirmed successfully!')
+      setTimeout(() => {
+        setIsConfirmModalOpen(false)
+        setConfirmationCode('')
+        setSelectedTransaction(null)
+        setConfirmMessage('')
+        loadAdminData()
+      }, 1500)
     } catch (err) {
-      setConfirmMessage('Failed to confirm')
+      setConfirmMessage('Error: ' + (err instanceof Error ? err.message : 'Failed to confirm'))
     } finally {
       setConfirmLoading(false)
     }
@@ -461,23 +583,81 @@ export default function AdminPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">Admin Panel</h1>
-            <p className="text-gray-400 text-xs sm:text-sm mt-0.5">Manage content, approvals, and payouts.</p>
+            <p className="text-gray-400 text-xs sm:text-sm mt-0.5">Manage content, approvals, and payouts. (15% Platform Fee)</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button 
-              onClick={() => {}} 
+              onClick={loadActivityLogs}
               className="px-3 py-1.5 bg-[#1a1a1a] border border-white/10 rounded-lg text-xs sm:text-sm hover:bg-[#2a2a2a] transition"
             >
-              Activity Logs
+              {showActivityLogs ? 'Hide Logs' : 'Activity Logs'}
             </button>
             <button 
-              onClick={() => {}} 
+              onClick={exportCSV}
               className="px-3 py-1.5 bg-[#f5c518] text-black rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#e0b010] transition"
             >
               Export CSV
             </button>
           </div>
         </div>
+
+        {/* Activity Logs Section */}
+        {showActivityLogs && (
+          <div className="mb-6 sm:mb-8">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg sm:text-xl font-bold">Activity Logs</h2>
+              <button 
+                onClick={() => setShowActivityLogs(false)}
+                className="text-gray-400 hover:text-white text-sm"
+              >
+                Close
+              </button>
+            </div>
+            <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden max-h-[400px] overflow-y-auto">
+              {loadingLogs ? (
+                <div className="p-4 text-center text-gray-400">Loading logs...</div>
+              ) : activityLogs.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">No activity logs found.</div>
+              ) : (
+                <div className="divide-y divide-white/5">
+                  {activityLogs.map((log) => (
+                    <div key={log.id} className="p-3 hover:bg-white/5 transition">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-1 h-full min-h-[40px] rounded-full ${
+                          log.action.includes('approve') ? 'bg-green-500' :
+                          log.action.includes('reject') || log.action.includes('delete') ? 'bg-red-500' :
+                          log.action.includes('payout') ? 'bg-yellow-500' :
+                          'bg-blue-500'
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-sm">
+                              {log.admin?.full_name || 'System'}
+                            </span>
+                            <span className="text-gray-400 text-xs">
+                              {log.action.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-gray-500 text-xs">
+                              {log.target_type}
+                            </span>
+                            <span className="text-gray-500 text-xs ml-auto">
+                              {new Date(log.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          {log.details && (
+                            <div className="text-xs text-gray-400 mt-1">
+                              {typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
@@ -502,7 +682,7 @@ export default function AdminPage() {
             <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-green-400">KES {stats.totalRevenue}</p>
           </div>
           <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-white/5">
-            <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Fees</p>
+            <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Fees (15%)</p>
             <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-yellow-400">KES {stats.totalPlatformFees}</p>
           </div>
           <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-white/5">
