@@ -9,10 +9,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Reial Network – Premium Stories from Creators',
   description: 'Discover and buy exclusive films, documentaries, and series directly from creators.',
-  icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
-  },
+  // ❌ Remove the icons section completely
 }
 
 export default function RootLayout({
