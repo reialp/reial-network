@@ -71,11 +71,13 @@ export async function POST(req: Request) {
 
     console.log('🔒 Verified status from Pesapal:', verified.payment_status_description, 'amount:', verified.amount)
 
-    if (verified.payment_status_description !== 'Completed') {
-      console.log('⏳ Payment not completed per Pesapal verification:', verified.payment_status_description)
-      return NextResponse.json({ message: 'Payment not completed' }, { status: 200 })
-    }
-
+   // status_code: 0=INVALID, 1=COMPLETED, 2=FAILED, 3=REVERSED — safer than
+// string-matching payment_status_description, whose casing isn't consistent
+// even in Pesapal's own docs ("COMPLETED" in prose, "Failed" in their sample).
+if (verified.status_code !== 1) {
+  console.log('⏳ Not completed per Pesapal. status_code:', verified.status_code, 'description:', verified.payment_status_description)
+  return NextResponse.json({ message: 'Payment not completed' }, { status: 200 })
+}
     const supabase = await createClient()
 
     // ✅ Check for duplicate
