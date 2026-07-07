@@ -328,7 +328,7 @@ export default function CreatorAnalyticsPage() {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
         <div className="text-center">
-          <p className="text-red-400 text-sm mb-2">{error || 'No data available'}</p>
+          <p className="text-red-400 text-sm mb-2 break-words">{error || 'No data available'}</p>
           <button onClick={() => router.back()} className="text-[#f5c518] hover:underline">
             Go Back
           </button>
@@ -339,7 +339,7 @@ export default function CreatorAnalyticsPage() {
 
   const { profile, overall, financials, projects, recentTransactions, chartData, insights } = data
 
-  // 🔍 PROJECT DETAIL VIEW - Mobile Optimized
+  // 🔍 PROJECT DETAIL VIEW
   if (selectedProject) {
     const projectPurchases = recentTransactions.filter(t => t.project_title === selectedProject.title)
     const totalRevenue = selectedProject.revenue
@@ -357,7 +357,7 @@ export default function CreatorAnalyticsPage() {
             <svg className="w-4 h-4 group-hover:-translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Overview
+            <span className="truncate">Back to Overview</span>
           </button>
 
           {/* Project Header */}
@@ -378,22 +378,22 @@ export default function CreatorAnalyticsPage() {
             <div className="flex-1 min-w-0">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">{selectedProject.title}</h1>
               <div className="flex flex-wrap items-center gap-2 mt-1">
-                <span className="text-xs sm:text-sm text-gray-400">{selectedProject.category}</span>
-                <span className="w-1 h-1 rounded-full bg-gray-600" />
-                <span className="text-xs sm:text-sm text-gray-400">KES {selectedProject.price}</span>
+                <span className="text-xs sm:text-sm text-gray-400 truncate">{selectedProject.category}</span>
+                <span className="w-1 h-1 rounded-full bg-gray-600 flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-gray-400 whitespace-nowrap">KES {selectedProject.price}</span>
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1 line-clamp-2">{selectedProject.description || 'No description'}</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1 line-clamp-2 break-words">{selectedProject.description || 'No description'}</p>
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
               <Link
                 href={`/${selectedProject.category.toLowerCase()}/${selectedProject.slug}`}
-                className="bg-[#f5c518] text-black px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition text-xs sm:text-sm flex-1 sm:flex-none text-center"
+                className="bg-[#f5c518] text-black px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition text-xs sm:text-sm flex-1 sm:flex-none text-center truncate"
               >
                 View Project
               </Link>
               <Link
                 href={`/upload/${selectedProject.id}`}
-                className="bg-[#1a1a1a] border border-white/10 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-white/5 transition flex-1 sm:flex-none text-center"
+                className="bg-[#1a1a1a] border border-white/10 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-white/5 transition flex-1 sm:flex-none text-center truncate"
               >
                 Edit
               </Link>
@@ -402,62 +402,62 @@ export default function CreatorAnalyticsPage() {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
-            <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5">
-              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">Revenue</p>
+            <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5 min-w-0">
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium truncate">Revenue</p>
               <p className="text-lg sm:text-2xl font-bold text-green-400 truncate">KES {formatCurrency(totalRevenue)}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5">
-              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">Sales</p>
-              <p className="text-lg sm:text-2xl font-bold text-blue-400">{totalSales}</p>
+            <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5 min-w-0">
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium truncate">Sales</p>
+              <p className="text-lg sm:text-2xl font-bold text-blue-400 truncate">{totalSales}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5">
-              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">Views</p>
-              <p className="text-lg sm:text-2xl font-bold text-purple-400">{totalViews}</p>
+            <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5 min-w-0">
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium truncate">Views</p>
+              <p className="text-lg sm:text-2xl font-bold text-purple-400 truncate">{totalViews}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5">
-              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">Conversion</p>
-              <p className="text-lg sm:text-2xl font-bold text-orange-400">{selectedProject.conversionRate.toFixed(1)}%</p>
+            <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5 min-w-0">
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium truncate">Conversion</p>
+              <p className="text-lg sm:text-2xl font-bold text-orange-400 truncate">{selectedProject.conversionRate.toFixed(1)}%</p>
             </div>
           </div>
 
           {/* Project Details & Revenue Breakdown */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-6">
-            <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5">
-              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Project Details</h3>
+            <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5 min-w-0">
+              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 truncate">Project Details</h3>
               <div className="space-y-2 sm:space-y-3">
-                <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-xs sm:text-sm text-gray-400">Created</span>
-                  <span className="text-xs sm:text-sm">{new Date(selectedProject.created_at).toLocaleDateString()}</span>
+                <div className="flex justify-between items-center border-b border-white/5 pb-2 gap-2">
+                  <span className="text-xs sm:text-sm text-gray-400 flex-shrink-0">Created</span>
+                  <span className="text-xs sm:text-sm truncate">{new Date(selectedProject.created_at).toLocaleDateString()}</span>
                 </div>
-                <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-xs sm:text-sm text-gray-400">Category</span>
-                  <span className="text-xs sm:text-sm">{selectedProject.category}</span>
+                <div className="flex justify-between items-center border-b border-white/5 pb-2 gap-2">
+                  <span className="text-xs sm:text-sm text-gray-400 flex-shrink-0">Category</span>
+                  <span className="text-xs sm:text-sm truncate">{selectedProject.category}</span>
                 </div>
-                <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-xs sm:text-sm text-gray-400">Price</span>
-                  <span className="text-xs sm:text-sm font-semibold">KES {selectedProject.price}</span>
+                <div className="flex justify-between items-center border-b border-white/5 pb-2 gap-2">
+                  <span className="text-xs sm:text-sm text-gray-400 flex-shrink-0">Price</span>
+                  <span className="text-xs sm:text-sm font-semibold whitespace-nowrap">KES {selectedProject.price}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-gray-400">Status</span>
-                  <span className="text-[10px] sm:text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">{selectedProject.status}</span>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-xs sm:text-sm text-gray-400 flex-shrink-0">Status</span>
+                  <span className="text-[10px] sm:text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full truncate">{selectedProject.status}</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5">
-              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Revenue Breakdown</h3>
+            <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5 min-w-0">
+              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 truncate">Revenue Breakdown</h3>
               <div className="space-y-2 sm:space-y-3">
-                <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-xs sm:text-sm text-gray-400">Gross Revenue</span>
-                  <span className="text-xs sm:text-sm font-bold">KES {formatCurrency(totalRevenue)}</span>
+                <div className="flex justify-between items-center border-b border-white/5 pb-2 gap-2">
+                  <span className="text-xs sm:text-sm text-gray-400 truncate">Gross Revenue</span>
+                  <span className="text-xs sm:text-sm font-bold whitespace-nowrap">KES {formatCurrency(totalRevenue)}</span>
                 </div>
-                <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-xs sm:text-sm text-gray-400">Your Earnings (85%)</span>
-                  <span className="text-xs sm:text-sm font-bold text-[#f5c518]">KES {formatCurrency(Math.round(totalRevenue * 0.85))}</span>
+                <div className="flex justify-between items-center border-b border-white/5 pb-2 gap-2">
+                  <span className="text-xs sm:text-sm text-gray-400 truncate">Your Earnings (85%)</span>
+                  <span className="text-xs sm:text-sm font-bold text-[#f5c518] whitespace-nowrap">KES {formatCurrency(Math.round(totalRevenue * 0.85))}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-gray-400">Platform Fee (15%)</span>
-                  <span className="text-xs sm:text-sm font-bold text-yellow-400">KES {formatCurrency(Math.round(totalRevenue * 0.15))}</span>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-xs sm:text-sm text-gray-400 truncate">Platform Fee (15%)</span>
+                  <span className="text-xs sm:text-sm font-bold text-yellow-400 whitespace-nowrap">KES {formatCurrency(Math.round(totalRevenue * 0.15))}</span>
                 </div>
               </div>
             </div>
@@ -466,7 +466,7 @@ export default function CreatorAnalyticsPage() {
           {/* Purchase History */}
           <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
             <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-white/5">
-              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Purchase History</h3>
+              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">Purchase History</h3>
               <p className="text-[10px] sm:text-xs text-gray-500 mt-1">{projectPurchases.length} purchases</p>
             </div>
             {projectPurchases.length === 0 ? (
@@ -476,22 +476,22 @@ export default function CreatorAnalyticsPage() {
                 <table className="w-full text-xs sm:text-sm">
                   <thead className="bg-[#0a0a0a]">
                     <tr>
-                      <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Buyer</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Amount</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider hidden sm:table-cell">Date</th>
-                      <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Status</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider truncate">Buyer</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider truncate">Amount</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider hidden sm:table-cell truncate">Date</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider truncate">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {projectPurchases.map((tx) => (
                       <tr key={tx.id} className="hover:bg-white/5 transition">
                         <td className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm truncate max-w-[80px] sm:max-w-[120px]">{tx.buyer_name}</td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-2.5 text-[#f5c518] font-semibold text-xs sm:text-sm">KES {formatCurrency(tx.amount)}</td>
-                        <td className="px-3 sm:px-4 py-2 sm:py-2.5 text-gray-400 text-xs hidden sm:table-cell">
+                        <td className="px-3 sm:px-4 py-2 sm:py-2.5 text-[#f5c518] font-semibold text-xs sm:text-sm whitespace-nowrap">KES {formatCurrency(tx.amount)}</td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-2.5 text-gray-400 text-xs hidden sm:table-cell whitespace-nowrap">
                           {new Date(tx.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-3 sm:px-4 py-2 sm:py-2.5">
-                          <span className="px-1.5 sm:px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-[10px] sm:text-xs">{tx.status}</span>
+                          <span className="px-1.5 sm:px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-[10px] sm:text-xs whitespace-nowrap">{tx.status}</span>
                         </td>
                       </tr>
                     ))}
@@ -505,7 +505,7 @@ export default function CreatorAnalyticsPage() {
     )
   }
 
-  // 📊 OVERALL VIEW - Mobile Optimized
+  // 📊 OVERALL VIEW
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
@@ -569,7 +569,7 @@ export default function CreatorAnalyticsPage() {
               <p className="text-xs sm:text-sm text-gray-300 truncate">{insights.growthMessage}</p>
               <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1 truncate">{insights.recommendation}</p>
             </div>
-            <span className="text-[10px] sm:text-xs bg-[#f5c518]/20 text-[#f5c518] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full whitespace-nowrap flex-shrink-0">
+            <span className="text-[10px] sm:text-xs bg-[#f5c518]/20 text-[#f5c518] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full whitespace-nowrap flex-shrink-0 truncate max-w-[120px] sm:max-w-none">
               Top: {insights.bestPerforming}
             </span>
           </div>
@@ -578,29 +578,29 @@ export default function CreatorAnalyticsPage() {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-6">
           <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5 hover:border-[#f5c518]/20 transition min-w-0">
-            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Revenue</p>
+            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium truncate">Revenue</p>
             <p className="text-base sm:text-xl font-bold text-green-400 truncate">KES {formatCurrency(overall.totalRevenue)}</p>
-            <span className={`text-[8px] sm:text-xs ${overall.revenueGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            <span className={`text-[8px] sm:text-xs ${overall.revenueGrowth >= 0 ? 'text-green-400' : 'text-red-400'} truncate block`}>
               {overall.revenueGrowth >= 0 ? '↑' : '↓'} {Math.abs(Math.round(overall.revenueGrowth))}%
             </span>
           </div>
           <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5 hover:border-blue-500/20 transition min-w-0">
-            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Sales</p>
-            <p className="text-base sm:text-xl font-bold text-blue-400">{overall.totalSales}</p>
-            <span className={`text-[8px] sm:text-xs ${overall.salesGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium truncate">Sales</p>
+            <p className="text-base sm:text-xl font-bold text-blue-400 truncate">{overall.totalSales}</p>
+            <span className={`text-[8px] sm:text-xs ${overall.salesGrowth >= 0 ? 'text-green-400' : 'text-red-400'} truncate block`}>
               {overall.salesGrowth >= 0 ? '↑' : '↓'} {Math.abs(Math.round(overall.salesGrowth))}%
             </span>
           </div>
           <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5 hover:border-purple-500/20 transition min-w-0">
-            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Views</p>
-            <p className="text-base sm:text-xl font-bold text-purple-400">{overall.totalViews}</p>
+            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium truncate">Views</p>
+            <p className="text-base sm:text-xl font-bold text-purple-400 truncate">{overall.totalViews}</p>
           </div>
           <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5 hover:border-orange-500/20 transition min-w-0">
-            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Conversion</p>
-            <p className="text-base sm:text-xl font-bold text-orange-400">{overall.conversionRate.toFixed(1)}%</p>
+            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium truncate">Conversion</p>
+            <p className="text-base sm:text-xl font-bold text-orange-400 truncate">{overall.conversionRate.toFixed(1)}%</p>
           </div>
           <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0a2a1a] rounded-xl p-3 sm:p-4 border border-green-500/20 col-span-2 sm:col-span-1 min-w-0">
-            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Balance</p>
+            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium truncate">Balance</p>
             <p className="text-base sm:text-xl font-bold text-green-400 truncate">KES {formatCurrency(financials.availableBalance)}</p>
             <span className="text-[8px] sm:text-xs text-gray-500 truncate block">Pending: KES {formatCurrency(financials.pendingPayouts)}</span>
           </div>
@@ -609,40 +609,40 @@ export default function CreatorAnalyticsPage() {
         {/* Financial Breakdown */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5 min-w-0">
-            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Revenue Split</h3>
+            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate mb-3">Revenue Split</h3>
             <div className="space-y-2 sm:space-y-3">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-2">
                 <span className="text-xs sm:text-sm text-gray-400 truncate">Your Earnings (85%)</span>
-                <span className="text-xs sm:text-sm text-[#f5c518] font-bold whitespace-nowrap ml-2">KES {formatCurrency(financials.yourEarnings)}</span>
+                <span className="text-xs sm:text-sm text-[#f5c518] font-bold whitespace-nowrap">KES {formatCurrency(financials.yourEarnings)}</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-2">
                 <span className="text-xs sm:text-sm text-gray-400 truncate">Platform Fee (15%)</span>
-                <span className="text-xs sm:text-sm text-yellow-400 font-bold whitespace-nowrap ml-2">KES {formatCurrency(financials.platformFees)}</span>
+                <span className="text-xs sm:text-sm text-yellow-400 font-bold whitespace-nowrap">KES {formatCurrency(financials.platformFees)}</span>
               </div>
-              <div className="flex justify-between items-center pt-2 sm:pt-3 border-t border-white/5">
+              <div className="flex justify-between items-center pt-2 sm:pt-3 border-t border-white/5 gap-2">
                 <span className="text-xs sm:text-sm text-gray-400 truncate">Lifetime Earnings</span>
-                <span className="text-xs sm:text-sm text-green-400 font-bold whitespace-nowrap ml-2">KES {formatCurrency(financials.lifetimeEarnings)}</span>
+                <span className="text-xs sm:text-sm text-green-400 font-bold whitespace-nowrap">KES {formatCurrency(financials.lifetimeEarnings)}</span>
               </div>
             </div>
           </div>
 
           <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5 min-w-0">
-            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Stats</h3>
+            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate mb-3">Quick Stats</h3>
             <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <div className="min-w-0">
-                <p className="text-gray-500 text-[10px] sm:text-xs">Projects</p>
-                <p className="text-base sm:text-lg font-bold">{projects.length}</p>
+                <p className="text-gray-500 text-[10px] sm:text-xs truncate">Projects</p>
+                <p className="text-base sm:text-lg font-bold truncate">{projects.length}</p>
               </div>
               <div className="min-w-0">
-                <p className="text-gray-500 text-[10px] sm:text-xs">Avg Price</p>
+                <p className="text-gray-500 text-[10px] sm:text-xs truncate">Avg Price</p>
                 <p className="text-base sm:text-lg font-bold truncate">KES {formatCurrency(Math.round(overall.avgPrice))}</p>
               </div>
               <div className="min-w-0">
-                <p className="text-gray-500 text-[10px] sm:text-xs">Top Category</p>
+                <p className="text-gray-500 text-[10px] sm:text-xs truncate">Top Category</p>
                 <p className="text-sm sm:text-base font-bold text-[#f5c518] truncate">{insights.topCategory}</p>
               </div>
               <div className="min-w-0">
-                <p className="text-gray-500 text-[10px] sm:text-xs">Best Project</p>
+                <p className="text-gray-500 text-[10px] sm:text-xs truncate">Best Project</p>
                 <p className="text-xs sm:text-sm font-bold text-[#f5c518] truncate">{insights.bestPerforming}</p>
               </div>
             </div>
@@ -652,7 +652,7 @@ export default function CreatorAnalyticsPage() {
         {/* Chart */}
         <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5 mb-4 sm:mb-6">
           <div className="flex justify-between items-center mb-3 sm:mb-4">
-            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Performance</h3>
+            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">Performance</h3>
             <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">Last 30 days</span>
           </div>
           <div className="h-[150px] sm:h-[220px] relative">
@@ -699,8 +699,8 @@ export default function CreatorAnalyticsPage() {
         <div className="mb-4 sm:mb-6">
           <div className="flex justify-between items-center mb-3 sm:mb-4">
             <div className="min-w-0">
-              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Projects</h3>
-              <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">Click a project for details</p>
+              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">Your Projects</h3>
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 truncate">Click a project for details</p>
             </div>
             <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap ml-2">{projects.length} projects</span>
           </div>
@@ -737,7 +737,7 @@ export default function CreatorAnalyticsPage() {
                     <span className="whitespace-nowrap">📦 {project.purchase_count}</span>
                     <span className="text-green-400 font-semibold text-[8px] sm:text-xs whitespace-nowrap">KES {formatCurrency(project.revenue)}</span>
                   </div>
-                  <div className="mt-1 sm:mt-2 text-[8px] sm:text-[10px] text-gray-600 group-hover:text-[#f5c518] transition flex items-center gap-0.5 sm:gap-1">
+                  <div className="mt-1 sm:mt-2 text-[8px] sm:text-[10px] text-gray-600 group-hover:text-[#f5c518] transition flex items-center gap-0.5 sm:gap-1 truncate">
                     Click for details
                     <svg className="w-2 h-2 sm:w-3 sm:h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -752,7 +752,7 @@ export default function CreatorAnalyticsPage() {
         {/* Recent Transactions */}
         <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
           <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-white/5">
-            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent Transactions</h3>
+            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">Recent Transactions</h3>
           </div>
           {recentTransactions.length === 0 ? (
             <div className="p-6 sm:p-8 text-center text-gray-500 text-xs sm:text-sm">No transactions yet</div>
@@ -761,11 +761,11 @@ export default function CreatorAnalyticsPage() {
               <table className="w-full text-xs sm:text-sm">
                 <thead className="bg-[#0a0a0a]">
                   <tr>
-                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Project</th>
-                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider hidden sm:table-cell">Buyer</th>
-                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Amount</th>
-                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider hidden md:table-cell">Date</th>
-                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Status</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider truncate">Project</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider hidden sm:table-cell truncate">Buyer</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider truncate">Amount</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider hidden md:table-cell truncate">Date</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider truncate">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
