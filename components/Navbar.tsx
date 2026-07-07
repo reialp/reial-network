@@ -126,26 +126,26 @@ export default function Navbar() {
   return (
     <nav className="bg-[#0a0a0a] border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm bg-black/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo + Brand Name - Fixed alignment */}
-          <Link href="/" className="flex items-center gap-3 flex-shrink-0 group">
-            <div className="relative w-10 h-10">
+        <div className="flex flex-wrap items-center justify-between py-3 gap-2">
+          {/* Logo + Brand Name - Fixed spacing between logo and text */}
+          <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
                 src="/logo.png"
                 alt="Reial Network"
                 fill
                 className="object-contain"
-                sizes="40px"
+                sizes="(max-width: 640px) 32px, 40px"
                 priority
               />
             </div>
-            <span className="text-xl font-bold group-hover:text-[#f5c518] transition-colors">
+            <span className="text-lg sm:text-xl font-bold leading-none group-hover:text-[#f5c518] transition-colors">
               Reial<span className="text-[#f5c518] group-hover:text-white transition-colors">.</span>
             </span>
           </Link>
 
           {/* Search Bar - Desktop */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
+          <div className="hidden md:flex flex-1 max-w-md mx-4">
             <div className="relative w-full">
               <input
                 type="text"
@@ -202,8 +202,7 @@ export default function Navbar() {
                 const menu = document.getElementById('mobile-menu')
                 if (menu) menu.classList.toggle('hidden')
               }}
-              className="text-gray-400 hover:text-white focus:outline-none p-2"
-              aria-label="Toggle menu"
+              className="text-gray-400 hover:text-white focus:outline-none"
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
