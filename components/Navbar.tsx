@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'  // ✅ Add this import
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useSearch } from '@/context/SearchContext'
@@ -87,7 +88,6 @@ export default function Navbar() {
       return
     }
 
-    // ✅ Fresh fetch from database
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('terms_accepted, is_creator')
@@ -130,9 +130,20 @@ export default function Navbar() {
     <nav className="bg-[#0a0a0a] border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm bg-black/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
-          <Link href="/" className="text-xl font-bold flex items-center gap-2 flex-shrink-0">
-            <span>Reial</span>
-            <span className="text-[#f5c518]">.</span>
+          {/* ✅ Logo + Brand Name */}
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 flex-shrink-0 group">
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10">
+              <Image
+                src="/logo.png"
+                alt="Reial Network"
+                fill
+                className="object-contain"
+                sizes="(max-width: 640px) 32px, 40px"
+              />
+            </div>
+            <span className="text-lg sm:text-xl font-bold group-hover:text-[#f5c518] transition-colors">
+              Reial<span className="text-[#f5c518] group-hover:text-white transition-colors">.</span>
+            </span>
           </Link>
 
           <div className="hidden md:flex flex-1 max-w-md mx-4">
