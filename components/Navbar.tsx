@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
@@ -12,6 +12,7 @@ export default function Navbar() {
   const router = useRouter()
   const supabase = createClient()
   const { searchTerm, setSearchTerm } = useSearch()
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const [user, setUser] = useState<any>(null)
   const [isCreator, setIsCreator] = useState(false)
@@ -71,6 +72,32 @@ export default function Navbar() {
     }
   }, [supabase])
 
+  // Scroll to search results when search term changes
+  useEffect(() => {
+    if (searchTerm && searchTerm.length > 0) {
+      // Small delay to let the results render
+      setTimeout(() => {
+        const resultsContainer = document.getElementById('search-results')
+        if (resultsContainer) {
+          resultsContainer.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          })
+        } else {
+          // If no results container, scroll to a reasonable position
+          window.scrollTo({
+            top: window.innerHeight * 0.6,
+            behavior: 'smooth'
+          })
+        }
+      }, 100)
+    }
+  }, [searchTerm])
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value)
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/')
@@ -127,7 +154,7 @@ export default function Navbar() {
     <nav className="bg-[#0a0a0a] border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm bg-black/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
-          {/* Logo + Brand Name - Fixed spacing between logo and text */}
+          {/* Logo + Brand Name */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
@@ -148,10 +175,11 @@ export default function Navbar() {
           <div className="hidden md:flex flex-1 max-w-md mx-4">
             <div className="relative w-full">
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search films, creators..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearch}
                 className="w-full px-4 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm"
               />
               <svg className="absolute right-3 top-2.5 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,7 +245,7 @@ export default function Navbar() {
             type="text"
             placeholder="Search films, creators..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearch}
             className="w-full px-4 py-2 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm"
           />
         </div>
