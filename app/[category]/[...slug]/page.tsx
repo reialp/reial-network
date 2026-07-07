@@ -18,7 +18,7 @@ async function getContentByIdentifier(identifier: string, userId?: string, isAdm
   
   let query = supabase
     .from('content')
-    .select(`*, profiles!inner ( full_name, bio, avatar_url )`)
+    .select(`*, profiles ( full_name, bio, avatar_url )`)
   
   if (isUUID) {
     query = query.eq('id', identifier)
