@@ -171,6 +171,7 @@ function ProfileForm() {
     loadProfile()
   }, [router, supabase])
 
+  // Scroll to edit form when editing starts
   useEffect(() => {
     if (isEditing && editFormRef.current) {
       setShowScrollHint(true)
@@ -334,7 +335,7 @@ function ProfileForm() {
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 sm:w-10 sm:h-10 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-gray-400 text-sm">Loading profile</p>
+          <p className="text-gray-400 text-sm">Loading profile...</p>
         </div>
       </div>
     )
@@ -396,7 +397,7 @@ function ProfileForm() {
                   {profile.full_name || 'Set up your profile'}
                 </h1>
                 {profile.tagline && (
-                  <p className="text-gray-300 text-sm mt-0.5 italic">{profile.tagline}</p>
+                  <p className="text-gray-300 text-sm mt-0.5 italic">"{profile.tagline}"</p>
                 )}
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1.5">
                   {profile.is_creator && (
@@ -423,7 +424,7 @@ function ProfileForm() {
               <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                 {profile.is_creator && userId && (
                   <Link
-                    href={`/creator/${userId}/analytics`}
+                    href={`/analytics/${userId}`}
                     className="px-4 py-2 bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] rounded-lg text-sm font-medium transition"
                   >
                     Analytics
@@ -719,8 +720,7 @@ function ProfileForm() {
                     </div>
                     <div>
                       <label className="block text-xs text-gray-500">Twitter</label>
-                      <input
-                        type="url"
+                      <input                        type="url"
                         value={profile.social_twitter}
                         onChange={(e) => setProfile({ ...profile, social_twitter: e.target.value })}
                         className="mt-1 block w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
