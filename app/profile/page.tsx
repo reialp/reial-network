@@ -424,7 +424,7 @@ function ProfileForm() {
               <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                 {profile.is_creator && userId && (
                   <Link
-                    href={`/analytics/${userId}`}
+                    href={`/creator/${userId}/analytics`}
                     className="px-4 py-2 bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] rounded-lg text-sm font-medium transition"
                   >
                     Analytics
