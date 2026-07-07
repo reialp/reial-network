@@ -339,7 +339,7 @@ export default function CreatorAnalyticsPage() {
 
   const { profile, overall, financials, projects, recentTransactions, chartData, insights } = data
 
-  // 🔍 PROJECT DETAIL VIEW
+  // 🔍 PROJECT DETAIL VIEW - Mobile Optimized
   if (selectedProject) {
     const projectPurchases = recentTransactions.filter(t => t.project_title === selectedProject.title)
     const totalRevenue = selectedProject.revenue
@@ -348,11 +348,11 @@ export default function CreatorAnalyticsPage() {
     
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
           
           <button
             onClick={() => setSelectedProjectId(null)}
-            className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2 mb-6 group"
+            className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2 mb-4 sm:mb-6 group"
           >
             <svg className="w-4 h-4 group-hover:-translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -360,8 +360,9 @@ export default function CreatorAnalyticsPage() {
             Back to Overview
           </button>
 
+          {/* Project Header - Mobile Optimized */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
-            <div className="w-20 h-20 rounded-xl bg-[#2a2a2a] overflow-hidden flex-shrink-0 border border-white/10">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-[#2a2a2a] overflow-hidden flex-shrink-0 border border-white/10">
               {selectedProject.thumbnail_url ? (
                 <Image
                   src={selectedProject.thumbnail_url}
@@ -371,123 +372,126 @@ export default function CreatorAnalyticsPage() {
                   className="object-cover w-full h-full"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-3xl text-gray-500">🎬</div>
+                <div className="w-full h-full flex items-center justify-center text-2xl sm:text-3xl text-gray-500">🎬</div>
               )}
             </div>
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold">{selectedProject.title}</h1>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">{selectedProject.title}</h1>
               <div className="flex flex-wrap items-center gap-2 mt-1">
-                <span className="text-sm text-gray-400">{selectedProject.category}</span>
+                <span className="text-xs sm:text-sm text-gray-400">{selectedProject.category}</span>
                 <span className="w-1 h-1 rounded-full bg-gray-600" />
-                <span className="text-sm text-gray-400">KES {selectedProject.price}</span>
+                <span className="text-xs sm:text-sm text-gray-400">KES {selectedProject.price}</span>
               </div>
-              <p className="text-gray-500 text-sm mt-1 max-w-2xl">{selectedProject.description || 'No description'}</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1 line-clamp-2">{selectedProject.description || 'No description'}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
               <Link
                 href={`/${selectedProject.category.toLowerCase()}/${selectedProject.slug}`}
-                className="bg-[#f5c518] text-black px-4 py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition text-sm"
+                className="bg-[#f5c518] text-black px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition text-xs sm:text-sm flex-1 sm:flex-none text-center"
               >
                 View Project
               </Link>
               <Link
                 href={`/upload/${selectedProject.id}`}
-                className="bg-[#1a1a1a] border border-white/10 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/5 transition"
+                className="bg-[#1a1a1a] border border-white/10 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium hover:bg-white/5 transition flex-1 sm:flex-none text-center"
               >
-                Edit Project
+                Edit
               </Link>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-            <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
-              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Revenue</p>
-              <p className="text-2xl font-bold text-green-400">KES {formatCurrency(totalRevenue)}</p>
+          {/* Stats Grid - Mobile Optimized */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
+            <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5">
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">Revenue</p>
+              <p className="text-lg sm:text-2xl font-bold text-green-400">KES {formatCurrency(totalRevenue)}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
-              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Sales</p>
-              <p className="text-2xl font-bold text-blue-400">{totalSales}</p>
+            <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5">
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">Sales</p>
+              <p className="text-lg sm:text-2xl font-bold text-blue-400">{totalSales}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
-              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Views</p>
-              <p className="text-2xl font-bold text-purple-400">{totalViews}</p>
+            <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5">
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">Views</p>
+              <p className="text-lg sm:text-2xl font-bold text-purple-400">{totalViews}</p>
             </div>
-            <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5">
-              <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Conversion</p>
-              <p className="text-2xl font-bold text-orange-400">{selectedProject.conversionRate.toFixed(1)}%</p>
+            <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5">
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">Conversion</p>
+              <p className="text-lg sm:text-2xl font-bold text-orange-400">{selectedProject.conversionRate.toFixed(1)}%</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Project Details</h3>
-              <div className="space-y-3">
+          {/* Project Details & Revenue Breakdown - Mobile Optimized */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-6">
+            <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5">
+              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Project Details</h3>
+              <div className="space-y-2 sm:space-y-3">
                 <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-gray-400 text-sm">Created</span>
-                  <span className="text-sm">{new Date(selectedProject.created_at).toLocaleDateString()}</span>
+                  <span className="text-xs sm:text-sm text-gray-400">Created</span>
+                  <span className="text-xs sm:text-sm">{new Date(selectedProject.created_at).toLocaleDateString()}</span>
                 </div>
                 <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-gray-400 text-sm">Category</span>
-                  <span className="text-sm">{selectedProject.category}</span>
+                  <span className="text-xs sm:text-sm text-gray-400">Category</span>
+                  <span className="text-xs sm:text-sm">{selectedProject.category}</span>
                 </div>
                 <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-gray-400 text-sm">Price</span>
-                  <span className="text-sm font-semibold">KES {selectedProject.price}</span>
+                  <span className="text-xs sm:text-sm text-gray-400">Price</span>
+                  <span className="text-xs sm:text-sm font-semibold">KES {selectedProject.price}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">Status</span>
-                  <span className="text-sm px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">{selectedProject.status}</span>
+                  <span className="text-xs sm:text-sm text-gray-400">Status</span>
+                  <span className="text-[10px] sm:text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">{selectedProject.status}</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Revenue Breakdown</h3>
-              <div className="space-y-3">
+            <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5">
+              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Revenue Breakdown</h3>
+              <div className="space-y-2 sm:space-y-3">
                 <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-gray-400 text-sm">Gross Revenue</span>
-                  <span className="text-sm font-bold">KES {formatCurrency(totalRevenue)}</span>
+                  <span className="text-xs sm:text-sm text-gray-400">Gross Revenue</span>
+                  <span className="text-xs sm:text-sm font-bold">KES {formatCurrency(totalRevenue)}</span>
                 </div>
                 <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span className="text-gray-400 text-sm">Your Earnings (85%)</span>
-                  <span className="text-sm font-bold text-[#f5c518]">KES {formatCurrency(Math.round(totalRevenue * 0.85))}</span>
+                  <span className="text-xs sm:text-sm text-gray-400">Your Earnings (85%)</span>
+                  <span className="text-xs sm:text-sm font-bold text-[#f5c518]">KES {formatCurrency(Math.round(totalRevenue * 0.85))}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">Platform Fee (15%)</span>
-                  <span className="text-sm font-bold text-yellow-400">KES {formatCurrency(Math.round(totalRevenue * 0.15))}</span>
+                  <span className="text-xs sm:text-sm text-gray-400">Platform Fee (15%)</span>
+                  <span className="text-xs sm:text-sm font-bold text-yellow-400">KES {formatCurrency(Math.round(totalRevenue * 0.15))}</span>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Purchase History - Mobile Optimized */}
           <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
-            <div className="px-5 py-4 border-b border-white/5">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Purchase History</h3>
-              <p className="text-xs text-gray-500 mt-1">{projectPurchases.length} purchases</p>
+            <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-white/5">
+              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Purchase History</h3>
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-1">{projectPurchases.length} purchases</p>
             </div>
             {projectPurchases.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 text-sm">No purchases yet for this project</div>
+              <div className="p-6 sm:p-8 text-center text-gray-500 text-xs sm:text-sm">No purchases yet for this project</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-xs sm:text-sm">
                   <thead className="bg-[#0a0a0a]">
                     <tr>
-                      <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider">Buyer</th>
-                      <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider">Amount</th>
-                      <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider hidden md:table-cell">Date</th>
-                      <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider">Status</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Buyer</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Amount</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider hidden sm:table-cell">Date</th>
+                      <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {projectPurchases.map((tx) => (
                       <tr key={tx.id} className="hover:bg-white/5 transition">
-                        <td className="px-4 py-2.5 text-sm">{tx.buyer_name}</td>
-                        <td className="px-4 py-2.5 text-[#f5c518] font-semibold">KES {formatCurrency(tx.amount)}</td>
-                        <td className="px-4 py-2.5 text-gray-400 text-sm hidden md:table-cell">
+                        <td className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none">{tx.buyer_name}</td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-2.5 text-[#f5c518] font-semibold text-xs sm:text-sm">KES {formatCurrency(tx.amount)}</td>
+                        <td className="px-3 sm:px-4 py-2 sm:py-2.5 text-gray-400 text-xs hidden sm:table-cell">
                           {new Date(tx.created_at).toLocaleDateString()}
                         </td>
-                        <td className="px-4 py-2.5">
-                          <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">{tx.status}</span>
+                        <td className="px-3 sm:px-4 py-2 sm:py-2.5">
+                          <span className="px-1.5 sm:px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-[10px] sm:text-xs">{tx.status}</span>
                         </td>
                       </tr>
                     ))}
@@ -501,15 +505,15 @@ export default function CreatorAnalyticsPage() {
     )
   }
 
-  // 📊 OVERALL VIEW - Performance Analytics Dashboard
+  // 📊 OVERALL VIEW - Mobile Optimized
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         
-        {/* Header with Avatar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-[#1a1a1a] border-2 border-white/10 overflow-hidden flex-shrink-0">
+        {/* Header - Mobile Optimized */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#1a1a1a] border-2 border-white/10 overflow-hidden flex-shrink-0">
               {profile.avatar_url ? (
                 <Image
                   src={profile.avatar_url}
@@ -519,139 +523,139 @@ export default function CreatorAnalyticsPage() {
                   className="object-cover w-full h-full"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-xl text-gray-500">
+                <div className="w-full h-full flex items-center justify-center text-base sm:text-xl text-gray-500">
                   {profile.full_name.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">Performance Analytics</h1>
-              <p className="text-gray-400 text-sm">{profile.full_name}</p>
+              <h1 className="text-lg sm:text-2xl md:text-3xl font-bold">Analytics</h1>
+              <p className="text-gray-400 text-xs sm:text-sm truncate max-w-[150px] sm:max-w-none">{profile.full_name}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {lastUpdated && (
-              <span className="text-xs text-gray-500">
+              <span className="text-[10px] sm:text-xs text-gray-500 hidden sm:block">
                 Updated: {lastUpdated.toLocaleTimeString()}
               </span>
             )}
             <button
               onClick={() => loadAnalytics(true)}
               disabled={refreshing}
-              className="text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
+              className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
             >
-              <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-3 h-3 sm:w-4 sm:h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
             <Link
               href={`/profile`}
-              className="text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
+              className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Back
+              <span className="hidden sm:inline">Back</span>
             </Link>
           </div>
         </div>
 
-        {/* Insights Banner */}
-        <div className="bg-gradient-to-r from-[#f5c518]/10 to-[#f5c518]/5 border border-[#f5c518]/20 rounded-xl p-4 mb-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-[#f5c518]">Key Insight</p>
-              <p className="text-sm text-gray-300">{insights.growthMessage}</p>
-              <p className="text-xs text-gray-400 mt-1">{insights.recommendation}</p>
+        {/* Insights Banner - Mobile Optimized */}
+        <div className="bg-gradient-to-r from-[#f5c518]/10 to-[#f5c518]/5 border border-[#f5c518]/20 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] sm:text-sm font-medium text-[#f5c518]">Key Insight</p>
+              <p className="text-xs sm:text-sm text-gray-300 truncate">{insights.growthMessage}</p>
+              <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1 truncate">{insights.recommendation}</p>
             </div>
-            <span className="text-xs bg-[#f5c518]/20 text-[#f5c518] px-3 py-1 rounded-full">
+            <span className="text-[10px] sm:text-xs bg-[#f5c518]/20 text-[#f5c518] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full whitespace-nowrap flex-shrink-0">
               Top: {insights.bestPerforming}
             </span>
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
-          <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 hover:border-[#f5c518]/20 transition">
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Revenue</p>
-            <p className="text-xl font-bold text-green-400">KES {formatCurrency(overall.totalRevenue)}</p>
-            <span className={`text-xs ${overall.revenueGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+        {/* Stats Grid - Mobile Optimized */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-6">
+          <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5 hover:border-[#f5c518]/20 transition">
+            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Revenue</p>
+            <p className="text-base sm:text-xl font-bold text-green-400">KES {formatCurrency(overall.totalRevenue)}</p>
+            <span className={`text-[8px] sm:text-xs ${overall.revenueGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {overall.revenueGrowth >= 0 ? '↑' : '↓'} {Math.abs(Math.round(overall.revenueGrowth))}%
             </span>
           </div>
-          <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 hover:border-blue-500/20 transition">
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Sales</p>
-            <p className="text-xl font-bold text-blue-400">{overall.totalSales}</p>
-            <span className={`text-xs ${overall.salesGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5 hover:border-blue-500/20 transition">
+            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Sales</p>
+            <p className="text-base sm:text-xl font-bold text-blue-400">{overall.totalSales}</p>
+            <span className={`text-[8px] sm:text-xs ${overall.salesGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {overall.salesGrowth >= 0 ? '↑' : '↓'} {Math.abs(Math.round(overall.salesGrowth))}%
             </span>
           </div>
-          <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 hover:border-purple-500/20 transition">
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Views</p>
-            <p className="text-xl font-bold text-purple-400">{overall.totalViews}</p>
+          <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5 hover:border-purple-500/20 transition">
+            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Views</p>
+            <p className="text-base sm:text-xl font-bold text-purple-400">{overall.totalViews}</p>
           </div>
-          <div className="bg-[#1a1a1a] rounded-xl p-4 border border-white/5 hover:border-orange-500/20 transition">
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Conversion</p>
-            <p className="text-xl font-bold text-orange-400">{overall.conversionRate.toFixed(1)}%</p>
+          <div className="bg-[#1a1a1a] rounded-xl p-3 sm:p-4 border border-white/5 hover:border-orange-500/20 transition">
+            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Conversion</p>
+            <p className="text-base sm:text-xl font-bold text-orange-400">{overall.conversionRate.toFixed(1)}%</p>
           </div>
-          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0a2a1a] rounded-xl p-4 border border-green-500/20">
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-medium">Balance</p>
-            <p className="text-xl font-bold text-green-400">KES {formatCurrency(financials.availableBalance)}</p>
-            <span className="text-xs text-gray-500">Pending: KES {formatCurrency(financials.pendingPayouts)}</span>
+          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0a2a1a] rounded-xl p-3 sm:p-4 border border-green-500/20 col-span-2 sm:col-span-1">
+            <p className="text-gray-400 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Balance</p>
+            <p className="text-base sm:text-xl font-bold text-green-400">KES {formatCurrency(financials.availableBalance)}</p>
+            <span className="text-[8px] sm:text-xs text-gray-500">Pending: KES {formatCurrency(financials.pendingPayouts)}</span>
           </div>
         </div>
 
-        {/* Financial Breakdown */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Revenue Split</h3>
-            <div className="space-y-3">
+        {/* Financial Breakdown - Mobile Optimized */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5">
+            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Revenue Split</h3>
+            <div className="space-y-2 sm:space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Your Earnings (85%)</span>
-                <span className="text-[#f5c518] font-bold">KES {formatCurrency(financials.yourEarnings)}</span>
+                <span className="text-xs sm:text-sm text-gray-400">Your Earnings (85%)</span>
+                <span className="text-xs sm:text-sm text-[#f5c518] font-bold">KES {formatCurrency(financials.yourEarnings)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">Platform Fee (15%)</span>
-                <span className="text-yellow-400 font-bold">KES {formatCurrency(financials.platformFees)}</span>
+                <span className="text-xs sm:text-sm text-gray-400">Platform Fee (15%)</span>
+                <span className="text-xs sm:text-sm text-yellow-400 font-bold">KES {formatCurrency(financials.platformFees)}</span>
               </div>
-              <div className="flex justify-between items-center pt-3 border-t border-white/5">
-                <span className="text-gray-400 text-sm">Lifetime Earnings</span>
-                <span className="text-green-400 font-bold">KES {formatCurrency(financials.lifetimeEarnings)}</span>
+              <div className="flex justify-between items-center pt-2 sm:pt-3 border-t border-white/5">
+                <span className="text-xs sm:text-sm text-gray-400">Lifetime Earnings</span>
+                <span className="text-xs sm:text-sm text-green-400 font-bold">KES {formatCurrency(financials.lifetimeEarnings)}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Stats</h3>
-            <div className="grid grid-cols-2 gap-3">
+          <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5">
+            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Quick Stats</h3>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <div>
-                <p className="text-gray-500 text-xs">Projects</p>
-                <p className="text-lg font-bold">{projects.length}</p>
+                <p className="text-gray-500 text-[10px] sm:text-xs">Projects</p>
+                <p className="text-base sm:text-lg font-bold">{projects.length}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs">Avg Price</p>
-                <p className="text-lg font-bold">KES {formatCurrency(Math.round(overall.avgPrice))}</p>
+                <p className="text-gray-500 text-[10px] sm:text-xs">Avg Price</p>
+                <p className="text-base sm:text-lg font-bold">KES {formatCurrency(Math.round(overall.avgPrice))}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs">Top Category</p>
-                <p className="text-lg font-bold text-[#f5c518]">{insights.topCategory}</p>
+                <p className="text-gray-500 text-[10px] sm:text-xs">Top Category</p>
+                <p className="text-sm sm:text-base font-bold text-[#f5c518] truncate">{insights.topCategory}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs">Best Project</p>
-                <p className="text-sm font-bold truncate text-[#f5c518]">{insights.bestPerforming}</p>
+                <p className="text-gray-500 text-[10px] sm:text-xs">Best Project</p>
+                <p className="text-xs sm:text-sm font-bold text-[#f5c518] truncate">{insights.bestPerforming}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Chart */}
-        <div className="bg-[#1a1a1a] rounded-xl p-5 border border-white/5 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Performance Over Time</h3>
-            <span className="text-xs text-gray-500">Last 30 days</span>
+        {/* Chart - Mobile Optimized */}
+        <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5 mb-4 sm:mb-6">
+          <div className="flex justify-between items-center mb-3 sm:mb-4">
+            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Performance</h3>
+            <span className="text-[10px] sm:text-xs text-gray-500">Last 30 days</span>
           </div>
-          <div className="h-[180px] sm:h-[220px] relative">
+          <div className="h-[150px] sm:h-[220px] relative">
             <div className="absolute inset-0 flex items-end">
               {chartData.labels.map((label, i) => {
                 const maxRevenue = Math.max(...chartData.revenue, 1)
@@ -660,18 +664,18 @@ export default function CreatorAnalyticsPage() {
                 const salesHeight = (chartData.sales[i] / maxSales) * 100
                 
                 return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <div key={i} className="flex-1 flex flex-col items-center gap-0.5 sm:gap-1">
                     <div className="w-full flex justify-center gap-0.5">
                       <div 
-                        className="w-1.5 sm:w-2.5 bg-[#f5c518] rounded-t"
+                        className="w-1 sm:w-2.5 bg-[#f5c518] rounded-t"
                         style={{ height: `${Math.max(height * 0.7, 2)}px` }}
                       />
                       <div 
-                        className="w-1.5 sm:w-2.5 bg-blue-400 rounded-t"
+                        className="w-1 sm:w-2.5 bg-blue-400 rounded-t"
                         style={{ height: `${Math.max(salesHeight * 0.5, 2)}px` }}
                       />
                     </div>
-                    <span className="text-[6px] sm:text-[8px] text-gray-600 rotate-45 sm:rotate-0 origin-left sm:origin-center">
+                    <span className="text-[5px] sm:text-[8px] text-gray-600 rotate-45 sm:rotate-0 origin-left sm:origin-center">
                       {label.split(' ')[0]}
                     </span>
                   </div>
@@ -679,29 +683,29 @@ export default function CreatorAnalyticsPage() {
               })}
             </div>
           </div>
-          <div className="flex justify-center gap-4 sm:gap-6 mt-2 text-xs text-gray-500">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 bg-[#f5c518] rounded" />
+          <div className="flex justify-center gap-3 sm:gap-6 mt-2 text-[10px] sm:text-xs text-gray-500">
+            <span className="flex items-center gap-1 sm:gap-1.5">
+              <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-[#f5c518] rounded" />
               Revenue
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 bg-blue-400 rounded" />
+            <span className="flex items-center gap-1 sm:gap-1.5">
+              <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-blue-400 rounded" />
               Sales
             </span>
           </div>
         </div>
 
-        {/* Project Grid */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-4">
+        {/* Project Grid - Mobile Optimized */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex justify-between items-center mb-3 sm:mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Your Projects</h3>
-              <p className="text-xs text-gray-500 mt-1">Click a project to view detailed analytics</p>
+              <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Projects</h3>
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">Click a project for details</p>
             </div>
-            <span className="text-xs text-gray-500">{projects.length} projects</span>
+            <span className="text-[10px] sm:text-xs text-gray-500">{projects.length} projects</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
             {projects.map((project) => (
               <button
                 key={project.id}
@@ -717,25 +721,25 @@ export default function CreatorAnalyticsPage() {
                       className="object-cover group-hover:scale-105 transition duration-500"
                     />
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-4xl text-gray-600">🎬</div>
+                    <div className="absolute inset-0 flex items-center justify-center text-2xl sm:text-4xl text-gray-600">🎬</div>
                   )}
-                  <div className="absolute top-2 right-2 bg-black/60 text-xs px-2 py-0.5 rounded-full text-white">
+                  <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-black/60 text-[8px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full text-white">
                     KES {project.price}
                   </div>
                 </div>
-                <div className="p-4">
-                  <h4 className="font-semibold group-hover:text-[#f5c518] transition">
+                <div className="p-2 sm:p-4">
+                  <h4 className="text-xs sm:text-sm font-semibold group-hover:text-[#f5c518] transition truncate">
                     {project.title}
                   </h4>
-                  <p className="text-gray-500 text-xs mt-1">{project.category}</p>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                  <p className="text-gray-500 text-[8px] sm:text-xs mt-0.5">{project.category}</p>
+                  <div className="flex items-center gap-2 sm:gap-3 mt-1 sm:mt-2 text-[8px] sm:text-xs text-gray-500">
                     <span>👁 {project.views}</span>
                     <span>📦 {project.purchase_count}</span>
-                    <span className="text-green-400 font-semibold">KES {formatCurrency(project.revenue)}</span>
+                    <span className="text-green-400 font-semibold text-[8px] sm:text-xs">KES {formatCurrency(project.revenue)}</span>
                   </div>
-                  <div className="mt-2 text-[10px] text-gray-600 group-hover:text-[#f5c518] transition flex items-center gap-1">
+                  <div className="mt-1 sm:mt-2 text-[8px] sm:text-[10px] text-gray-600 group-hover:text-[#f5c518] transition flex items-center gap-0.5 sm:gap-1">
                     Click for details
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-2 h-2 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -745,36 +749,36 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
-        {/* Recent Transactions */}
+        {/* Recent Transactions - Mobile Optimized */}
         <div className="bg-[#1a1a1a] rounded-xl border border-white/5 overflow-hidden">
-          <div className="px-5 py-4 border-b border-white/5">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent Transactions</h3>
+          <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-white/5">
+            <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Recent Transactions</h3>
           </div>
           {recentTransactions.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 text-sm">No transactions yet</div>
+            <div className="p-6 sm:p-8 text-center text-gray-500 text-xs sm:text-sm">No transactions yet</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-xs sm:text-sm">
                 <thead className="bg-[#0a0a0a]">
                   <tr>
-                    <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider">Project</th>
-                    <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider hidden sm:table-cell">Buyer</th>
-                    <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider">Amount</th>
-                    <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider hidden md:table-cell">Date</th>
-                    <th className="px-4 py-2.5 text-left text-gray-500 text-xs uppercase tracking-wider">Status</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Project</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider hidden sm:table-cell">Buyer</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Amount</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider hidden md:table-cell">Date</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-2.5 text-left text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {recentTransactions.map((tx) => (
                     <tr key={tx.id} className="hover:bg-white/5 transition">
-                      <td className="px-4 py-2.5 text-sm truncate max-w-[120px]">{tx.project_title}</td>
-                      <td className="px-4 py-2.5 text-gray-400 text-sm hidden sm:table-cell truncate max-w-[100px]">{tx.buyer_name}</td>
-                      <td className="px-4 py-2.5 text-[#f5c518] font-semibold">KES {formatCurrency(tx.amount)}</td>
-                      <td className="px-4 py-2.5 text-gray-400 text-sm hidden md:table-cell">
+                      <td className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm truncate max-w-[80px] sm:max-w-[120px]">{tx.project_title}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-2.5 text-gray-400 text-xs hidden sm:table-cell truncate max-w-[80px]">{tx.buyer_name}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-2.5 text-[#f5c518] font-semibold text-xs sm:text-sm">KES {formatCurrency(tx.amount)}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-2.5 text-gray-400 text-xs hidden md:table-cell">
                         {new Date(tx.created_at).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-2.5">
-                        <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-xs">
+                      <td className="px-3 sm:px-4 py-2 sm:py-2.5">
+                        <span className="px-1.5 sm:px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full text-[10px] sm:text-xs">
                           {tx.status}
                         </span>
                       </td>
