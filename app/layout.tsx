@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next'
+import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/Navbar'
@@ -9,6 +9,10 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Reial Network – Premium Stories from Creators',
   description: 'Discover and buy exclusive films, documentaries, and series directly from creators.',
+  icons: {
+    icon: '/logo.png',  // ✅ This makes it appear in browser tab
+    apple: '/logo.png', // ✅ For iOS devices
+  },
 }
 
 export default function RootLayout({
