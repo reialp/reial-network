@@ -105,6 +105,17 @@ interface ActivityLog {
   }
 }
 
+interface MonthlyReport {
+  month: string
+  year: number
+  total_transactions: number
+  total_revenue: number
+  total_fees: number
+  total_earnings: number
+  unique_buyers: number
+  unique_films: number
+}
+
 export default function AdminPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -116,6 +127,7 @@ export default function AdminPage() {
   const [payouts, setPayouts] = useState<PayoutRequest[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [creatorStats, setCreatorStats] = useState<CreatorStats[]>([])
+  const [monthlyReport, setMonthlyReport] = useState<MonthlyReport[]>([])
   
   const [stats, setStats] = useState({
     totalFilms: 0,
@@ -200,48 +212,167 @@ export default function AdminPage() {
     }
   }
 
-  // Improved Export CSV with better formatting
-  const exportCSV = () => {
+  // Professional Export Report
+  const exportReport = () => {
     try {
-      const headers = [
-        'Title',
-        'Creator', 
-        'Price (KES)',
-        'Status',
-        'Views',
-        'Sales',
-        'Revenue (KES)',
-        'Created At'
-      ]
+      const now = new Date()
+      const reportDate = now.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })
       
-      const rows = filteredContent.map(item => [
-        `"${item.title}"`,
-        `"${item.creator_name || 'Unknown'}"`,
-        item.price,
-        item.status,
-        item.views || 0,
-        item.purchase_count || 0,
-        item.price * (item.purchase_count || 0),
-        new Date(item.created_at).toLocaleDateString()
-      ])
+      // Calculate totals
+      const totalRevenue = Number(stats.totalRevenue) || 0
+      const totalFees = Number(stats.totalPlatformFees) || 0
+      const totalEarnings = Number(stats.totalPaidToCreators) || 0
+      const totalSales = stats.totalSales || 0
+      const totalFilms = stats.totalFilms || 0
       
-      const csvContent = [
-        headers.join(','),
-        ...rows.map(row => row.join(','))
-      ].join('\n')
+      // Build the report
+      let report = []
       
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      // Header
+      report.push('='.repeat(80))
+      report.push('PLATFORM PERFORMANCE REPORT')
+      report.push('='.repeat(80))
+      report.push(`Report Generated: ${reportDate}`)
+      report.push(`Report Period: ${dateRange.start || 'All Time'} to ${dateRange.end || 'Present'}`)
+      report.push('='.repeat(80))
+      report.push('')
+      
+      // Executive Summary
+      report.push('EXECUTIVE SUMMARY')
+      report.push('-'.repeat(80))
+      report.push(`Total Revenue:              KES ${totalRevenue.toFixed(2)}`)
+      report.push(`Platform Fees (15%):        KES ${totalFees.toFixed(2)}`)
+      report.push(`Creator Earnings (85%):     KES ${totalEarnings.toFixed(2)}`)
+      report.push(`Total Sales:                ${totalSales}`)
+      report.push(`Total Films:                ${totalFilms}`)
+      report.push(`Total Creators:             ${stats.totalCreators}`)
+      report.push(`Total Views:                ${stats.totalViews}`)
+      report.push(`Pending Submissions:        ${stats.pendingSubmissions}`)
+      report.push(`Pending Payouts:            KES ${Number(stats.pendingPayouts).toFixed(2)}`)
+      report.push('')
+      
+      // Monthly Breakdown
+      report.push('MONTHLY BREAKDOWN')
+      report.push('-'.repeat(80))
+      
+      if (monthlyReport.length > 0) {
+        report.push('Month'.padEnd(15) + 
+                   'Transactions'.padEnd(15) + 
+                   'Revenue (KES)'.padEnd(15) + 
+                   'Fees (KES)'.padEnd(15) + 
+                   'Earnings (KES)'.padEnd(15) + 
+                   'Unique Buyers'.padEnd(15) +
+                   'Unique Films')
+        report.push('-'.repeat(80))
+        
+        monthlyReport.forEach(m => {
+          const monthLabel = `${m.month} ${m.year}`
+          report.push(
+            monthLabel.padEnd(15) +
+            m.total_transactions.toString().padEnd(15) +
+            m.total_revenue.toFixed(2).padEnd(15) +
+            m.total_fees.toFixed(2).padEnd(15) +
+            m.total_earnings.toFixed(2).padEnd(15) +
+            m.unique_buyers.toString().padEnd(15) +
+            m.unique_films.toString()
+          )
+        })
+        report.push('')
+        report.push('Monthly Average:')
+        const avgRevenue = monthlyReport.reduce((s, m) => s + m.total_revenue, 0) / monthlyReport.length
+        const avgFees = monthlyReport.reduce((s, m) => s + m.total_fees, 0) / monthlyReport.length
+        const avgEarnings = monthlyReport.reduce((s, m) => s + m.total_earnings, 0) / monthlyReport.length
+        report.push(`  Average Revenue:  KES ${avgRevenue.toFixed(2)}`)
+        report.push(`  Average Fees:     KES ${avgFees.toFixed(2)}`)
+        report.push(`  Average Earnings: KES ${avgEarnings.toFixed(2)}`)
+        report.push('')
+      } else {
+        report.push('No monthly data available.')
+        report.push('')
+      }
+      
+      // Content Report
+      report.push('CONTENT DETAILS')
+      report.push('-'.repeat(80))
+      report.push('Title'.padEnd(35) + 
+                 'Creator'.padEnd(20) + 
+                 'Price'.padEnd(10) + 
+                 'Status'.padEnd(12) + 
+                 'Views'.padEnd(10) + 
+                 'Sales'.padEnd(10) + 
+                 'Revenue (KES)')
+      report.push('-'.repeat(80))
+      
+      if (filteredContent.length > 0) {
+        filteredContent.forEach(item => {
+          const revenue = item.price * (item.purchase_count || 0)
+          report.push(
+            item.title.substring(0, 30).padEnd(35) +
+            (item.creator_name || 'Unknown').substring(0, 18).padEnd(20) +
+            item.price.toFixed(2).padEnd(10) +
+            item.status.padEnd(12) +
+            (item.views || 0).toString().padEnd(10) +
+            (item.purchase_count || 0).toString().padEnd(10) +
+            revenue.toFixed(2)
+          )
+        })
+        report.push('')
+      } else {
+        report.push('No content available for the selected filters.')
+        report.push('')
+      }
+      
+      // Creator Summary
+      report.push('CREATOR SUMMARY')
+      report.push('-'.repeat(80))
+      report.push('Creator'.padEnd(25) + 
+                 'Films'.padEnd(10) + 
+                 'Revenue (KES)'.padEnd(15) + 
+                 'Earnings (KES)'.padEnd(15) + 
+                 'Views')
+      report.push('-'.repeat(80))
+      
+      const activeCreators = creatorStats.filter(c => c.total_films > 0)
+      if (activeCreators.length > 0) {
+        activeCreators.forEach(creator => {
+          report.push(
+            creator.creator_name.substring(0, 23).padEnd(25) +
+            creator.total_films.toString().padEnd(10) +
+            Number(creator.total_revenue).toFixed(2).padEnd(15) +
+            Number(creator.total_earnings).toFixed(2).padEnd(15) +
+            creator.total_views.toString()
+          )
+        })
+        report.push('')
+      } else {
+        report.push('No active creators with films.')
+        report.push('')
+      }
+      
+      // Footer
+      report.push('='.repeat(80))
+      report.push('END OF REPORT')
+      report.push(`Generated by Admin Panel`)
+      report.push('='.repeat(80))
+      
+      // Create and download the file
+      const csvContent = report.join('\n')
+      const blob = new Blob([csvContent], { type: 'text/plain;charset=utf-8;' })
       const link = document.createElement('a')
       const url = URL.createObjectURL(blob)
       link.setAttribute('href', url)
-      link.setAttribute('download', `content_report_${new Date().toISOString().split('T')[0]}.csv`)
+      link.setAttribute('download', `platform_report_${now.toISOString().split('T')[0]}.txt`)
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('Error exporting CSV:', error)
-      alert('Failed to export CSV')
+      console.error('Error exporting report:', error)
+      alert('Failed to export report')
     }
   }
 
@@ -288,6 +419,65 @@ export default function AdminPage() {
         .select('*, content:content_id(title, creator_id), buyer:buyer_id(email)')
         .order('created_at', { ascending: false })
       setTransactions(transactionsData || [])
+
+      // Calculate monthly report
+      if (transactionsData && transactionsData.length > 0) {
+        const monthlyData: { [key: string]: MonthlyReport } = {}
+        
+        transactionsData
+          .filter((tx: any) => tx.status === 'completed')
+          .forEach((tx: any) => {
+            const date = new Date(tx.created_at)
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+            const monthName = date.toLocaleString('default', { month: 'long' })
+            
+            if (!monthlyData[monthKey]) {
+              monthlyData[monthKey] = {
+                month: monthName,
+                year: date.getFullYear(),
+                total_transactions: 0,
+                total_revenue: 0,
+                total_fees: 0,
+                total_earnings: 0,
+                unique_buyers: new Set().size,
+                unique_films: new Set().size,
+              }
+            }
+            
+            monthlyData[monthKey].total_transactions += 1
+            monthlyData[monthKey].total_revenue += Number(tx.amount_paid || 0)
+            monthlyData[monthKey].total_fees += Number(tx.platform_fee || 0)
+            monthlyData[monthKey].total_earnings += Number(tx.creator_earnings || 0)
+          })
+        
+        // Convert to array and sort
+        const monthlyArray = Object.keys(monthlyData)
+          .sort()
+          .map(key => {
+            const data = monthlyData[key]
+            // Calculate unique counts
+            const buyers = new Set()
+            const films = new Set()
+            transactionsData
+              .filter((tx: any) => {
+                const date = new Date(tx.created_at)
+                const txKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+                return txKey === key && tx.status === 'completed'
+              })
+              .forEach((tx: any) => {
+                if (tx.buyer_id) buyers.add(tx.buyer_id)
+                if (tx.content_id) films.add(tx.content_id)
+              })
+            
+            return {
+              ...data,
+              unique_buyers: buyers.size,
+              unique_films: films.size
+            }
+          })
+        
+        setMonthlyReport(monthlyArray)
+      }
 
       // Fetch profiles
       const { data: profilesData } = await supabase
@@ -347,7 +537,7 @@ export default function AdminPage() {
       const creatorStatsArray = Array.from(creatorMap.values())
       setCreatorStats(creatorStatsArray)
 
-      // Calculate stats - use Number to avoid floating point issues
+      // Calculate stats
       const totalFilms = allContent.length
       const totalSales = allContent.reduce((sum: number, c: any) => sum + (c.purchase_count || 0), 0)
       const totalRevenue = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.amount_paid || 0), 0) || 0)
@@ -495,7 +685,22 @@ export default function AdminPage() {
   const viewCreatorDetails = (creatorId: string) => {
     const creator = creatorStats.find(c => c.creator_id === creatorId)
     if (creator) {
-      alert(`Creator: ${creator.creator_name}\nEmail: ${creator.email || 'N/A'}\nTotal Films: ${creator.total_films}\nTotal Revenue: KES ${Number(creator.total_revenue).toFixed(2)}\nTotal Earnings: KES ${Number(creator.total_earnings).toFixed(2)}\nApproved Films: ${creator.approved_films}\nPending Films: ${creator.pending_films}\nRejected Films: ${creator.rejected_films}`)
+      const revenue = Number(creator.total_revenue) || 0
+      const fees = revenue * 0.15
+      const earnings = revenue * 0.85
+      
+      alert(
+        `Creator: ${creator.creator_name}\n` +
+        `Email: ${creator.email || 'N/A'}\n` +
+        `Total Films: ${creator.total_films}\n` +
+        `Total Revenue: KES ${revenue.toFixed(2)}\n` +
+        `Platform Fees (15%): KES ${fees.toFixed(2)}\n` +
+        `Creator Earnings (85%): KES ${earnings.toFixed(2)}\n` +
+        `Approved Films: ${creator.approved_films}\n` +
+        `Pending Films: ${creator.pending_films}\n` +
+        `Rejected Films: ${creator.rejected_films}\n` +
+        `Phone: ${creator.phone || 'N/A'}`
+      )
     }
   }
 
@@ -643,10 +848,10 @@ export default function AdminPage() {
               {showActivityLogs ? 'Hide Logs' : 'Activity Logs'}
             </button>
             <button 
-              onClick={exportCSV}
-              className="px-3 py-1.5 bg-[#1a1a1a] border border-white/10 rounded-lg text-xs sm:text-sm hover:bg-[#2a2a2a] transition"
+              onClick={exportReport}
+              className="px-3 py-1.5 bg-[#f5c518] text-black rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#e0b010] transition"
             >
-              Export CSV
+              Export Report
             </button>
           </div>
         </div>
@@ -979,6 +1184,43 @@ export default function AdminPage() {
             </table>
           </div>
         </div>
+
+        {/* Monthly Report Section */}
+        {monthlyReport.length > 0 && (
+          <div className="mb-8 sm:mb-12">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4">Monthly Performance Report</h2>
+            <div className="bg-[#1a1a1a] rounded-xl sm:rounded-2xl border border-white/5 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs sm:text-sm">
+                  <thead className="bg-[#0a0a0a] border-b border-white/5">
+                    <tr>
+                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Month</th>
+                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Transactions</th>
+                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Revenue (KES)</th>
+                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Fees (KES)</th>
+                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Earnings (KES)</th>
+                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden sm:table-cell">Unique Buyers</th>
+                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden md:table-cell">Unique Films</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {monthlyReport.map((month) => (
+                      <tr key={`${month.year}-${month.month}`} className="hover:bg-white/5 transition">
+                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 font-medium">{month.month} {month.year}</td>
+                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right">{month.total_transactions}</td>
+                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-green-400">KES {month.total_revenue.toFixed(2)}</td>
+                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-yellow-400">KES {month.total_fees.toFixed(2)}</td>
+                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-purple-400">KES {month.total_earnings.toFixed(2)}</td>
+                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right hidden sm:table-cell">{month.unique_buyers}</td>
+                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right hidden md:table-cell">{month.unique_films}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Payouts Section */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
