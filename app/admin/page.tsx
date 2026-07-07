@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { 
@@ -149,43 +149,31 @@ export default function AdminPage() {
     end: ''
   })
 
-  // Activity Logs state
   const [showActivityLogs, setShowActivityLogs] = useState(false)
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
   const [loadingLogs, setLoadingLogs] = useState(false)
 
-  // Platform fee percentage (15%)
   const PLATFORM_FEE_PERCENTAGE = 0.15
 
-  useEffect(() => {
-    loadAdminData()
-  }, [])
-
-  useMemo(() => {
-    let filtered = [...content]
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((c) => c.status === statusFilter)
-    }
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter((c) =>
-        c.title.toLowerCase().includes(term) ||
-        (c.creator_name?.toLowerCase() || '').includes(term)
-      )
-    }
-    if (dateRange.start) {
-      filtered = filtered.filter(c => c.created_at >= dateRange.start)
-    }
-    if (dateRange.end) {
-      filtered = filtered.filter(c => c.created_at <= dateRange.end)
-    }
-    setFilteredContent(filtered)
-  }, [content, statusFilter, searchTerm, dateRange])
-
-  // Load Activity Logs
+  // Load Activity Logs with better error handling
   const loadActivityLogs = async () => {
     setLoadingLogs(true)
     try {
+      // Check if table exists first
+      const { error: tableCheckError } = await supabase
+        .from('admin_activity_logs')
+        .select('id')
+        .limit(1)
+      
+      if (tableCheckError && tableCheckError.code === '42P01') {
+        // Table doesn't exist
+        setActivityLogs([])
+        setShowActivityLogs(true)
+        alert('Activity logs table not found. Please run the SQL migration.')
+        setLoadingLogs(false)
+        return
+      }
+
       const { data, error } = await supabase
         .from('admin_activity_logs')
         .select('*, admin:admin_id(full_name)')
@@ -195,15 +183,16 @@ export default function AdminPage() {
       if (error) throw error
       setActivityLogs(data || [])
       setShowActivityLogs(true)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading activity logs:', error)
-      alert('Failed to load activity logs')
+      // Don't show alert, just show empty state
+      setActivityLogs([])
+      setShowActivityLogs(true)
     } finally {
       setLoadingLogs(false)
     }
   }
 
-  // Log admin action
   const logAdminAction = async (action: string, targetId: string, targetType: string, details?: any) => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -221,10 +210,22 @@ export default function AdminPage() {
     }
   }
 
-  // Export CSV
+  // Improved Export CSV with better formatting
   const exportCSV = () => {
     try {
-      const headers = ['Title', 'Creator', 'Price', 'Status', 'Views', 'Sales', 'Created At']
+      // Create headers
+      const headers = [
+        'Title',
+        'Creator', 
+        'Price (KES)',
+        'Status',
+        'Views',
+        'Sales',
+        'Revenue (KES)',
+        'Created At'
+      ]
+      
+      // Create rows with better data
       const rows = filteredContent.map(item => [
         `"${item.title}"`,
         `"${item.creator_name || 'Unknown'}"`,
@@ -232,19 +233,22 @@ export default function AdminPage() {
         item.status,
         item.views || 0,
         item.purchase_count || 0,
+        item.price * (item.purchase_count || 0),
         new Date(item.created_at).toLocaleDateString()
       ])
       
+      // Build CSV content
       const csvContent = [
         headers.join(','),
         ...rows.map(row => row.join(','))
       ].join('\n')
       
+      // Create and download the file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const link = document.createElement('a')
       const url = URL.createObjectURL(blob)
       link.setAttribute('href', url)
-      link.setAttribute('download', `content_export_${new Date().toISOString().split('T')[0]}.csv`)
+      link.setAttribute('download', `content_report_${new Date().toISOString().split('T')[0]}.csv`)
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -255,14 +259,7 @@ export default function AdminPage() {
     }
   }
 
-  // Refresh data
-  const refreshData = async () => {
-    setRefreshing(true)
-    await loadAdminData()
-    setRefreshing(false)
-  }
-
-  const loadAdminData = async () => {
+  const loadAdminData = useCallback(async () => {
     setLoading(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -282,6 +279,7 @@ export default function AdminPage() {
         return
       }
 
+      // Fetch content
       const result = await getAllContent()
       if (result.error) {
         console.error('Error fetching content:', result.error)
@@ -291,18 +289,21 @@ export default function AdminPage() {
         setFilteredContent(allContent)
       }
 
+      // Fetch payouts
       const { data: payoutData } = await supabase
         .from('payout_requests')
         .select('*, profiles(full_name)')
         .order('requested_at', { ascending: false })
       setPayouts(payoutData || [])
 
+      // Fetch transactions with platform fees
       const { data: transactionsData } = await supabase
         .from('purchases')
         .select('*, content:content_id(title, creator_id), buyer:buyer_id(email)')
         .order('created_at', { ascending: false })
       setTransactions(transactionsData || [])
 
+      // Fetch profiles
       const { data: profilesData } = await supabase
         .from('profiles')
         .select('id, full_name, email, phone_number, is_onboarded, has_phone, has_payout_method, created_at, last_seen, total_earnings')
@@ -319,7 +320,7 @@ export default function AdminPage() {
           total_views: 0,
           total_purchases: 0,
           total_revenue: 0,
-          total_earnings: profile.total_earnings || 0,
+          total_earnings: Number(profile.total_earnings || 0).toFixed(2),
           pending_films: 0,
           approved_films: 0,
           rejected_films: 0,
@@ -352,24 +353,27 @@ export default function AdminPage() {
         if (tx.content) {
           const creator = creatorMap.get(tx.content.creator_id)
           if (creator) {
-            creator.total_earnings += (tx.creator_earnings || 0)
+            creator.total_earnings = Number(creator.total_earnings || 0) + Number(tx.creator_earnings || 0)
           }
         }
       })
 
-      const creatorStatsArray = Array.from(creatorMap.values())
+      // Format earnings to 2 decimal places
+      const creatorStatsArray = Array.from(creatorMap.values()).map(creator => ({
+        ...creator,
+        total_earnings: Number(creator.total_earnings).toFixed(2)
+      }))
       setCreatorStats(creatorStatsArray)
 
+      // Calculate stats - use Number to avoid floating point issues
       const totalFilms = allContent.length
       const totalSales = allContent.reduce((sum: number, c: any) => sum + (c.purchase_count || 0), 0)
-      const totalRevenue = allContent.reduce((sum: number, c: any) => sum + (c.price * (c.purchase_count || 0)), 0)
+      const totalRevenue = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.amount_paid || 0), 0) || 0).toFixed(2)
+      const totalPlatformFees = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.platform_fee || 0), 0) || 0).toFixed(2)
+      const totalPaidToCreators = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.creator_earnings || 0), 0) || 0).toFixed(2)
       const pendingSubmissions = allContent.filter((c: any) => c.status === 'pending').length
       const totalViews = allContent.reduce((sum: number, c: any) => sum + (c.views || 0), 0)
       const flaggedContent = allContent.filter((c: any) => c.flagged || false).length
-      
-      const { data: purchases } = await supabase.from('purchases').select('platform_fee, creator_earnings')
-      const totalPlatformFees = purchases?.reduce((sum, p) => sum + (p.platform_fee || 0), 0) || 0
-      const totalPaidToCreators = purchases?.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) || 0
       
       const { data: pendingPayoutsData } = await supabase.from('payout_requests').select('amount').eq('status', 'pending')
       const pendingPayouts = pendingPayoutsData?.reduce((sum, p) => sum + p.amount, 0) || 0
@@ -377,29 +381,63 @@ export default function AdminPage() {
       setStats({
         totalFilms,
         totalSales,
-        totalRevenue,
-        totalPlatformFees,
-        totalPaidToCreators,
+        totalRevenue: Number(totalRevenue),
+        totalPlatformFees: Number(totalPlatformFees),
+        totalPaidToCreators: Number(totalPaidToCreators),
         pendingPayouts,
         pendingSubmissions,
         totalCreators: creatorStatsArray.length,
         totalViews,
         flaggedContent,
       })
+
     } catch (error) {
       console.error('Error loading admin data:', error)
     } finally {
       setLoading(false)
     }
+  }, [supabase, router])
+
+  const refreshData = async () => {
+    setRefreshing(true)
+    await loadAdminData()
+    setRefreshing(false)
   }
 
+  useEffect(() => {
+    loadAdminData()
+  }, [loadAdminData])
+
+  // Filter content when filters change
+  useMemo(() => {
+    let filtered = [...content]
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((c) => c.status === statusFilter)
+    }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter((c) =>
+        c.title.toLowerCase().includes(term) ||
+        (c.creator_name?.toLowerCase() || '').includes(term)
+      )
+    }
+    if (dateRange.start) {
+      filtered = filtered.filter(c => c.created_at >= dateRange.start)
+    }
+    if (dateRange.end) {
+      filtered = filtered.filter(c => c.created_at <= dateRange.end)
+    }
+    setFilteredContent(filtered)
+  }, [content, statusFilter, searchTerm, dateRange])
+
+  // Handlers for actions
   const handleApprove = async (id: string) => {
     try {
       const result = await approveContent(id)
       if (result.success) {
         await logAdminAction('content_approve', id, 'content', { status: 'approved' })
         alert('Content approved successfully!')
-        loadAdminData()
+        await loadAdminData()
       } else {
         alert('Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
       }
@@ -414,7 +452,7 @@ export default function AdminPage() {
       if (result.success) {
         await logAdminAction('content_reject', id, 'content', { status: 'rejected' })
         alert('Content rejected.')
-        loadAdminData()
+        await loadAdminData()
       } else {
         alert('Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
       }
@@ -430,7 +468,7 @@ export default function AdminPage() {
       if (result.success) {
         await logAdminAction('content_revoke', id, 'content', { status: 'revoked' })
         alert('Approval revoked.')
-        loadAdminData()
+        await loadAdminData()
       } else {
         alert('Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
       }
@@ -446,7 +484,7 @@ export default function AdminPage() {
       if (result.success) {
         await logAdminAction('content_delete', id, 'content', { deleted: true })
         alert('Content deleted.')
-        loadAdminData()
+        await loadAdminData()
       } else {
         alert('Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
       }
@@ -462,13 +500,20 @@ export default function AdminPage() {
       if (result.success) {
         await logAdminAction('payout_processed', id, 'payout', { status: 'processed' })
         alert('Payout marked as processed.')
-        loadAdminData()
+        await loadAdminData()
       } else {
         alert('Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
       }
     } catch (err) {
       alert('Failed to process payout')
     }
+  }
+
+  // View Details handler - Opens creator detail
+  const viewCreatorDetails = (creatorId: string) => {
+    // Navigate to creator detail or open modal
+    alert(`Creator details for ID: ${creatorId}\nThis will show full creator analytics.`)
+    // You can implement a modal or navigate to a detail page
   }
 
   const handleConfirmTransaction = async () => {
@@ -478,7 +523,6 @@ export default function AdminPage() {
     }
     setConfirmLoading(true)
     try {
-      // Get the transaction with content price
       const { data: txData, error: txError } = await supabase
         .from('purchases')
         .select('*, content:content_id(price, title, creator_id)')
@@ -487,12 +531,10 @@ export default function AdminPage() {
 
       if (txError) throw txError
 
-      // Calculate platform fee (15%)
-      const amountPaid = txData.amount_paid || txData.content?.price || 0
-      const platformFee = Math.round(amountPaid * PLATFORM_FEE_PERCENTAGE * 100) / 100
-      const creatorEarnings = Math.round((amountPaid - platformFee) * 100) / 100
+      const amountPaid = Number(txData.amount_paid || txData.content?.price || 0)
+      const platformFee = Number((amountPaid * PLATFORM_FEE_PERCENTAGE).toFixed(2))
+      const creatorEarnings = Number((amountPaid - platformFee).toFixed(2))
 
-      // Update the purchase with calculated fees
       const { error: updateError } = await supabase
         .from('purchases')
         .update({
@@ -505,7 +547,6 @@ export default function AdminPage() {
 
       if (updateError) throw updateError
 
-      // Log the action
       await logAdminAction('transaction_confirm', selectedTransaction.id, 'transaction', {
         amount: amountPaid,
         platform_fee: platformFee,
@@ -514,12 +555,12 @@ export default function AdminPage() {
       })
 
       setConfirmMessage('Transaction confirmed successfully!')
-      setTimeout(() => {
+      setTimeout(async () => {
         setIsConfirmModalOpen(false)
         setConfirmationCode('')
         setSelectedTransaction(null)
         setConfirmMessage('')
-        loadAdminData()
+        await loadAdminData()
       }, 1500)
     } catch (err) {
       setConfirmMessage('Error: ' + (err instanceof Error ? err.message : 'Failed to confirm'))
@@ -559,7 +600,7 @@ export default function AdminPage() {
     filtered.sort((a, b) => {
       switch (creatorSortBy) {
         case 'name': return a.creator_name.localeCompare(b.creator_name)
-        case 'revenue': return b.total_revenue - a.total_revenue
+        case 'revenue': return Number(b.total_revenue) - Number(a.total_revenue)
         case 'films': return b.total_films - a.total_films
         case 'views': return b.total_views - a.total_views
         default: return 0
@@ -598,9 +639,19 @@ export default function AdminPage() {
             <button 
               onClick={refreshData}
               disabled={refreshing}
-              className="px-3 py-1.5 bg-[#1a1a1a] border border-white/10 rounded-lg text-xs sm:text-sm hover:bg-[#2a2a2a] transition disabled:opacity-50 flex items-center gap-1"
+              className="px-3 py-1.5 bg-[#f5c518] text-black rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#e0b010] transition disabled:opacity-50 flex items-center gap-1"
             >
-              {refreshing ? 'Refreshing...' : 'Refresh Data'}
+              {refreshing ? (
+                <>
+                  <svg className="animate-spin h-3 w-3 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Refreshing...
+                </>
+              ) : (
+                'Refresh Data'
+              )}
             </button>
             <button 
               onClick={loadActivityLogs}
@@ -610,7 +661,7 @@ export default function AdminPage() {
             </button>
             <button 
               onClick={exportCSV}
-              className="px-3 py-1.5 bg-[#f5c518] text-black rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#e0b010] transition"
+              className="px-3 py-1.5 bg-[#1a1a1a] border border-white/10 rounded-lg text-xs sm:text-sm hover:bg-[#2a2a2a] transition"
             >
               Export CSV
             </button>
@@ -633,7 +684,14 @@ export default function AdminPage() {
               {loadingLogs ? (
                 <div className="p-4 text-center text-gray-400">Loading logs...</div>
               ) : activityLogs.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">No activity logs found.</div>
+                <div className="p-4 text-center text-gray-500">
+                  No activity logs found. 
+                  {activityLogs.length === 0 && (
+                    <span className="block text-xs text-gray-600 mt-1">
+                      Admin actions will appear here once you approve/reject content or process payouts.
+                    </span>
+                  )}
+                </div>
               ) : (
                 <div className="divide-y divide-white/5">
                   {activityLogs.map((log) => (
@@ -695,15 +753,15 @@ export default function AdminPage() {
           </div>
           <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-white/5">
             <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Revenue</p>
-            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-green-400">KES {stats.totalRevenue}</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-green-400">KES {Number(stats.totalRevenue).toFixed(2)}</p>
           </div>
           <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-white/5">
             <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Fees (15%)</p>
-            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-yellow-400">KES {stats.totalPlatformFees}</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-yellow-400">KES {Number(stats.totalPlatformFees).toFixed(2)}</p>
           </div>
           <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-white/5">
             <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Payouts</p>
-            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-orange-400">KES {stats.pendingPayouts}</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-orange-400">KES {Number(stats.pendingPayouts).toFixed(2)}</p>
           </div>
           <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-yellow-500/20 bg-yellow-500/5">
             <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Pending</p>
@@ -801,13 +859,14 @@ export default function AdminPage() {
                           {creator.total_views}
                         </td>
                         <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right font-semibold text-green-400 text-xs sm:text-sm">
-                          KES {creator.total_revenue}
+                          KES {Number(creator.total_revenue).toFixed(2)}
                         </td>
                         <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right font-semibold text-yellow-400 text-xs sm:text-sm hidden lg:table-cell">
-                          KES {creator.total_earnings}
+                          KES {Number(creator.total_earnings).toFixed(2)}
                         </td>
                         <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-center">
                           <button 
+                            onClick={() => viewCreatorDetails(creator.creator_id)}
                             className="bg-[#f5c518] text-black px-2 sm:px-3 py-0.5 sm:py-1 rounded text-[8px] sm:text-xs font-semibold hover:bg-[#e0b010] transition whitespace-nowrap"
                           >
                             View Details
