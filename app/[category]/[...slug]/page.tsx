@@ -13,65 +13,37 @@ function getEmbedUrl(url: string): string {
 
 async function getContentByIdentifier(identifier: string, userId?: string, isAdmin?: boolean) {
   const supabase = await createClient()
-  
-  // Try to find by slug first (preferred)
+
+  // 🔧 Instead of guessing whether `identifier` is a UUID or a slug (which can
+  // misfire if a slug happens to be 36 chars with dashes in it), just check
+  // both columns directly. This removes an entire class of false-404s.
+  const escapedIdentifier = identifier.replace(/,/g, '')
+
   let query = supabase
     .from('content')
     .select(`*, profiles!content_creator_id_fkey ( full_name, bio, avatar_url )`)
-    .eq('slug', identifier)
-  
-  // If not admin, check if user owns it or if it's approved
+    .or(`id.eq.${escapedIdentifier},slug.eq.${escapedIdentifier}`)
+
   if (!isAdmin) {
     if (userId) {
-      // If user is logged in, allow them to see their own content even if not approved
-      query = query.or(`status.eq.approved,creator_id.eq.${userId}`)
+      const filmCheck = await supabase
+        .from('content')
+        .select('creator_id')
+        .or(`id.eq.${escapedIdentifier},slug.eq.${escapedIdentifier}`)
+        .maybeSingle()
+      if (filmCheck.data && filmCheck.data.creator_id !== userId) {
+        query = query.eq('status', 'approved')
+      }
     } else {
       query = query.eq('status', 'approved')
     }
   }
-  
-  let { data, error } = await query.single()
-  
-  // If not found by slug, try by ID (fallback for content without slugs)
-  if (error || !data) {
-    // Check if identifier might be a UUID
-    const isUUID = identifier.includes('-') && identifier.length === 36
-    
-    if (isUUID) {
-      let fallbackQuery = supabase
-        .from('content')
-        .select(`*, profiles!content_creator_id_fkey ( full_name, bio, avatar_url )`)
-        .eq('id', identifier)
-      
-      if (!isAdmin) {
-        if (userId) {
-          fallbackQuery = fallbackQuery.or(`status.eq.approved,creator_id.eq.${userId}`)
-        } else {
-          fallbackQuery = fallbackQuery.eq('status', 'approved')
-        }
-      }
-      
-      const { data: fallbackData, error: fallbackError } = await fallbackQuery.single()
-      
-      if (!fallbackError && fallbackData) {
-        return fallbackData
-      }
-    }
-    
-    // Try to find by slug with different case
-    const { data: caseInsensitiveData, error: caseError } = await supabase
-      .from('content')
-      .select(`*, profiles!content_creator_id_fkey ( full_name, bio, avatar_url )`)
-      .ilike('slug', identifier)
-      .single()
-    
-    if (!caseError && caseInsensitiveData) {
-      return caseInsensitiveData
-    }
-    
-    return null
+
+  const { data, error } = await query.maybeSingle()
+  if (error) {
+    console.error('getContentByIdentifier error:', error)
   }
-  
+  if (error || !data) return null
   return data
 }
 
@@ -82,7 +54,6 @@ async function hasUserPurchased(userId: string, contentId: string) {
     .select('id')
     .eq('buyer_id', userId)
     .eq('content_id', contentId)
-    .eq('status', 'completed')
     .is('revoked_at', null)
     .maybeSingle()
   return !!data
@@ -128,11 +99,7 @@ export default async function ContentPage({
   }
 
   const content = await getContentByIdentifier(identifier, userId, isUserAdmin)
-  
-  if (!content) {
-    console.log('Content not found for identifier:', identifier)
-    notFound()
-  }
+  if (!content) notFound()
 
   const profile = content.profiles as any
   const isOwnContent = userId && content.creator_id === userId
@@ -275,8 +242,8 @@ export default async function ContentPage({
 
               {showFeeBreakdown && isApproved && (
                 <div className="mt-4 pt-4 border-t border-white/10 text-xs text-gray-500 space-y-1">
-                  <p>Platform Fee (20%): <span className="text-yellow-400">KES {Math.round(content.price * 0.20)}</span></p>
-                  <p>You Earn (80%): <span className="text-green-400">KES {Math.round(content.price * 0.80)}</span></p>
+                  <p>Platform Fee (15%): <span className="text-yellow-400">KES {Math.round(content.price * 0.15)}</span></p>
+                  <p>You Earn (85%): <span className="text-green-400">KES {Math.round(content.price * 0.85)}</span></p>
                 </div>
               )}
 
