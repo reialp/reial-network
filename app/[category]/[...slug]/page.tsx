@@ -14,22 +14,24 @@ function getEmbedUrl(url: string): string {
 async function getContentByIdentifier(identifier: string, userId?: string, isAdmin?: boolean) {
   const supabase = await createClient()
 
-  // 🔧 Instead of guessing whether `identifier` is a UUID or a slug (which can
-  // misfire if a slug happens to be 36 chars with dashes in it), just check
-  // both columns directly. This removes an entire class of false-404s.
-  const escapedIdentifier = identifier.replace(/,/g, '')
+  // 🔧 Only query the `id` column when the identifier is actually shaped like
+  // a UUID. Querying a UUID column with a non-UUID string (like a slug)
+  // throws a hard Postgres error that silently kills the whole request —
+  // which is what caused every slug-based project to 404 last time.
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const isUUID = uuidPattern.test(identifier)
 
   let query = supabase
     .from('content')
     .select(`*, profiles!content_creator_id_fkey ( full_name, bio, avatar_url )`)
-    .or(`id.eq.${escapedIdentifier},slug.eq.${escapedIdentifier}`)
+    .eq(isUUID ? 'id' : 'slug', identifier)
 
   if (!isAdmin) {
     if (userId) {
       const filmCheck = await supabase
         .from('content')
         .select('creator_id')
-        .or(`id.eq.${escapedIdentifier},slug.eq.${escapedIdentifier}`)
+        .eq(isUUID ? 'id' : 'slug', identifier)
         .maybeSingle()
       if (filmCheck.data && filmCheck.data.creator_id !== userId) {
         query = query.eq('status', 'approved')
