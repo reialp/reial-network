@@ -156,7 +156,6 @@ export default function HomePage() {
     }
   }, [allFilms, isPaused])
 
-  // ✅ SCROLL TO RESULTS WHEN SEARCH TERM CHANGES
   useEffect(() => {
     if (searchTerm && searchTerm.length > 0) {
       setTimeout(() => {
@@ -177,11 +176,9 @@ export default function HomePage() {
 
   const categories = ['All', ...new Set(allFilms.map(f => f.category).filter((c): c is string => c !== null))]
 
-  // ✅ FILTERED FILMS - Search works here
   const filteredFilms = useMemo(() => {
     let result = allFilms
     
-    // ✅ Apply search filter
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase()
       result = result.filter(f =>
@@ -190,7 +187,6 @@ export default function HomePage() {
       )
     }
     
-    // ✅ Apply category filter
     if (selectedCategory !== 'All') {
       result = result.filter(f => f.category === selectedCategory)
     }
@@ -303,8 +299,8 @@ export default function HomePage() {
   const renderRow = (title: string, films: Film[], rowId: string) => {
     if (films.length === 0) return null
     return (
-      <div className="mb-6 sm:mb-10 group/row">
-        <div className="flex justify-between items-center mb-3 sm:mb-4 px-4 sm:px-0">
+      <div className="mb-6 sm:mb-10 px-4 sm:px-6 md:px-8 group/row">
+        <div className="flex justify-between items-center mb-3 sm:mb-4">
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white">
             {title}
           </h2>
@@ -335,9 +331,9 @@ export default function HomePage() {
 
           <div
             ref={(el) => { scrollContainerRefs.current[rowId] = el }}
-            className="overflow-x-auto scrollbar-hide px-4 sm:px-0 pb-3 sm:pb-4 -mx-4 sm:mx-0 scroll-smooth"
+            className="overflow-x-auto scrollbar-hide pb-3 sm:pb-4 scroll-smooth -mx-4 sm:mx-0 px-4 sm:px-0"
           >
-            <div className="flex gap-2.5 sm:gap-3 md:gap-4 px-4 sm:px-0">
+            <div className="flex gap-2.5 sm:gap-3 md:gap-4">
               {films.map(film => renderFilmCard(film))}
             </div>
           </div>
@@ -350,7 +346,6 @@ export default function HomePage() {
     )
   }
 
-  // ✅ GROUP FILMS BY CATEGORY - Using filteredFilms
   const groupedFilms = useMemo(() => {
     const grouped: Record<string, Film[]> = {}
     filteredFilms.forEach(film => {
@@ -360,11 +355,6 @@ export default function HomePage() {
     })
     return grouped
   }, [filteredFilms])
-
-  // ✅ ROW DATA - Using filteredFilms
-  const featuredFilms = filteredFilms.slice(0, 8)
-  const topPicks = filteredFilms.slice(8, 16)
-  const recentFilms = filteredFilms.slice(16, 24)
 
   if (loading) {
     return (
@@ -380,7 +370,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-x-hidden">
       
-      {/* ✅ HERO SECTION */}
+      {/* HERO SECTION - Full width, no padding on edges */}
       <section className="relative h-[70vh] sm:h-[80vh] md:h-[85vh] lg:h-[90vh] w-full overflow-hidden">
         {/* Carousel Background */}
         <div className="absolute inset-0">
@@ -410,8 +400,8 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* Hero Content */}
-        <div className="relative z-10 h-full flex flex-col justify-center px-4 sm:px-8 md:px-16">
+        {/* Hero Content - With padding on edges */}
+        <div className="relative z-10 h-full flex flex-col justify-center px-6 sm:px-10 md:px-16 lg:px-20">
           <div className="max-w-3xl">
             <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] text-xs sm:text-sm font-medium mb-3 sm:mb-4">
                Creator Marketplace
@@ -472,8 +462,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ✅ CATEGORY FILTERS - Sticky */}
-      <div className="sticky top-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-white/5 py-2 sm:py-3 px-4">
+      {/* CATEGORY FILTERS - Sticky with padding */}
+      <div className="sticky top-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-white/5 py-2 sm:py-3 px-6 sm:px-10 md:px-16 lg:px-20">
         <div className="max-w-7xl mx-auto">
           <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide">
             {categories.map((category) => (
@@ -493,10 +483,10 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ✅ CONTENT ROWS - Filtered by search */}
-      <div ref={resultsRef} id="search-results">
+      {/* CONTENT ROWS - With consistent padding */}
+      <div ref={resultsRef} id="search-results" className="py-4 sm:py-6 md:py-8">
         {filteredFilms.length === 0 ? (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          <div className="max-w-7xl mx-auto px-6 sm:px-10 md:px-16 lg:px-20">
             <div className="bg-[#1a1a1a] rounded-2xl p-8 sm:p-12 text-center border border-white/5">
               <div className="text-5xl sm:text-6xl mb-4">🔍</div>
               <h2 className="text-lg sm:text-xl font-bold mb-2">No content found</h2>
@@ -517,16 +507,16 @@ export default function HomePage() {
             </div>
           </div>
         ) : (
-          <div className="max-w-7xl mx-auto py-3 sm:py-4 md:py-6">
+          <div className="max-w-7xl mx-auto">
             
-            {/* ✅ STREAMING ROWS - Filtered by search */}
+            {/* STREAMING ROWS - Each row now has its own padding */}
             {Object.entries(groupedFilms).map(([category, films]) => {
               if (category === 'Other' && films.length < 3) return null
               return renderRow(category, films, `category-${category}`)
             })}
 
-            {/* ✅ ALL FILMS - Grid view */}
-            <div className="mt-4 sm:mt-6 md:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-white/5 px-4 sm:px-0">
+            {/* ALL FILMS - Grid view with padding */}
+            <div className="mt-4 sm:mt-6 md:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-white/5 px-6 sm:px-10 md:px-16 lg:px-20">
               <div className="flex justify-between items-center mb-3 sm:mb-4">
                 <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">All Content</h2>
                 <span className="text-gray-500 text-xs sm:text-sm">{filteredFilms.length} films</span>
