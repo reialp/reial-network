@@ -17,21 +17,27 @@ const createAdminClient = () => {
   })
 }
 
+async function requireAdmin() {
+  const supabase = await createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error('Not authenticated')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', session.user.id)
+    .single()
+
+  if (!profile?.is_admin) throw new Error('Access denied: Admin only')
+
+  return session.user.id
+}
+
 export async function getAllContent() {
   try {
-    const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return { error: 'Not authenticated', content: [] }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', session.user.id)
-      .single()
-
-    if (!profile?.is_admin) return { error: 'Access denied: Admin only', content: [] }
-
+    await requireAdmin()
     const adminSupabase = createAdminClient()
+
     const { data: content, error: contentError } = await adminSupabase
       .from('content')
       .select('*')
@@ -41,13 +47,13 @@ export async function getAllContent() {
 
     const creatorIds = [...new Set((content || []).map(c => c.creator_id).filter(Boolean))]
     let creatorNames: Record<string, string> = {}
-    
+
     if (creatorIds.length > 0) {
       const { data: profiles } = await adminSupabase
         .from('profiles')
         .select('id, full_name')
         .in('id', creatorIds)
-      
+
       if (profiles) {
         creatorNames = profiles.reduce((acc, p) => {
           acc[p.id] = p.full_name || 'Unknown Creator'
@@ -69,6 +75,7 @@ export async function getAllContent() {
 
 export async function approveContent(contentId: string) {
   try {
+    await requireAdmin()
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
       .from('content')
@@ -85,6 +92,7 @@ export async function approveContent(contentId: string) {
 
 export async function rejectContent(contentId: string) {
   try {
+    await requireAdmin()
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
       .from('content')
@@ -101,6 +109,7 @@ export async function rejectContent(contentId: string) {
 
 export async function revokeApproval(contentId: string) {
   try {
+    await requireAdmin()
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
       .from('content')
@@ -117,6 +126,7 @@ export async function revokeApproval(contentId: string) {
 
 export async function deleteContent(contentId: string) {
   try {
+    await requireAdmin()
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
       .from('content')
@@ -133,11 +143,33 @@ export async function deleteContent(contentId: string) {
 
 export async function confirmTransaction(transactionId: string, confirmationCode: string) {
   try {
+    const adminId = await requireAdmin()
+
+    if (!confirmationCode?.trim()) {
+      throw new Error('Confirmation code is required')
+    }
+
     const adminSupabase = createAdminClient()
+
+    const { data: purchase, error: fetchError } = await adminSupabase
+      .from('purchases')
+      .select('amount_paid')
+      .eq('id', transactionId)
+      .single()
+
+    if (fetchError || !purchase) throw new Error('Transaction not found')
+
+    const PLATFORM_FEE_PERCENTAGE = 0.15
+    const amountPaid = Number(purchase.amount_paid || 0)
+    const platformFee = Number((amountPaid * PLATFORM_FEE_PERCENTAGE).toFixed(2))
+    const creatorEarnings = Number((amountPaid - platformFee).toFixed(2))
+
     const { error } = await adminSupabase
       .from('purchases')
-      .update({ 
-        status: 'completed', 
+      .update({
+        status: 'completed',
+        platform_fee: platformFee,
+        creator_earnings: creatorEarnings,
         pesapal_transaction_id: confirmationCode.trim(),
         updated_at: new Date().toISOString()
       })
@@ -153,12 +185,13 @@ export async function confirmTransaction(transactionId: string, confirmationCode
 
 export async function processPayout(payoutId: string) {
   try {
+    await requireAdmin()
     const adminSupabase = createAdminClient()
     const { error } = await adminSupabase
       .from('payout_requests')
-      .update({ 
-        status: 'processed', 
-        processed_at: new Date().toISOString() 
+      .update({
+        status: 'processed',
+        processed_at: new Date().toISOString()
       })
       .eq('id', payoutId)
 
