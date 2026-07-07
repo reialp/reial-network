@@ -110,6 +110,7 @@ export default function DashboardPage() {
 
     setContent(contentData || [])
 
+    // Calculate stats from creator's content
     const totalFilms = contentData?.length || 0
     const pendingApprovals = contentData?.filter(c => c.status === 'pending').length || 0
     const totalSales = contentData?.reduce((sum, c) => sum + (c.purchase_count || 0), 0) || 0
@@ -117,13 +118,21 @@ export default function DashboardPage() {
     const yourEarnings = Math.round(grossRevenue * 0.85)
     const platformFees = Math.round(grossRevenue * 0.15)
 
-    const { data: purchasesData } = await supabase
-      .from('purchases')
-      .select('creator_earnings')
-      .eq('status', 'completed')
+    // FIX: Get creator earnings ONLY for this creator's content
+    const contentIds = contentData?.map(c => c.id) || []
+    
+    let totalEarningsFromPurchases = 0
+    if (contentIds.length > 0) {
+      const { data: purchasesData } = await supabase
+        .from('purchases')
+        .select('creator_earnings')
+        .eq('status', 'completed')
+        .in('content_id', contentIds) // Only purchases for this creator's content
+      
+      totalEarningsFromPurchases = purchasesData?.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) || 0
+    }
 
-    const totalEarningsFromPurchases = purchasesData?.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) || 0
-
+    // Get payouts for this creator only
     const { data: payoutData } = await supabase
       .from('payout_requests')
       .select('amount, status')
@@ -555,7 +564,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* ✅ Contact + Logout Section */}
+        {/* Contact + Logout Section */}
         <div className="mt-6 sm:mt-8 md:mt-10 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {/* Contact Card */}
           <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-4 sm:p-5">
