@@ -414,7 +414,7 @@ export default function HomePage() {
         <div className="relative z-10 h-full flex flex-col justify-center px-4 sm:px-8 md:px-16">
           <div className="max-w-3xl">
             <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-              🎬 Creator Marketplace
+               Creator Marketplace
             </div>
             
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] mb-3 sm:mb-4">
@@ -426,7 +426,7 @@ export default function HomePage() {
             </h1>
             
             <p className="text-gray-300 text-sm sm:text-base md:text-lg max-w-2xl mb-4 sm:mb-6">
-              Discover and buy exclusive films, documentaries, series and more — 
+              Discover and buy exclusive films, documentaries, series and more 
               <span className="text-[#f5c518] font-medium"> directly from independent creators.</span>
             </p>
             
