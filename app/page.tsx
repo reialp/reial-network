@@ -36,6 +36,7 @@ export default function HomePage() {
   const [purchaseTokens, setPurchaseTokens] = useState<Record<string, string>>({})
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const scrollContainerRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
+  const resultsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -154,6 +155,25 @@ export default function HomePage() {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [allFilms, isPaused])
+
+  // ✅ SCROLL TO RESULTS WHEN SEARCH TERM CHANGES
+  useEffect(() => {
+    if (searchTerm && searchTerm.length > 0) {
+      setTimeout(() => {
+        if (resultsRef.current) {
+          resultsRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          })
+        } else {
+          window.scrollTo({
+            top: window.innerHeight * 0.6,
+            behavior: 'smooth'
+          })
+        }
+      }, 150)
+    }
+  }, [searchTerm])
 
   const categories = ['All', ...new Set(allFilms.map(f => f.category).filter((c): c is string => c !== null))]
 
@@ -474,100 +494,102 @@ export default function HomePage() {
       </div>
 
       {/* ✅ CONTENT ROWS - Filtered by search */}
-      {filteredFilms.length === 0 ? (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-          <div className="bg-[#1a1a1a] rounded-2xl p-8 sm:p-12 text-center border border-white/5">
-            <div className="text-5xl sm:text-6xl mb-4">🔍</div>
-            <h2 className="text-lg sm:text-xl font-bold mb-2">No content found</h2>
-            <p className="text-gray-400 text-sm">
-              {searchTerm ? `No results matching "${searchTerm}"` : 'Try adjusting your filters'}
-            </p>
-            {(searchTerm || selectedCategory !== 'All') && (
-              <button
-                onClick={() => {
-                  setSearchTerm('')
-                  setSelectedCategory('All')
-                }}
-                className="mt-4 bg-[#f5c518] text-black px-5 py-2 rounded-full font-semibold hover:scale-105 transition text-sm"
-              >
-                Clear Filters
-              </button>
-            )}
+      <div ref={resultsRef} id="search-results">
+        {filteredFilms.length === 0 ? (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+            <div className="bg-[#1a1a1a] rounded-2xl p-8 sm:p-12 text-center border border-white/5">
+              <div className="text-5xl sm:text-6xl mb-4">🔍</div>
+              <h2 className="text-lg sm:text-xl font-bold mb-2">No content found</h2>
+              <p className="text-gray-400 text-sm">
+                {searchTerm ? `No results matching "${searchTerm}"` : 'Try adjusting your filters'}
+              </p>
+              {(searchTerm || selectedCategory !== 'All') && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('')
+                    setSelectedCategory('All')
+                  }}
+                  className="mt-4 bg-[#f5c518] text-black px-5 py-2 rounded-full font-semibold hover:scale-105 transition text-sm"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="max-w-7xl mx-auto py-3 sm:py-4 md:py-6">
-          
-          {/* ✅ STREAMING ROWS - Filtered by search */}
-          {Object.entries(groupedFilms).map(([category, films]) => {
-            if (category === 'Other' && films.length < 3) return null
-            return renderRow(category, films, `category-${category}`)
-          })}
+        ) : (
+          <div className="max-w-7xl mx-auto py-3 sm:py-4 md:py-6">
+            
+            {/* ✅ STREAMING ROWS - Filtered by search */}
+            {Object.entries(groupedFilms).map(([category, films]) => {
+              if (category === 'Other' && films.length < 3) return null
+              return renderRow(category, films, `category-${category}`)
+            })}
 
-          {/* ✅ ALL FILMS - Grid view */}
-          <div className="mt-4 sm:mt-6 md:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-white/5 px-4 sm:px-0">
-            <div className="flex justify-between items-center mb-3 sm:mb-4">
-              <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">All Content</h2>
-              <span className="text-gray-500 text-xs sm:text-sm">{filteredFilms.length} films</span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
-              {filteredFilms.map((film) => {
-                const isPurchased = purchasedIds.has(film.id)
-                const token = purchaseTokens[film.id]
-                const contentSlug = film.slug || film.id
-                const categoryPath = film.category ? film.category.toLowerCase() : 'film'
-                let watchUrl = `/${categoryPath}/${contentSlug}`
-                if (isPurchased && token) {
-                  watchUrl = `/watch/${token}`
-                } else if (isPurchased && !token) {
-                  watchUrl = `/watch/${film.id}`
-                }
-                
-                return (
-                  <Link
-                    key={film.id}
-                    href={watchUrl}
-                    className="group bg-[#1a1a1a] rounded-lg sm:rounded-xl overflow-hidden hover:scale-[1.03] transition-all duration-300 hover:shadow-lg hover:shadow-[#f5c518]/20 border border-white/5 hover:border-[#f5c518]/30"
-                  >
-                    <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
-                      {film.thumbnail_url ? (
-                        <Image
-                          src={film.thumbnail_url}
-                          alt={film.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-3xl sm:text-4xl opacity-20">🎬</div>
-                      )}
-                      {film.category && (
-                        <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-[#f5c518]/90 text-black text-[6px] sm:text-[8px] px-1 sm:px-2 py-0.5 rounded-full font-semibold">
-                          {film.category}
-                        </div>
-                      )}
-                      <div className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2">
-                        {isPurchased ? (
-                          <span className="bg-green-500 text-white text-[6px] sm:text-[8px] font-bold px-1 sm:px-2 py-0.5 rounded-full">✓ Owned</span>
+            {/* ✅ ALL FILMS - Grid view */}
+            <div className="mt-4 sm:mt-6 md:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-white/5 px-4 sm:px-0">
+              <div className="flex justify-between items-center mb-3 sm:mb-4">
+                <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">All Content</h2>
+                <span className="text-gray-500 text-xs sm:text-sm">{filteredFilms.length} films</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
+                {filteredFilms.map((film) => {
+                  const isPurchased = purchasedIds.has(film.id)
+                  const token = purchaseTokens[film.id]
+                  const contentSlug = film.slug || film.id
+                  const categoryPath = film.category ? film.category.toLowerCase() : 'film'
+                  let watchUrl = `/${categoryPath}/${contentSlug}`
+                  if (isPurchased && token) {
+                    watchUrl = `/watch/${token}`
+                  } else if (isPurchased && !token) {
+                    watchUrl = `/watch/${film.id}`
+                  }
+                  
+                  return (
+                    <Link
+                      key={film.id}
+                      href={watchUrl}
+                      className="group bg-[#1a1a1a] rounded-lg sm:rounded-xl overflow-hidden hover:scale-[1.03] transition-all duration-300 hover:shadow-lg hover:shadow-[#f5c518]/20 border border-white/5 hover:border-[#f5c518]/30"
+                    >
+                      <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
+                        {film.thumbnail_url ? (
+                          <Image
+                            src={film.thumbnail_url}
+                            alt={film.title}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
                         ) : (
-                          <span className="bg-black/80 text-[#f5c518] text-[6px] sm:text-[8px] font-bold px-1 sm:px-2 py-0.5 rounded-full">KES {film.price}</span>
+                          <div className="absolute inset-0 flex items-center justify-center text-3xl sm:text-4xl opacity-20">🎬</div>
                         )}
+                        {film.category && (
+                          <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-[#f5c518]/90 text-black text-[6px] sm:text-[8px] px-1 sm:px-2 py-0.5 rounded-full font-semibold">
+                            {film.category}
+                          </div>
+                        )}
+                        <div className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2">
+                          {isPurchased ? (
+                            <span className="bg-green-500 text-white text-[6px] sm:text-[8px] font-bold px-1 sm:px-2 py-0.5 rounded-full">✓ Owned</span>
+                          ) : (
+                            <span className="bg-black/80 text-[#f5c518] text-[6px] sm:text-[8px] font-bold px-1 sm:px-2 py-0.5 rounded-full">KES {film.price}</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="p-1.5 sm:p-2 md:p-3">
-                      <h3 className="font-semibold text-[10px] sm:text-xs md:text-sm group-hover:text-[#f5c518] transition-colors line-clamp-1">
-                        {film.title}
-                      </h3>
-                      <p className="text-gray-500 text-[6px] sm:text-[8px] md:text-xs mt-0.5 truncate">
-                        {film.creator_name || 'Unknown Creator'}
-                      </p>
-                    </div>
-                  </Link>
-                )
-              })}
+                      <div className="p-1.5 sm:p-2 md:p-3">
+                        <h3 className="font-semibold text-[10px] sm:text-xs md:text-sm group-hover:text-[#f5c518] transition-colors line-clamp-1">
+                          {film.title}
+                        </h3>
+                        <p className="text-gray-500 text-[6px] sm:text-[8px] md:text-xs mt-0.5 truncate">
+                          {film.creator_name || 'Unknown Creator'}
+                        </p>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
