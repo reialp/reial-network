@@ -131,14 +131,26 @@ export default function LibraryPage() {
       contentMap[content.id] = content
     })
 
+    // 🔧 Helper: PostgREST returns an embedded belongs-to relationship
+    // (many content rows -> one profile) as a single OBJECT, not an array.
+    // The old code assumed it was always an array (`profiles[0].full_name`),
+    // which silently failed and fell back to "Unknown Creator" every time,
+    // even when the creator data loaded correctly. This handles both shapes
+    // safely, in case Supabase's return shape ever changes.
+    const getCreatorName = (profilesField: any): string => {
+      if (!profilesField) return 'Unknown Creator'
+      if (Array.isArray(profilesField)) {
+        return profilesField[0]?.full_name || 'Unknown Creator'
+      }
+      return profilesField.full_name || 'Unknown Creator'
+    }
+
     // Build the purchase list with content details
     const mapped = purchasesData
       .filter(purchase => contentMap[purchase.content_id]) // Only include if content exists
       .map((purchase: any) => {
         const content = contentMap[purchase.content_id]
-        const creatorName = content?.profiles && content.profiles.length > 0 
-          ? content.profiles[0].full_name 
-          : 'Unknown Creator'
+        const creatorName = getCreatorName(content?.profiles)
         
         return {
           token: purchase.watch_token || purchase.id,
