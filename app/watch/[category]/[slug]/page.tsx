@@ -37,8 +37,28 @@ type WatchData = {
   }[]
 }
 
-async function getVideoAndFilmBySlug(slug: string, userId: string): Promise<WatchData | null> {
+// 🔧 Normalize a category string for comparison: decode URL encoding, trim
+// edges, collapse repeated whitespace, and lowercase. This makes the match
+// resilient to stray spaces or inconsistent casing in the database.
+function normalizeCategory(value: string): string {
+  let decoded = value
+  try {
+    decoded = decodeURIComponent(value)
+  } catch {
+    // value wasn't URL-encoded to begin with — fine, use as-is
+  }
+  return decoded.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+async function getVideoAndFilmBySlug(identifier: string, userId: string): Promise<WatchData | null> {
   const supabase = await createClient()
+
+  // 🔧 Match by id OR slug, the same safe way we fixed on the main content
+  // page — only query the `id` column when the identifier is actually
+  // UUID-shaped, so a null/mismatched slug can never make purchased content
+  // unreachable.
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const isUUID = uuidPattern.test(identifier)
 
   const { data: contentData, error: contentError } = await supabase
     .from('content')
@@ -60,24 +80,38 @@ async function getVideoAndFilmBySlug(slug: string, userId: string): Promise<Watc
         avatar_url
       )
     `)
-    .eq('slug', slug)
-    .single()
+    .eq(isUUID ? 'id' : 'slug', identifier)
+    .maybeSingle()
 
-  if (contentError || !contentData) {
-    console.error('❌ Content not found for slug:', slug)
+  if (contentError) {
+    console.error('❌ Content lookup error for identifier:', identifier, contentError)
+  }
+  if (!contentData) {
+    console.error('❌ Content not found for identifier:', identifier)
     return null
   }
 
-  const { data: purchase, error: purchaseError } = await supabase
+  // 🔧 maybeSingle() instead of single(): if a buyer ever ends up with more
+  // than one purchase row for the same content (retry after a flaky
+  // payment, double-click, etc.), we still find a valid purchase instead of
+  // throwing an error and locking them out of content they paid for.
+  const { data: purchases, error: purchaseError } = await supabase
     .from('purchases')
-    .select('*')
+    .select('id, revoked_at')
     .eq('content_id', contentData.id)
     .eq('buyer_id', userId)
     .is('revoked_at', null)
-    .single()
+    .order('created_at', { ascending: false })
+    .limit(1)
 
-  if (purchaseError || !purchase) {
-    console.error('❌ No purchase found for user:', userId, 'content:', contentData.id)
+  if (purchaseError) {
+    console.error('❌ Purchase lookup error for user:', userId, 'content:', contentData.id, purchaseError)
+  }
+
+  const purchase = purchases && purchases.length > 0 ? purchases[0] : null
+
+  if (!purchase) {
+    console.error('❌ No valid purchase found for user:', userId, 'content:', contentData.id)
     return null
   }
 
@@ -170,7 +204,7 @@ export default async function WatchPage({ params }: { params: Promise<{ category
   if (sessionError || !session) {
     console.log('🔒 No session, redirecting to login')
     const currentPath = `/watch/${category}/${slug}`
-    redirect(`/auth/login?redirectTo=${currentPath}`)
+    redirect(`/auth/login?redirectTo=${encodeURIComponent(currentPath)}`)
   }
 
   console.log('✅ User is logged in:', session.user.email)
@@ -182,9 +216,14 @@ export default async function WatchPage({ params }: { params: Promise<{ category
     notFound()
   }
 
-  const contentCategory = data.category ? data.category.toLowerCase() : 'film'
-  if (contentCategory !== category) {
-    console.error('❌ Category mismatch:', contentCategory, category)
+  // 🔧 Normalize both sides before comparing — trims stray spaces, decodes
+  // %20 etc., collapses double-spaces, and ignores case differences. A
+  // legitimate purchase should never 404 over a formatting mismatch.
+  const normalizedContentCategory = normalizeCategory(data.category || 'film')
+  const normalizedUrlCategory = normalizeCategory(category)
+
+  if (normalizedContentCategory !== normalizedUrlCategory) {
+    console.error('❌ Category mismatch:', normalizedContentCategory, 'vs', normalizedUrlCategory)
     notFound()
   }
 
