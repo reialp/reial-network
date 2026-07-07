@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   title: 'Reial Network – Premium Stories from Creators',
   description: 'Discover and buy exclusive films, documentaries, and series directly from creators.',
   icons: {
-    icon: '/favicon.ico',  // Use favicon.ico if available
-    apple: '/apple-touch-icon.png', // Apple-specific icon
+    icon: '/logo.png',
+    apple: '/logo.png',
   },
 }
 
