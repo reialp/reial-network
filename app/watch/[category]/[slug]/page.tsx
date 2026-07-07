@@ -95,11 +95,16 @@ async function getVideoAndFilmBySlug(identifier: string, userId: string): Promis
   // than one purchase row for the same content (retry after a flaky
   // payment, double-click, etc.), we still find a valid purchase instead of
   // throwing an error and locking them out of content they paid for.
+  // ✅ .eq('status', 'completed') — this is the critical access-control
+  // check. A `pending` purchase (created the moment checkout starts, before
+  // Pesapal is even contacted) must NEVER grant access to the video. Only a
+  // purchase the IPN handler has verified and flipped to 'completed' counts.
   const { data: purchases, error: purchaseError } = await supabase
     .from('purchases')
-    .select('id, revoked_at')
+    .select('id, revoked_at, status')
     .eq('content_id', contentData.id)
     .eq('buyer_id', userId)
+    .eq('status', 'completed')
     .is('revoked_at', null)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -111,7 +116,7 @@ async function getVideoAndFilmBySlug(identifier: string, userId: string): Promis
   const purchase = purchases && purchases.length > 0 ? purchases[0] : null
 
   if (!purchase) {
-    console.error('❌ No valid purchase found for user:', userId, 'content:', contentData.id)
+    console.error('❌ No completed purchase found for user:', userId, 'content:', contentData.id)
     return null
   }
 
@@ -194,13 +199,13 @@ function getEmbedUrl(url: string): string {
 
 export default async function WatchPage({ params }: { params: Promise<{ category: string; slug: string }> }) {
   const { category, slug } = await params
-  
+
   console.log('🔍 WatchPage - Category:', category, 'Slug:', slug)
 
   const supabase = await createClient()
-  
+
   const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-  
+
   if (sessionError || !session) {
     console.log('🔒 No session, redirecting to login')
     const currentPath = `/watch/${category}/${slug}`
@@ -245,7 +250,7 @@ export default async function WatchPage({ params }: { params: Promise<{ category
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-6 lg:py-8">
-        
+
         {/* Header - Mobile optimized */}
         <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4 md:mb-6">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -266,7 +271,7 @@ export default async function WatchPage({ params }: { params: Promise<{ category
 
         {/* Main content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-          
+
           {/* Left column: video + description */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
             {/* Video Player - Full width on mobile */}
@@ -313,7 +318,7 @@ export default async function WatchPage({ params }: { params: Promise<{ category
 
           {/* Right sidebar */}
           <div className="space-y-4 sm:space-y-5 md:space-y-6">
-            
+
             {/* Creator Info - Mobile optimized */}
             <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 lg:p-6 border border-white/5">
               <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 sm:mb-3 md:mb-4">Creator</h3>
@@ -347,7 +352,7 @@ export default async function WatchPage({ params }: { params: Promise<{ category
                     const categoryPath = film.category ? film.category.toLowerCase() : 'film'
                     const slug = film.slug || film.id
                     const filmUrl = `/${categoryPath}/${slug}`
-                    
+
                     return (
                       <Link
                         key={film.id}
@@ -391,7 +396,7 @@ export default async function WatchPage({ params }: { params: Promise<{ category
                 const categoryPath = film.category ? film.category.toLowerCase() : 'film'
                 const slug = film.slug || film.id
                 const filmUrl = `/${categoryPath}/${slug}`
-                
+
                 return (
                   <Link
                     key={film.id}
