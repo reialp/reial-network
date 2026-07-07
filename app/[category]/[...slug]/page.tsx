@@ -56,6 +56,7 @@ async function hasUserPurchased(userId: string, contentId: string) {
     .select('id')
     .eq('buyer_id', userId)
     .eq('content_id', contentId)
+    .eq('status', 'completed') // ✅ pending/failed purchases no longer grant access
     .is('revoked_at', null)
     .maybeSingle()
   return !!data
