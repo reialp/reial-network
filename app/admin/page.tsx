@@ -159,33 +159,23 @@ export default function AdminPage() {
   const loadActivityLogs = async () => {
     setLoadingLogs(true)
     try {
-      // Check if table exists first
-      const { error: tableCheckError } = await supabase
-        .from('admin_activity_logs')
-        .select('id')
-        .limit(1)
-      
-      if (tableCheckError && tableCheckError.code === '42P01') {
-        // Table doesn't exist
-        setActivityLogs([])
-        setShowActivityLogs(true)
-        alert('Activity logs table not found. Please run the SQL migration.')
-        setLoadingLogs(false)
-        return
-      }
-
       const { data, error } = await supabase
         .from('admin_activity_logs')
         .select('*, admin:admin_id(full_name)')
         .order('created_at', { ascending: false })
         .limit(50)
       
-      if (error) throw error
+      if (error) {
+        console.error('Error loading activity logs:', error)
+        setActivityLogs([])
+        setShowActivityLogs(true)
+        return
+      }
+      
       setActivityLogs(data || [])
       setShowActivityLogs(true)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error loading activity logs:', error)
-      // Don't show alert, just show empty state
       setActivityLogs([])
       setShowActivityLogs(true)
     } finally {
@@ -213,7 +203,6 @@ export default function AdminPage() {
   // Improved Export CSV with better formatting
   const exportCSV = () => {
     try {
-      // Create headers
       const headers = [
         'Title',
         'Creator', 
@@ -225,7 +214,6 @@ export default function AdminPage() {
         'Created At'
       ]
       
-      // Create rows with better data
       const rows = filteredContent.map(item => [
         `"${item.title}"`,
         `"${item.creator_name || 'Unknown'}"`,
@@ -237,13 +225,11 @@ export default function AdminPage() {
         new Date(item.created_at).toLocaleDateString()
       ])
       
-      // Build CSV content
       const csvContent = [
         headers.join(','),
         ...rows.map(row => row.join(','))
       ].join('\n')
       
-      // Create and download the file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const link = document.createElement('a')
       const url = URL.createObjectURL(blob)
@@ -320,7 +306,7 @@ export default function AdminPage() {
           total_views: 0,
           total_purchases: 0,
           total_revenue: 0,
-          total_earnings: Number(profile.total_earnings || 0).toFixed(2),
+          total_earnings: Number(profile.total_earnings || 0),
           pending_films: 0,
           approved_films: 0,
           rejected_films: 0,
@@ -358,19 +344,15 @@ export default function AdminPage() {
         }
       })
 
-      // Format earnings to 2 decimal places
-      const creatorStatsArray = Array.from(creatorMap.values()).map(creator => ({
-        ...creator,
-        total_earnings: Number(creator.total_earnings).toFixed(2)
-      }))
+      const creatorStatsArray = Array.from(creatorMap.values())
       setCreatorStats(creatorStatsArray)
 
       // Calculate stats - use Number to avoid floating point issues
       const totalFilms = allContent.length
       const totalSales = allContent.reduce((sum: number, c: any) => sum + (c.purchase_count || 0), 0)
-      const totalRevenue = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.amount_paid || 0), 0) || 0).toFixed(2)
-      const totalPlatformFees = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.platform_fee || 0), 0) || 0).toFixed(2)
-      const totalPaidToCreators = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.creator_earnings || 0), 0) || 0).toFixed(2)
+      const totalRevenue = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.amount_paid || 0), 0) || 0)
+      const totalPlatformFees = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.platform_fee || 0), 0) || 0)
+      const totalPaidToCreators = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.creator_earnings || 0), 0) || 0)
       const pendingSubmissions = allContent.filter((c: any) => c.status === 'pending').length
       const totalViews = allContent.reduce((sum: number, c: any) => sum + (c.views || 0), 0)
       const flaggedContent = allContent.filter((c: any) => c.flagged || false).length
@@ -381,9 +363,9 @@ export default function AdminPage() {
       setStats({
         totalFilms,
         totalSales,
-        totalRevenue: Number(totalRevenue),
-        totalPlatformFees: Number(totalPlatformFees),
-        totalPaidToCreators: Number(totalPaidToCreators),
+        totalRevenue,
+        totalPlatformFees,
+        totalPaidToCreators,
         pendingPayouts,
         pendingSubmissions,
         totalCreators: creatorStatsArray.length,
@@ -509,11 +491,12 @@ export default function AdminPage() {
     }
   }
 
-  // View Details handler - Opens creator detail
+  // View Details handler
   const viewCreatorDetails = (creatorId: string) => {
-    // Navigate to creator detail or open modal
-    alert(`Creator details for ID: ${creatorId}\nThis will show full creator analytics.`)
-    // You can implement a modal or navigate to a detail page
+    const creator = creatorStats.find(c => c.creator_id === creatorId)
+    if (creator) {
+      alert(`Creator: ${creator.creator_name}\nEmail: ${creator.email || 'N/A'}\nTotal Films: ${creator.total_films}\nTotal Revenue: KES ${Number(creator.total_revenue).toFixed(2)}\nTotal Earnings: KES ${Number(creator.total_earnings).toFixed(2)}\nApproved Films: ${creator.approved_films}\nPending Films: ${creator.pending_films}\nRejected Films: ${creator.rejected_films}`)
+    }
   }
 
   const handleConfirmTransaction = async () => {
@@ -685,12 +668,7 @@ export default function AdminPage() {
                 <div className="p-4 text-center text-gray-400">Loading logs...</div>
               ) : activityLogs.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
-                  No activity logs found. 
-                  {activityLogs.length === 0 && (
-                    <span className="block text-xs text-gray-600 mt-1">
-                      Admin actions will appear here once you approve/reject content or process payouts.
-                    </span>
-                  )}
+                  No activity logs found.
                 </div>
               ) : (
                 <div className="divide-y divide-white/5">
