@@ -144,7 +144,7 @@ export default function CreatorAnalyticsPage() {
       if (projectIds.length > 0) {
         const { data: purchasesData } = await supabase
           .from('purchases')
-          .select('*, buyer:buyer_id(email)')
+          .select('*')
           .in('content_id', projectIds)
           .eq('status', 'completed')
           .order('created_at', { ascending: false })
@@ -211,7 +211,7 @@ export default function CreatorAnalyticsPage() {
         id: p.id,
         project_title: p.content?.title || 'Unknown',
         amount: p.amount_paid || p.amount || 0,
-        buyer_name: p.buyer?.email || 'Anonymous',
+        buyer_name: 'User',
         created_at: p.created_at,
         status: p.status || 'completed',
       }))
