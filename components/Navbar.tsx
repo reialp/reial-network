@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'  // ✅ Add this import
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useSearch } from '@/context/SearchContext'
@@ -57,13 +57,11 @@ export default function Navbar() {
             setIsAdmin(profile.is_admin || false)
             setHasAcceptedTerms(profile.terms_accepted || false)
           }
-          router.refresh()
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
           setIsCreator(false)
           setIsAdmin(false)
           setHasAcceptedTerms(false)
-          router.refresh()
         }
       }
     )
@@ -71,12 +69,11 @@ export default function Navbar() {
     return () => {
       subscription.unsubscribe()
     }
-  }, [supabase, router])
+  }, [supabase])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push('/')
-    router.refresh()
   }
 
   const handleUploadClick = async (e: React.MouseEvent) => {
@@ -130,7 +127,7 @@ export default function Navbar() {
     <nav className="bg-[#0a0a0a] border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm bg-black/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
-          {/* ✅ Logo + Brand Name */}
+          {/* Logo + Brand Name */}
           <Link href="/" className="flex items-center gap-2 sm:gap-3 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
