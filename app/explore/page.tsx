@@ -214,8 +214,8 @@ function ExploreContent() {
   const renderRow = (title: string, films: Film[], rowId: string) => {
     if (films.length === 0) return null
     return (
-      <div className="mb-6 sm:mb-10 group/row">
-        <div className="flex justify-between items-center mb-3 sm:mb-4 px-4 sm:px-0">
+      <div className="mb-6 sm:mb-10 px-6 sm:px-10 md:px-16 lg:px-20 group/row">
+        <div className="flex justify-between items-center mb-3 sm:mb-4">
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white">
             {title}
           </h2>
@@ -241,14 +241,13 @@ function ExploreContent() {
             </svg>
           </button>
 
-          <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-r from-[#0a0a0a] to-transparent z-10 pointer-events-none hidden sm:block" />
-          <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-[#0a0a0a] to-transparent z-10 pointer-events-none hidden sm:block" />
+          {/* Gradient fades removed - no more haze! */}
 
           <div
             ref={(el) => { scrollContainerRefs.current[rowId] = el }}
-            className="overflow-x-auto scrollbar-hide px-4 sm:px-0 pb-3 sm:pb-4 -mx-4 sm:mx-0 scroll-smooth"
+            className="overflow-x-auto scrollbar-hide pb-3 sm:pb-4 scroll-smooth -mx-4 sm:mx-0 px-4 sm:px-0"
           >
-            <div className="flex gap-2.5 sm:gap-3 md:gap-4 px-4 sm:px-0">
+            <div className="flex gap-2.5 sm:gap-3 md:gap-4">
               {films.map(film => renderFilmCard(film))}
             </div>
           </div>
@@ -274,8 +273,8 @@ function ExploreContent() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Header */}
-      <div className="border-b border-white/5 px-4 sm:px-6 py-4 sm:py-6 md:py-8">
+      {/* Header - With padding */}
+      <div className="border-b border-white/5 px-6 sm:px-10 md:px-16 lg:px-20 py-4 sm:py-6 md:py-8">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold">Explore</h1>
           <p className="text-gray-400 text-xs sm:text-sm mt-0.5 sm:mt-1">
@@ -285,8 +284,8 @@ function ExploreContent() {
         </div>
       </div>
 
-      {/* Search + Categories */}
-      <div className="sticky top-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-white/5 py-2 sm:py-3 px-4">
+      {/* Search + Categories - With padding */}
+      <div className="sticky top-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-white/5 py-2 sm:py-3 px-6 sm:px-10 md:px-16 lg:px-20">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row gap-2 sm:gap-3">
           <div className="relative w-full sm:flex-1">
             <input
@@ -319,7 +318,7 @@ function ExploreContent() {
       </div>
 
       {filteredFilms.length === 0 ? (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-24">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 md:px-16 lg:px-20 py-12 sm:py-16 md:py-24">
           <div className="bg-[#1a1a1a] rounded-2xl p-8 sm:p-12 md:p-16 text-center border border-white/5">
             <div className="text-5xl sm:text-6xl mb-4">🎬</div>
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-2">
@@ -346,14 +345,14 @@ function ExploreContent() {
       ) : (
         <div className="max-w-7xl mx-auto py-3 sm:py-4 md:py-6">
           
-          {/* ✅ STREAMING ROWS - Grouped by category */}
+          {/* STREAMING ROWS - Grouped by category */}
           {Object.entries(groupedFilms).map(([category, films]) => {
             if (category === 'Other' && films.length < 3) return null
             return renderRow(category, films, `category-${category}`)
           })}
 
-          {/* ✅ ALL FILMS - Grid view at bottom */}
-          <div className="mt-4 sm:mt-6 md:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-white/5 px-4 sm:px-0">
+          {/* ALL FILMS - Grid view at bottom with padding */}
+          <div className="mt-4 sm:mt-6 md:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-white/5 px-6 sm:px-10 md:px-16 lg:px-20">
             <div className="flex justify-between items-center mb-3 sm:mb-4">
               <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">All Content</h2>
               <span className="text-gray-500 text-xs sm:text-sm">{filteredFilms.length} films</span>
