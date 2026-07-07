@@ -34,61 +34,114 @@ export default function LibraryPage() {
   const scrollContainerRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
   useEffect(() => {
-    async function loadPurchases() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/auth/login')
-        return
-      }
-      setUserId(session.user.id)
+    loadPurchases()
 
-      const { data, error } = await supabase
-        .from('purchases')
-        .select(`
-          watch_token,
-          content_id,
-          created_at,
-          content:content_id (
-            id,
-            title,
-            description,
-            thumbnail_url,
-            price,
-            creator_id,
-            slug,
-            category,
-            profiles (
-              full_name
-            )
-          )
-        `)
-        .eq('buyer_id', session.user.id)
-        .is('revoked_at', null)
-        .order('created_at', { ascending: false })
-
-      if (error || !data) {
-        console.error('Error fetching purchases:', error)
-        setLoading(false)
-        return
-      }
-
-      // Deduplicate by content_id
-      const uniqueMap = new Map()
-      data.forEach((purchase: any) => {
-        const contentId = purchase.content_id
-        if (!uniqueMap.has(contentId) || new Date(purchase.created_at) > new Date(uniqueMap.get(contentId).created_at)) {
-          uniqueMap.set(contentId, purchase)
+    // Real-time subscription for purchases
+    const channel = supabase
+      .channel('library-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'purchases',
+        },
+        () => {
+          console.log('🔄 New purchase detected, refreshing library...')
+          loadPurchases()
         }
-      })
+      )
+      .subscribe()
 
-      const mapped = Array.from(uniqueMap.values()).map((purchase: any) => {
-        const content = purchase.content
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  const loadPurchases = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      router.push('/auth/login')
+      return
+    }
+    setUserId(session.user.id)
+
+    // First, get all purchases for this user
+    const { data: purchasesData, error: purchasesError } = await supabase
+      .from('purchases')
+      .select(`
+        id,
+        content_id,
+        watch_token,
+        status,
+        created_at,
+        revoked_at
+      `)
+      .eq('buyer_id', session.user.id)
+      .eq('status', 'completed')
+      .is('revoked_at', null)
+      .order('created_at', { ascending: false })
+
+    if (purchasesError || !purchasesData || purchasesData.length === 0) {
+      console.log('No purchases found:', purchasesError)
+      setLoading(false)
+      return
+    }
+
+    console.log('Found purchases:', purchasesData.length)
+
+    // Get all content IDs from purchases
+    const contentIds = purchasesData.map(p => p.content_id).filter(id => id)
+
+    if (contentIds.length === 0) {
+      setLoading(false)
+      return
+    }
+
+    // Fetch content details for all purchased content
+    const { data: contentData, error: contentError } = await supabase
+      .from('content')
+      .select(`
+        id,
+        title,
+        description,
+        thumbnail_url,
+        price,
+        slug,
+        category,
+        creator_id,
+        profiles!content_creator_id_fkey (
+          full_name
+        )
+      `)
+      .in('id', contentIds)
+      .eq('status', 'approved')
+
+    if (contentError) {
+      console.error('Error fetching content:', contentError)
+      setLoading(false)
+      return
+    }
+
+    console.log('Found content:', contentData?.length)
+
+    // Map content to a lookup object
+    const contentMap: { [key: string]: any } = {}
+    contentData?.forEach((content: any) => {
+      contentMap[content.id] = content
+    })
+
+    // Build the purchase list with content details
+    const mapped = purchasesData
+      .filter(purchase => contentMap[purchase.content_id]) // Only include if content exists
+      .map((purchase: any) => {
+        const content = contentMap[purchase.content_id]
         const creatorName = content?.profiles && content.profiles.length > 0 
           ? content.profiles[0].full_name 
           : 'Unknown Creator'
         
         return {
-          token: purchase.watch_token,
+          token: purchase.watch_token || purchase.id,
           film: {
             id: content?.id,
             title: content?.title || 'Untitled',
@@ -104,12 +157,10 @@ export default function LibraryPage() {
         }
       })
 
-      setPurchases(mapped)
-      setLoading(false)
-    }
-
-    loadPurchases()
-  }, [supabase, router])
+    console.log('Mapped purchases:', mapped.length)
+    setPurchases(mapped)
+    setLoading(false)
+  }
 
   // Filter purchases by search term
   const filteredPurchases = useMemo(() => {
@@ -146,10 +197,13 @@ export default function LibraryPage() {
   }
 
   const renderFilmCard = (purchase: Purchase, isLarge: boolean = false) => {
+    // Generate a unique key for the watch URL
+    const watchUrl = `/watch/${purchase.film.category}/${purchase.film.slug}?token=${encodeURIComponent(purchase.token)}`
+    
     return (
       <Link
         key={purchase.token}
-        href={`/watch/${purchase.film.category}/${purchase.film.slug}`}
+        href={watchUrl}
         className={`group flex-shrink-0 ${
           isLarge 
             ? 'w-[160px] sm:w-[200px] md:w-[240px] lg:w-[280px]' 
@@ -198,13 +252,19 @@ export default function LibraryPage() {
             {title}
           </h2>
           {items.length > 6 && (
-            <Link href={`/library?category=${encodeURIComponent(title)}`} className="text-[#f5c518] text-xs sm:text-sm hover:underline font-medium">
+            <button 
+              onClick={() => {
+                const element = document.getElementById('all-purchased')
+                if (element) element.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="text-[#f5c518] text-xs sm:text-sm hover:underline font-medium"
+            >
               See All →
-            </Link>
+            </button>
           )}
         </div>
         <div className="relative">
-          {/* Scroll buttons - hidden on mobile, visible on hover on desktop */}
+          {/* Scroll buttons */}
           <button
             onClick={() => scrollRow('left', rowId)}
             className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white p-1.5 sm:p-2 rounded-full transition-all duration-300 opacity-0 group-hover/row:opacity-100 hover:scale-110 hidden sm:flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10"
@@ -222,7 +282,7 @@ export default function LibraryPage() {
             </svg>
           </button>
 
-          {/* Gradient fades - desktop only */}
+          {/* Gradient fades */}
           <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-r from-[#0a0a0a] to-transparent z-10 pointer-events-none hidden sm:block" />
           <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-[#0a0a0a] to-transparent z-10 pointer-events-none hidden sm:block" />
 
@@ -258,7 +318,7 @@ export default function LibraryPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Header - Mobile optimized */}
+      {/* Header */}
       <div className="border-b border-white/5 px-4 sm:px-6 py-4 sm:py-6 md:py-8">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold">Your Library</h1>
@@ -292,14 +352,12 @@ export default function LibraryPage() {
       ) : (
         <div className="max-w-7xl mx-auto py-3 sm:py-4 md:py-6">
           
-          {/* ✅ CONTINUE WATCHING - Large card row */}
+          {/* Continue Watching */}
           {recentPurchases.length > 0 && renderRow('Continue Watching', recentPurchases, 'continue-watching', true)}
 
-          {/* ✅ CATEGORY ROWS - Streaming style */}
+          {/* Category Rows */}
           {Object.entries(groupedPurchases).map(([category, categoryItems]) => {
-            // Skip if it's the same as Continue Watching or empty
             if (category === 'Continue Watching' || categoryItems.length === 0) return null
-            // Skip if all items are already in Continue Watching
             const isAllInRecent = categoryItems.every(item => 
               recentPurchases.some(rp => rp.token === item.token)
             )
@@ -308,44 +366,47 @@ export default function LibraryPage() {
             return renderRow(category, categoryItems, `category-${category}`, false)
           })}
 
-          {/* ✅ ALL PURCHASED - Grid view at bottom */}
-          <div className="mt-4 sm:mt-6 md:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-white/5 px-4 sm:px-0">
+          {/* All Purchased */}
+          <div id="all-purchased" className="mt-4 sm:mt-6 md:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-white/5 px-4 sm:px-0">
             <div className="flex justify-between items-center mb-3 sm:mb-4">
               <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">All Purchased</h2>
               <span className="text-gray-500 text-xs sm:text-sm">{filteredPurchases.length} films</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
-              {filteredPurchases.map((purchase) => (
-                <Link
-                  key={purchase.token}
-                  href={`/watch/${purchase.film.category}/${purchase.film.slug}`}
-                  className="group bg-[#1a1a1a] rounded-lg sm:rounded-xl overflow-hidden hover:scale-[1.03] transition-all duration-300 hover:shadow-lg hover:shadow-[#f5c518]/20 border border-white/5 hover:border-[#f5c518]/30"
-                >
-                  <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
-                    {purchase.film.thumbnail_url ? (
-                      <Image
-                        src={purchase.film.thumbnail_url}
-                        alt={purchase.film.title}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-3xl sm:text-4xl opacity-20">🎬</div>
-                    )}
-                    <div className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <span className="bg-green-500 text-white text-[6px] sm:text-[8px] font-bold px-1 sm:px-2 py-0.5 rounded-full">✓ Owned</span>
+              {filteredPurchases.map((purchase) => {
+                const watchUrl = `/watch/${purchase.film.category}/${purchase.film.slug}?token=${encodeURIComponent(purchase.token)}`
+                return (
+                  <Link
+                    key={purchase.token}
+                    href={watchUrl}
+                    className="group bg-[#1a1a1a] rounded-lg sm:rounded-xl overflow-hidden hover:scale-[1.03] transition-all duration-300 hover:shadow-lg hover:shadow-[#f5c518]/20 border border-white/5 hover:border-[#f5c518]/30"
+                  >
+                    <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
+                      {purchase.film.thumbnail_url ? (
+                        <Image
+                          src={purchase.film.thumbnail_url}
+                          alt={purchase.film.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-3xl sm:text-4xl opacity-20">🎬</div>
+                      )}
+                      <div className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <span className="bg-green-500 text-white text-[6px] sm:text-[8px] font-bold px-1 sm:px-2 py-0.5 rounded-full">✓ Owned</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="p-1.5 sm:p-2 md:p-3">
-                    <h3 className="font-semibold text-[10px] sm:text-xs md:text-sm group-hover:text-[#f5c518] transition-colors line-clamp-1">
-                      {purchase.film.title}
-                    </h3>
-                    <p className="text-gray-500 text-[6px] sm:text-[8px] md:text-xs mt-0.5 truncate">
-                      {purchase.creator_name}
-                    </p>
-                  </div>
-                </Link>
-              ))}
+                    <div className="p-1.5 sm:p-2 md:p-3">
+                      <h3 className="font-semibold text-[10px] sm:text-xs md:text-sm group-hover:text-[#f5c518] transition-colors line-clamp-1">
+                        {purchase.film.title}
+                      </h3>
+                      <p className="text-gray-500 text-[6px] sm:text-[8px] md:text-xs mt-0.5 truncate">
+                        {purchase.creator_name}
+                      </p>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           </div>
         </div>
