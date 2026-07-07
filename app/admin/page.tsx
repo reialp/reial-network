@@ -339,11 +339,12 @@ export default function AdminPage() {
       const activeCreators = creatorStats.filter(c => c.total_films > 0)
       if (activeCreators.length > 0) {
         activeCreators.forEach(creator => {
+          const earnings = Number(creator.total_revenue) * 0.85 // 85% of revenue
           report.push(
             creator.creator_name.substring(0, 23).padEnd(25) +
             creator.total_films.toString().padEnd(10) +
             Number(creator.total_revenue).toFixed(2).padEnd(15) +
-            Number(creator.total_earnings).toFixed(2).padEnd(15) +
+            earnings.toFixed(2).padEnd(15) +
             creator.total_views.toString()
           )
         })
@@ -418,51 +419,51 @@ export default function AdminPage() {
         .from('purchases')
         .select('*, content:content_id(title, creator_id), buyer:buyer_id(email)')
         .order('created_at', { ascending: false })
+      
+      // Filter only completed transactions for stats
+      const completedTransactions = transactionsData?.filter((tx: any) => tx.status === 'completed') || []
       setTransactions(transactionsData || [])
 
-      // Calculate monthly report
-      if (transactionsData && transactionsData.length > 0) {
+      // Calculate monthly report from completed transactions
+      if (completedTransactions.length > 0) {
         const monthlyData: { [key: string]: MonthlyReport } = {}
         
-        transactionsData
-          .filter((tx: any) => tx.status === 'completed')
-          .forEach((tx: any) => {
-            const date = new Date(tx.created_at)
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-            const monthName = date.toLocaleString('default', { month: 'long' })
-            
-            if (!monthlyData[monthKey]) {
-              monthlyData[monthKey] = {
-                month: monthName,
-                year: date.getFullYear(),
-                total_transactions: 0,
-                total_revenue: 0,
-                total_fees: 0,
-                total_earnings: 0,
-                unique_buyers: new Set().size,
-                unique_films: new Set().size,
-              }
+        completedTransactions.forEach((tx: any) => {
+          const date = new Date(tx.created_at)
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+          const monthName = date.toLocaleString('default', { month: 'long' })
+          
+          if (!monthlyData[monthKey]) {
+            monthlyData[monthKey] = {
+              month: monthName,
+              year: date.getFullYear(),
+              total_transactions: 0,
+              total_revenue: 0,
+              total_fees: 0,
+              total_earnings: 0,
+              unique_buyers: 0,
+              unique_films: 0,
             }
-            
-            monthlyData[monthKey].total_transactions += 1
-            monthlyData[monthKey].total_revenue += Number(tx.amount_paid || 0)
-            monthlyData[monthKey].total_fees += Number(tx.platform_fee || 0)
-            monthlyData[monthKey].total_earnings += Number(tx.creator_earnings || 0)
-          })
+          }
+          
+          monthlyData[monthKey].total_transactions += 1
+          monthlyData[monthKey].total_revenue += Number(tx.amount_paid || 0)
+          monthlyData[monthKey].total_fees += Number(tx.platform_fee || 0)
+          monthlyData[monthKey].total_earnings += Number(tx.creator_earnings || 0)
+        })
         
         // Convert to array and sort
         const monthlyArray = Object.keys(monthlyData)
           .sort()
           .map(key => {
             const data = monthlyData[key]
-            // Calculate unique counts
             const buyers = new Set()
             const films = new Set()
-            transactionsData
+            completedTransactions
               .filter((tx: any) => {
                 const date = new Date(tx.created_at)
                 const txKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-                return txKey === key && tx.status === 'completed'
+                return txKey === key
               })
               .forEach((tx: any) => {
                 if (tx.buyer_id) buyers.add(tx.buyer_id)
@@ -496,7 +497,7 @@ export default function AdminPage() {
           total_views: 0,
           total_purchases: 0,
           total_revenue: 0,
-          total_earnings: Number(profile.total_earnings || 0),
+          total_earnings: 0,
           pending_films: 0,
           approved_films: 0,
           rejected_films: 0,
@@ -510,6 +511,7 @@ export default function AdminPage() {
         })
       })
 
+      // Process content for each creator
       allContent.forEach((item: any) => {
         const creator = creatorMap.get(item.creator_id)
         if (creator) {
@@ -524,12 +526,12 @@ export default function AdminPage() {
         }
       })
 
-      // Calculate creator earnings from transactions
-      transactionsData?.forEach((tx: any) => {
+      // Calculate creator earnings from completed transactions ONLY
+      completedTransactions.forEach((tx: any) => {
         if (tx.content) {
           const creator = creatorMap.get(tx.content.creator_id)
           if (creator) {
-            creator.total_earnings = Number(creator.total_earnings || 0) + Number(tx.creator_earnings || 0)
+            creator.total_earnings += Number(tx.creator_earnings || 0)
           }
         }
       })
@@ -537,12 +539,12 @@ export default function AdminPage() {
       const creatorStatsArray = Array.from(creatorMap.values())
       setCreatorStats(creatorStatsArray)
 
-      // Calculate stats
+      // Calculate stats from completed transactions
       const totalFilms = allContent.length
       const totalSales = allContent.reduce((sum: number, c: any) => sum + (c.purchase_count || 0), 0)
-      const totalRevenue = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.amount_paid || 0), 0) || 0)
-      const totalPlatformFees = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.platform_fee || 0), 0) || 0)
-      const totalPaidToCreators = Number(transactionsData?.reduce((sum: number, tx: any) => sum + Number(tx.creator_earnings || 0), 0) || 0)
+      const totalRevenue = completedTransactions.reduce((sum: number, tx: any) => sum + Number(tx.amount_paid || 0), 0)
+      const totalPlatformFees = completedTransactions.reduce((sum: number, tx: any) => sum + Number(tx.platform_fee || 0), 0)
+      const totalPaidToCreators = completedTransactions.reduce((sum: number, tx: any) => sum + Number(tx.creator_earnings || 0), 0)
       const pendingSubmissions = allContent.filter((c: any) => c.status === 'pending').length
       const totalViews = allContent.reduce((sum: number, c: any) => sum + (c.views || 0), 0)
       const flaggedContent = allContent.filter((c: any) => c.flagged || false).length
@@ -681,13 +683,13 @@ export default function AdminPage() {
     }
   }
 
-  // View Details handler
+  // View Details handler with correct earnings (85% of revenue)
   const viewCreatorDetails = (creatorId: string) => {
     const creator = creatorStats.find(c => c.creator_id === creatorId)
     if (creator) {
       const revenue = Number(creator.total_revenue) || 0
       const fees = revenue * 0.15
-      const earnings = revenue * 0.85
+      const earnings = revenue * 0.85 // This is the correct 85%
       
       alert(
         `Creator: ${creator.creator_name}\n` +
