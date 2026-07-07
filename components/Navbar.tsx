@@ -126,26 +126,26 @@ export default function Navbar() {
   return (
     <nav className="bg-[#0a0a0a] border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm bg-black/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-between py-3 gap-2">
+        <div className="flex items-center justify-between h-16">
           {/* Logo + Brand Name - Fixed alignment */}
-          <Link href="/" className="flex items-center gap-2 sm:gap-3 flex-shrink-0 group">
-            <div className="relative w-8 h-8 sm:w-10 sm:h-10">
+          <Link href="/" className="flex items-center gap-3 flex-shrink-0 group">
+            <div className="relative w-10 h-10">
               <Image
                 src="/logo.png"
                 alt="Reial Network"
                 fill
                 className="object-contain"
-                sizes="(max-width: 640px) 32px, 40px"
+                sizes="40px"
                 priority
               />
             </div>
-            <span className="text-lg sm:text-xl font-bold leading-none group-hover:text-[#f5c518] transition-colors">
+            <span className="text-xl font-bold group-hover:text-[#f5c518] transition-colors">
               Reial<span className="text-[#f5c518] group-hover:text-white transition-colors">.</span>
             </span>
           </Link>
 
-          {/* Search Bar - UNCHANGED */}
-          <div className="hidden md:flex flex-1 max-w-md mx-4">
+          {/* Search Bar - Desktop */}
+          <div className="hidden md:flex flex-1 max-w-md mx-8">
             <div className="relative w-full">
               <input
                 type="text"
@@ -160,7 +160,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Navigation Links - UNCHANGED */}
+          {/* Navigation Links - Desktop */}
           <div className="hidden md:flex items-center gap-6 flex-shrink-0">
             {navLinks.map((link) => (
               link.onClick ? (
@@ -195,14 +195,15 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button - UNCHANGED */}
+          {/* Mobile Menu Button */}
           <div className="md:hidden">
             <button
               onClick={() => {
                 const menu = document.getElementById('mobile-menu')
                 if (menu) menu.classList.toggle('hidden')
               }}
-              className="text-gray-400 hover:text-white focus:outline-none"
+              className="text-gray-400 hover:text-white focus:outline-none p-2"
+              aria-label="Toggle menu"
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -211,7 +212,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Search - UNCHANGED */}
+        {/* Mobile Search */}
         <div className="md:hidden pb-3">
           <input
             type="text"
@@ -222,7 +223,7 @@ export default function Navbar() {
           />
         </div>
 
-        {/* Mobile Menu - UNCHANGED */}
+        {/* Mobile Menu */}
         <div id="mobile-menu" className="hidden md:hidden pb-4">
           <div className="flex flex-col gap-2">
             {navLinks.map((link) => (
