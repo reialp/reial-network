@@ -72,33 +72,66 @@ interface Transaction {
   buyer: { email: string } | null
 }
 
-// New interfaces for creator analytics
-interface CreatorStats {
-  creator_id: string
-  creator_name: string
-  total_films: number
-  total_views: number
-  total_purchases: number
-  total_revenue: number
-  total_earnings: number
-  pending_films: number
-  approved_films: number
-  rejected_films: number
-  total_signups?: number
-  signup_date?: string
-  last_active?: string
-  email?: string
-  phone?: string
+// 🆕 Creator analytics detail types
+interface CreatorDetailContent {
+  id: string
+  title: string
+  category: string
+  price: number
+  views: number
+  purchase_count: number
+  status: string
+  created_at: string
+  thumbnail_url: string
 }
 
-interface CreatorDetail extends CreatorStats {
-  films: Content[]
-  transactions: Transaction[]
-  payouts: PayoutRequest[]
-  total_payouts_processed: number
-  pending_payout_amount: number
-  average_price: number
-  most_popular_film: string | null
+interface CreatorDetailPurchase {
+  id: string
+  amount_paid: number
+  status: string
+  created_at: string
+  content: { title: string } | null
+}
+
+interface CreatorDetailPayout {
+  id: string
+  amount: number
+  phone: string
+  status: string
+  requested_at: string
+  processed_at: string | null
+}
+
+interface CreatorDetail {
+  profile: {
+    id: string
+    full_name: string
+    bio: string
+    avatar_url: string
+    is_creator: boolean
+    is_admin?: boolean
+    payout_phone: string
+    created_at?: string
+    location?: string
+    tagline?: string
+  } | null
+  content: CreatorDetailContent[]
+  purchases: CreatorDetailPurchase[]
+  payouts: CreatorDetailPayout[]
+  stats: {
+    totalProjects: number
+    approvedProjects: number
+    pendingProjects: number
+    rejectedProjects: number
+    totalViews: number
+    totalSales: number
+    totalRevenue: number
+    yourEarnings: number
+    platformFees: number
+    totalPaid: number
+    totalPending: number
+    availableBalance: number
+  }
 }
 
 export default function AdminPage() {
@@ -118,8 +151,8 @@ export default function AdminPage() {
     totalPaidToCreators: 0,
     pendingPayouts: 0,
     pendingSubmissions: 0,
-    totalCreators: 0,
-    totalViews: 0,
+    totalViews: 0,      // 🆕 total views across every project on the platform
+    totalSignups: 0,    // 🆕 total registered users/creators
   })
 
   const [statusFilter, setStatusFilter] = useState<ContentStatus>('all')
@@ -134,12 +167,12 @@ export default function AdminPage() {
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [confirmMessage, setConfirmMessage] = useState('')
 
-  // New state for creator analytics
-  const [creatorStats, setCreatorStats] = useState<CreatorStats[]>([])
-  const [selectedCreator, setSelectedCreator] = useState<CreatorDetail | null>(null)
+  // 🆕 Creator analytics modal state
   const [isCreatorModalOpen, setIsCreatorModalOpen] = useState(false)
-  const [creatorSearchTerm, setCreatorSearchTerm] = useState('')
-  const [creatorSortBy, setCreatorSortBy] = useState<'name' | 'revenue' | 'films' | 'views'>('revenue')
+  const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(null)
+  const [creatorDetail, setCreatorDetail] = useState<CreatorDetail | null>(null)
+  const [loadingCreatorDetail, setLoadingCreatorDetail] = useState(false)
+  const [creatorDetailError, setCreatorDetailError] = useState<string | null>(null)
 
   useEffect(() => {
     loadAdminData()
@@ -201,77 +234,23 @@ export default function AdminPage() {
         .order('created_at', { ascending: false })
       setTransactions(transactionsData || [])
 
-      // Fetch creator profiles for analytics
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, phone, created_at, last_seen')
-        .order('full_name')
+      const totalFilms = result.content?.length || 0
+      const totalSales = result.content?.reduce((sum, c) => sum + (c.purchase_count || 0), 0) || 0
+      const totalRevenue = result.content?.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0) || 0
+      const pendingSubmissions = result.content?.filter((c: any) => c.status === 'pending').length || 0
+      const totalViews = result.content?.reduce((sum, c) => sum + (c.views || 0), 0) || 0 // 🆕
 
-      // Calculate creator stats
-      const creatorMap = new Map<string, CreatorStats>()
-      const allContent = result.content || []
-
-      // Initialize stats for all creators
-      profilesData?.forEach((profile: any) => {
-        creatorMap.set(profile.id, {
-          creator_id: profile.id,
-          creator_name: profile.full_name || 'Unknown',
-          total_films: 0,
-          total_views: 0,
-          total_purchases: 0,
-          total_revenue: 0,
-          total_earnings: 0,
-          pending_films: 0,
-          approved_films: 0,
-          rejected_films: 0,
-          email: profile.email,
-          phone: profile.phone,
-          signup_date: profile.created_at,
-          last_active: profile.last_seen,
-        })
-      })
-
-      // Process content data
-      allContent.forEach((item: any) => {
-        const creator = creatorMap.get(item.creator_id)
-        if (creator) {
-          creator.total_films++
-          creator.total_views += item.views || 0
-          creator.total_purchases += item.purchase_count || 0
-          creator.total_revenue += (item.price * (item.purchase_count || 0))
-          
-          if (item.status === 'pending') creator.pending_films++
-          else if (item.status === 'approved') creator.approved_films++
-          else if (item.status === 'rejected') creator.rejected_films++
-        }
-      })
-
-      // Process earnings from purchases
-      transactionsData?.forEach((tx: any) => {
-        if (tx.content) {
-          const creator = creatorMap.get(tx.content.creator_id)
-          if (creator) {
-            creator.total_earnings += tx.creator_earnings || 0
-          }
-        }
-      })
-
-      const creatorStatsArray = Array.from(creatorMap.values())
-      setCreatorStats(creatorStatsArray)
-
-      // Update total stats
-      const totalFilms = allContent.length
-      const totalSales = allContent.reduce((sum: number, c: any) => sum + (c.purchase_count || 0), 0)
-      const totalRevenue = allContent.reduce((sum: number, c: any) => sum + (c.price * (c.purchase_count || 0)), 0)
-      const pendingSubmissions = allContent.filter((c: any) => c.status === 'pending').length
-      const totalViews = allContent.reduce((sum: number, c: any) => sum + (c.views || 0), 0)
-      
       const { data: purchases } = await supabase.from('purchases').select('platform_fee, creator_earnings')
       const totalPlatformFees = purchases?.reduce((sum, p) => sum + (p.platform_fee || 0), 0) || 0
       const totalPaidToCreators = purchases?.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) || 0
       
       const { data: pendingPayoutsData } = await supabase.from('payout_requests').select('amount').eq('status', 'pending')
       const pendingPayouts = pendingPayoutsData?.reduce((sum, p) => sum + p.amount, 0) || 0
+
+      // 🆕 Total signups = every row in profiles (every user who has ever signed up)
+      const { count: totalSignups } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
 
       setStats({
         totalFilms,
@@ -281,8 +260,8 @@ export default function AdminPage() {
         totalPaidToCreators,
         pendingPayouts,
         pendingSubmissions,
-        totalCreators: creatorStatsArray.length,
         totalViews,
+        totalSignups: totalSignups || 0,
       })
     } catch (error) {
       console.error('Error loading admin data:', error)
@@ -356,6 +335,10 @@ export default function AdminPage() {
       if (result.success) {
         alert('✅ Payout marked as processed.')
         loadAdminData()
+        // 🆕 keep creator modal in sync if it's open for this payout's creator
+        if (isCreatorModalOpen && selectedCreatorId) {
+          openCreatorDetail(selectedCreatorId)
+        }
       } else {
         alert('❌ Error: ' + (typeof result.error === 'string' ? result.error : JSON.stringify(result.error)))
       }
@@ -408,80 +391,108 @@ export default function AdminPage() {
     setIsConfirmModalOpen(true)
   }
 
-  // New function to open creator detail modal
+  // 🆕 Load full analytics for a single creator: profile, every project, every
+  // purchase against those projects, and their full payout history.
   const openCreatorDetail = async (creatorId: string) => {
-    const creator = creatorStats.find(c => c.creator_id === creatorId)
-    if (!creator) return
-
-    // Fetch all content by this creator
-    const creatorContent = content.filter(c => c.creator_id === creatorId)
-    
-    // Fetch transactions for this creator's content
-    const creatorContentIds = creatorContent.map(c => c.id)
-    const creatorTransactions = transactions.filter(t => 
-      t.content_id && creatorContentIds.includes(t.content_id)
-    )
-    
-    // Fetch payouts for this creator
-    const creatorPayouts = payouts.filter(p => p.creator_id === creatorId)
-    
-    // Calculate additional stats
-    const totalPayoutsProcessed = creatorPayouts
-      .filter(p => p.status === 'processed')
-      .reduce((sum, p) => sum + p.amount, 0)
-    
-    const pendingPayoutAmount = creatorPayouts
-      .filter(p => p.status === 'pending')
-      .reduce((sum, p) => sum + p.amount, 0)
-    
-    const avgPrice = creatorContent.length > 0 
-      ? creatorContent.reduce((sum, c) => sum + c.price, 0) / creatorContent.length 
-      : 0
-    
-    const mostPopularFilm = creatorContent.length > 0
-      ? creatorContent.reduce((a, b) => (a.purchase_count || 0) > (b.purchase_count || 0) ? a : b)
-      : null
-
-    const creatorDetail: CreatorDetail = {
-      ...creator,
-      films: creatorContent,
-      transactions: creatorTransactions,
-      payouts: creatorPayouts,
-      total_payouts_processed: totalPayoutsProcessed,
-      pending_payout_amount: pendingPayoutAmount,
-      average_price: avgPrice,
-      most_popular_film: mostPopularFilm?.title || null,
-    }
-
-    setSelectedCreator(creatorDetail)
+    if (!creatorId) return
+    setSelectedCreatorId(creatorId)
     setIsCreatorModalOpen(true)
+    setLoadingCreatorDetail(true)
+    setCreatorDetailError(null)
+    setCreatorDetail(null)
+
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', creatorId)
+        .single()
+
+      if (profileError || !profile) {
+        setCreatorDetailError('Could not load this creator\'s profile.')
+        setLoadingCreatorDetail(false)
+        return
+      }
+
+      const { data: creatorContent } = await supabase
+        .from('content')
+        .select('id, title, category, price, views, purchase_count, status, created_at, thumbnail_url')
+        .eq('creator_id', creatorId)
+        .order('created_at', { ascending: false })
+
+      const contentList = creatorContent || []
+      const contentIds = contentList.map((c) => c.id)
+
+      let creatorPurchases: CreatorDetailPurchase[] = []
+      if (contentIds.length > 0) {
+        const { data: purchasesData } = await supabase
+          .from('purchases')
+          .select('id, amount_paid, status, created_at, content:content_id(title)')
+          .in('content_id', contentIds)
+          .order('created_at', { ascending: false })
+        creatorPurchases = (purchasesData as any) || []
+      }
+
+      const { data: creatorPayouts } = await supabase
+        .from('payout_requests')
+        .select('id, amount, phone, status, requested_at, processed_at')
+        .eq('creator_id', creatorId)
+        .order('requested_at', { ascending: false })
+
+      const totalProjects = contentList.length
+      const approvedProjects = contentList.filter((c) => c.status === 'approved').length
+      const pendingProjects = contentList.filter((c) => c.status === 'pending').length
+      const rejectedProjects = contentList.filter((c) => c.status === 'rejected').length
+      const totalViews = contentList.reduce((sum, c) => sum + (c.views || 0), 0)
+      const totalSales = contentList.reduce((sum, c) => sum + (c.purchase_count || 0), 0)
+      const totalRevenue = contentList.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0)
+      const yourEarnings = Math.round(totalRevenue * 0.85)
+      const platformFees = Math.round(totalRevenue * 0.15)
+      const totalPaid = (creatorPayouts || [])
+        .filter((p) => p.status === 'processed')
+        .reduce((sum, p) => sum + p.amount, 0)
+      const totalPending = (creatorPayouts || [])
+        .filter((p) => p.status === 'pending')
+        .reduce((sum, p) => sum + p.amount, 0)
+
+      setCreatorDetail({
+        profile,
+        content: contentList,
+        purchases: creatorPurchases,
+        payouts: creatorPayouts || [],
+        stats: {
+          totalProjects,
+          approvedProjects,
+          pendingProjects,
+          rejectedProjects,
+          totalViews,
+          totalSales,
+          totalRevenue,
+          yourEarnings,
+          platformFees,
+          totalPaid,
+          totalPending,
+          availableBalance: yourEarnings - totalPaid - totalPending,
+        },
+      })
+    } catch (err) {
+      console.error('Error loading creator detail:', err)
+      setCreatorDetailError('Something went wrong loading this creator\'s analytics.')
+    } finally {
+      setLoadingCreatorDetail(false)
+    }
   }
 
-  // Filter and sort creator stats
-  const filteredCreators = useMemo(() => {
-    let filtered = [...creatorStats]
-    
-    if (creatorSearchTerm) {
-      const term = creatorSearchTerm.toLowerCase()
-      filtered = filtered.filter(c => 
-        c.creator_name.toLowerCase().includes(term) ||
-        c.email?.toLowerCase().includes(term)
-      )
-    }
-    
-    // Sort creators
-    filtered.sort((a, b) => {
-      switch (creatorSortBy) {
-        case 'name': return a.creator_name.localeCompare(b.creator_name)
-        case 'revenue': return b.total_revenue - a.total_revenue
-        case 'films': return b.total_films - a.total_films
-        case 'views': return b.total_views - a.total_views
-        default: return 0
-      }
-    })
-    
-    return filtered
-  }, [creatorStats, creatorSearchTerm, creatorSortBy])
+  const closeCreatorDetail = () => {
+    setIsCreatorModalOpen(false)
+    setSelectedCreatorId(null)
+    setCreatorDetail(null)
+    setCreatorDetailError(null)
+  }
+
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString()
+  }
 
   if (loading) {
     return (
@@ -508,19 +519,11 @@ export default function AdminPage() {
           <p className="text-gray-400 text-xs sm:text-sm mt-0.5">Manage content, approvals, and payouts.</p>
         </div>
 
-        {/* Stats Grid - Added Creators and Views */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
           <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-white/5">
             <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Films</p>
             <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5">{stats.totalFilms}</p>
-          </div>
-          <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-white/5">
-            <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Creators</p>
-            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-purple-400">{stats.totalCreators}</p>
-          </div>
-          <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-white/5">
-            <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Views</p>
-            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-cyan-400">{stats.totalViews.toLocaleString()}</p>
           </div>
           <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-white/5">
             <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Sales</p>
@@ -548,6 +551,20 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* 🆕 Platform-wide Stats: Total Signups & Total Views across every creator */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
+          <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-blue-500/20 bg-blue-500/5">
+            <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Total Signups</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-blue-300">{stats.totalSignups.toLocaleString()}</p>
+            <p className="text-gray-500 text-[8px] sm:text-[10px] mt-0.5">All registered users</p>
+          </div>
+          <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-purple-500/20 bg-purple-500/5">
+            <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Total Views</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-purple-300">{stats.totalViews.toLocaleString()}</p>
+            <p className="text-gray-500 text-[8px] sm:text-[10px] mt-0.5">Across every project</p>
+          </div>
+        </div>
+
         {/* Pending Alert */}
         {stats.pendingSubmissions > 0 && (
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
@@ -556,108 +573,6 @@ export default function AdminPage() {
             </p>
           </div>
         )}
-
-        {/* Creator Analytics Section - NEW */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-            <div>
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold">Creator Analytics</h2>
-              <p className="text-gray-400 text-xs sm:text-sm">Click on any creator to view full details and stats</p>
-            </div>
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-              <input
-                type="text"
-                placeholder="Search creators..."
-                value={creatorSearchTerm}
-                onChange={(e) => setCreatorSearchTerm(e.target.value)}
-                className="flex-1 sm:flex-none px-3 py-1.5 bg-[#1a1a1a] border border-white/10 rounded-lg focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-xs sm:text-sm min-w-[120px]"
-              />
-              <select 
-                value={creatorSortBy} 
-                onChange={(e) => setCreatorSortBy(e.target.value as any)}
-                className="bg-[#1a1a1a] border border-white/10 rounded-lg px-2 sm:px-3 py-1.5 text-xs sm:text-sm outline-none"
-              >
-                <option value="revenue">Sort by Revenue</option>
-                <option value="views">Sort by Views</option>
-                <option value="films">Sort by Films</option>
-                <option value="name">Sort by Name</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="bg-[#1a1a1a] rounded-xl sm:rounded-2xl border border-white/5 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs sm:text-sm">
-                <thead className="bg-[#0a0a0a] border-b border-white/5">
-                  <tr>
-                    <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Creator</th>
-                    <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden sm:table-cell">Email</th>
-                    <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Films</th>
-                    <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden md:table-cell">Views</th>
-                    <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Revenue</th>
-                    <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden lg:table-cell">Earnings</th>
-                    <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-center text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Status</th>
-                    <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-center text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredCreators.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="px-4 sm:px-6 py-6 sm:py-8 text-center text-gray-500 text-xs sm:text-sm">No creators found.</td>
-                    </tr>
-                  ) : (
-                    filteredCreators.map((creator) => (
-                      <tr key={creator.creator_id} className="hover:bg-white/5 transition cursor-pointer" onClick={() => openCreatorDetail(creator.creator_id)}>
-                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#f5c518]/20 flex items-center justify-center text-[#f5c518] text-xs sm:text-sm font-bold">
-                              {creator.creator_name.charAt(0).toUpperCase()}
-                            </div>
-                            <span className="text-xs sm:text-sm font-medium truncate max-w-[80px] sm:max-w-[120px]">{creator.creator_name}</span>
-                          </div>
-                        </td>
-                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-gray-400 text-xs hidden sm:table-cell truncate max-w-[100px]">{creator.email || 'N/A'}</td>
-                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-xs sm:text-sm">
-                          <span className="font-semibold">{creator.total_films}</span>
-                          <span className="text-gray-500 text-[8px] sm:text-xs ml-1">
-                            ({creator.pending_films > 0 && `${creator.pending_films} pending`}
-                            {creator.pending_films > 0 && creator.approved_films > 0 && ', '}
-                            {creator.approved_films > 0 && `${creator.approved_films} approved`})
-                          </span>
-                        </td>
-                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-gray-400 text-xs hidden md:table-cell">
-                          {creator.total_views.toLocaleString()}
-                        </td>
-                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right font-semibold text-green-400 text-xs sm:text-sm">
-                          KES {creator.total_revenue}
-                        </td>
-                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right font-semibold text-yellow-400 text-xs sm:text-sm hidden lg:table-cell">
-                          KES {creator.total_earnings}
-                        </td>
-                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            {creator.approved_films > 0 && <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>}
-                            {creator.pending_films > 0 && <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>}
-                            {creator.rejected_films > 0 && <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>}
-                            {creator.total_films === 0 && <span className="text-gray-500 text-[8px]">—</span>}
-                          </div>
-                        </td>
-                        <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-center">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); openCreatorDetail(creator.creator_id); }}
-                            className="bg-[#f5c518] text-black px-2 sm:px-3 py-0.5 sm:py-1 rounded text-[8px] sm:text-xs font-semibold hover:bg-[#e0b010] transition whitespace-nowrap"
-                          >
-                            View Details
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center mb-4 sm:mb-6">
@@ -722,7 +637,16 @@ export default function AdminPage() {
                           <span className="text-xs sm:text-sm font-medium truncate max-w-[80px] sm:max-w-[120px] md:max-w-[150px]">{item.title}</span>
                         </div>
                       </td>
-                      <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-gray-400 text-xs hidden sm:table-cell truncate max-w-[100px]">{item.creator_name || 'Unknown'}</td>
+                      <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-gray-400 text-xs hidden sm:table-cell truncate max-w-[100px]">
+                        {/* 🆕 Creator name is now clickable → opens full creator analytics */}
+                        <button
+                          onClick={() => openCreatorDetail(item.creator_id)}
+                          className="hover:text-[#f5c518] hover:underline transition text-left"
+                          title="View creator analytics"
+                        >
+                          {item.creator_name || 'Unknown'}
+                        </button>
+                      </td>
                       <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 font-semibold text-xs hidden md:table-cell">KES {item.price}</td>
                       <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-gray-400 text-xs hidden lg:table-cell">{item.purchase_count}</td>
                       <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3">
@@ -793,7 +717,16 @@ export default function AdminPage() {
                 ) : (
                   filteredPayouts.map((payout) => (
                     <tr key={payout.id} className="hover:bg-white/5 transition">
-                      <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-xs">{payout.profiles?.full_name || 'Unknown'}</td>
+                      <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-xs">
+                        {/* 🆕 Creator name is now clickable → opens full creator analytics */}
+                        <button
+                          onClick={() => openCreatorDetail(payout.creator_id)}
+                          className="hover:text-[#f5c518] hover:underline transition text-left"
+                          title="View creator analytics"
+                        >
+                          {payout.profiles?.full_name || 'Unknown'}
+                        </button>
+                      </td>
                       <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 font-semibold text-green-400 text-xs sm:text-sm">KES {payout.amount}</td>
                       <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-gray-400 text-xs hidden sm:table-cell">{payout.phone}</td>
                       <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3">
@@ -896,225 +829,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Creator Detail Modal - NEW */}
-        {isCreatorModalOpen && selectedCreator && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-            <div className="bg-[#1a1a1a] rounded-xl sm:rounded-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto border border-white/10">
-              {/* Modal Header */}
-              <div className="sticky top-0 bg-[#1a1a1a] px-3 sm:px-4 md:px-6 py-2.5 sm:py-4 border-b border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#f5c518]/20 flex items-center justify-center text-[#f5c518] text-sm sm:text-base font-bold">
-                    {selectedCreator.creator_name.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <h2 className="text-base sm:text-lg md:text-xl font-bold">{selectedCreator.creator_name}</h2>
-                    <p className="text-gray-400 text-xs sm:text-sm">{selectedCreator.email || 'No email'}</p>
-                  </div>
-                </div>
-                <button onClick={() => setIsCreatorModalOpen(false)} className="text-gray-400 hover:text-white transition p-1">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-
-              <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
-                {/* Creator Stats Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                  <div className="bg-[#0a0a0a] rounded-lg p-2.5 sm:p-3">
-                    <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider">Total Films</p>
-                    <p className="text-lg sm:text-xl font-bold mt-0.5">{selectedCreator.total_films}</p>
-                    <div className="flex gap-1 mt-1 text-[8px] sm:text-[10px]">
-                      <span className="text-green-400">✓{selectedCreator.approved_films}</span>
-                      <span className="text-yellow-400">⏳{selectedCreator.pending_films}</span>
-                      <span className="text-red-400">✕{selectedCreator.rejected_films}</span>
-                    </div>
-                  </div>
-                  <div className="bg-[#0a0a0a] rounded-lg p-2.5 sm:p-3">
-                    <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider">Total Views</p>
-                    <p className="text-lg sm:text-xl font-bold mt-0.5 text-cyan-400">{selectedCreator.total_views.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-[#0a0a0a] rounded-lg p-2.5 sm:p-3">
-                    <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider">Revenue</p>
-                    <p className="text-lg sm:text-xl font-bold mt-0.5 text-green-400">KES {selectedCreator.total_revenue}</p>
-                    <p className="text-[8px] sm:text-[10px] text-gray-500">Avg: KES {Math.round(selectedCreator.average_price)}</p>
-                  </div>
-                  <div className="bg-[#0a0a0a] rounded-lg p-2.5 sm:p-3">
-                    <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider">Earnings</p>
-                    <p className="text-lg sm:text-xl font-bold mt-0.5 text-yellow-400">KES {selectedCreator.total_earnings}</p>
-                    <p className="text-[8px] sm:text-[10px] text-gray-500">Paid: KES {selectedCreator.total_payouts_processed}</p>
-                  </div>
-                </div>
-
-                {/* Additional Info */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div className="bg-[#0a0a0a] rounded-lg p-3 sm:p-4">
-                    <h4 className="text-xs sm:text-sm font-semibold mb-2">Payout Information</h4>
-                    <div className="space-y-1 text-xs sm:text-sm">
-                      <p><span className="text-gray-400">Pending Payouts:</span> <span className="text-orange-400">KES {selectedCreator.pending_payout_amount}</span></p>
-                      <p><span className="text-gray-400">Total Payouts:</span> <span className="text-green-400">KES {selectedCreator.total_payouts_processed}</span></p>
-                      <p><span className="text-gray-400">Phone:</span> {selectedCreator.phone || 'N/A'}</p>
-                    </div>
-                  </div>
-                  <div className="bg-[#0a0a0a] rounded-lg p-3 sm:p-4">
-                    <h4 className="text-xs sm:text-sm font-semibold mb-2">Creator Details</h4>
-                    <div className="space-y-1 text-xs sm:text-sm">
-                      <p><span className="text-gray-400">Member Since:</span> {selectedCreator.signup_date ? new Date(selectedCreator.signup_date).toLocaleDateString() : 'N/A'}</p>
-                      <p><span className="text-gray-400">Last Active:</span> {selectedCreator.last_active ? new Date(selectedCreator.last_active).toLocaleDateString() : 'N/A'}</p>
-                      <p><span className="text-gray-400">Most Popular:</span> <span className="text-[#f5c518]">{selectedCreator.most_popular_film || 'N/A'}</span></p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Creator's Films */}
-                <div>
-                  <h4 className="text-xs sm:text-sm font-semibold mb-2">Films by {selectedCreator.creator_name}</h4>
-                  <div className="bg-[#0a0a0a] rounded-lg overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs sm:text-sm">
-                        <thead className="bg-[#0a0a0a] border-b border-white/5">
-                          <tr>
-                            <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider">Title</th>
-                            <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider hidden sm:table-cell">Price</th>
-                            <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider">Views</th>
-                            <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider hidden md:table-cell">Sales</th>
-                            <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                          {selectedCreator.films.length === 0 ? (
-                            <tr>
-                              <td colSpan={5} className="px-4 py-4 text-center text-gray-500">No films found</td>
-                            </tr>
-                          ) : (
-                            selectedCreator.films.map((film) => (
-                              <tr key={film.id} className="hover:bg-white/5 transition">
-                                <td className="px-2 sm:px-4 py-2">
-                                  <div className="flex items-center gap-2">
-                                    {film.thumbnail_url && (
-                                      <img src={film.thumbnail_url} alt="" className="w-6 h-8 sm:w-8 sm:h-10 object-cover rounded" />
-                                    )}
-                                    <span className="truncate max-w-[80px] sm:max-w-[150px]">{film.title}</span>
-                                  </div>
-                                </td>
-                                <td className="px-2 sm:px-4 py-2 hidden sm:table-cell">KES {film.price}</td>
-                                <td className="px-2 sm:px-4 py-2">{film.views}</td>
-                                <td className="px-2 sm:px-4 py-2 hidden md:table-cell">{film.purchase_count}</td>
-                                <td className="px-2 sm:px-4 py-2">
-                                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-medium ${
-                                    film.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                                    film.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                                    'bg-red-500/20 text-red-400'
-                                  }`}>
-                                    {film.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Payout History for this Creator */}
-                {selectedCreator.payouts.length > 0 && (
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-semibold mb-2">Payout History</h4>
-                    <div className="bg-[#0a0a0a] rounded-lg overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs sm:text-sm">
-                          <thead className="bg-[#0a0a0a] border-b border-white/5">
-                            <tr>
-                              <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider">Amount</th>
-                              <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider hidden sm:table-cell">Date</th>
-                              <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider">Status</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-white/5">
-                            {selectedCreator.payouts.map((payout) => (
-                              <tr key={payout.id} className="hover:bg-white/5 transition">
-                                <td className="px-2 sm:px-4 py-2 font-semibold text-green-400">KES {payout.amount}</td>
-                                <td className="px-2 sm:px-4 py-2 text-gray-400 hidden sm:table-cell">
-                                  {new Date(payout.requested_at).toLocaleDateString()}
-                                </td>
-                                <td className="px-2 sm:px-4 py-2">
-                                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-medium ${
-                                    payout.status === 'processed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                                  }`}>
-                                    {payout.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Transaction History for this Creator */}
-                {selectedCreator.transactions.length > 0 && (
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-semibold mb-2">Recent Purchases</h4>
-                    <div className="bg-[#0a0a0a] rounded-lg overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs sm:text-sm">
-                          <thead className="bg-[#0a0a0a] border-b border-white/5">
-                            <tr>
-                              <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider">Buyer</th>
-                              <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider hidden sm:table-cell">Amount</th>
-                              <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider">Earnings</th>
-                              <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider hidden md:table-cell">Date</th>
-                              <th className="px-2 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider">Status</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-white/5">
-                            {selectedCreator.transactions.slice(0, 10).map((tx) => (
-                              <tr key={tx.id} className="hover:bg-white/5 transition">
-                                <td className="px-2 sm:px-4 py-2 truncate max-w-[80px] sm:max-w-[120px]">{tx.buyer?.email || 'Unknown'}</td>
-                                <td className="px-2 sm:px-4 py-2 hidden sm:table-cell text-[#f5c518]">KES {tx.amount_paid}</td>
-                                <td className="px-2 sm:px-4 py-2 text-yellow-400">KES {tx.creator_earnings}</td>
-                                <td className="px-2 sm:px-4 py-2 text-gray-400 hidden md:table-cell">
-                                  {new Date(tx.created_at).toLocaleDateString()}
-                                </td>
-                                <td className="px-2 sm:px-4 py-2">
-                                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-medium ${
-                                    tx.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                                  }`}>
-                                    {tx.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                            {selectedCreator.transactions.length > 10 && (
-                              <tr>
-                                <td colSpan={5} className="px-4 py-2 text-center text-gray-500 text-xs">
-                                  + {selectedCreator.transactions.length - 10} more transactions
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Close button */}
-                <div className="flex justify-end pt-3 sm:pt-4 border-t border-white/10">
-                  <button 
-                    onClick={() => setIsCreatorModalOpen(false)} 
-                    className="border border-white/20 px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg text-sm font-semibold hover:bg-white/5 transition"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Confirmation Modal */}
         {isConfirmModalOpen && selectedTransaction && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
@@ -1153,6 +867,257 @@ export default function AdminPage() {
                     {confirmLoading ? 'Confirming...' : 'Confirm'}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 🆕 Creator Analytics Modal */}
+        {isCreatorModalOpen && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+            <div className="bg-[#1a1a1a] rounded-xl sm:rounded-2xl max-w-5xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto border border-white/10">
+              <div className="sticky top-0 bg-[#1a1a1a] px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10 flex justify-between items-center z-10">
+                <h2 className="text-base sm:text-lg md:text-xl font-bold">Creator Analytics</h2>
+                <button onClick={closeCreatorDetail} className="text-gray-400 hover:text-white transition p-1">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+
+              <div className="p-4 sm:p-6">
+                {loadingCreatorDetail && (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="w-8 h-8 border-4 border-[#f5c518] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+
+                {!loadingCreatorDetail && creatorDetailError && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-400 text-sm">
+                    {creatorDetailError}
+                  </div>
+                )}
+
+                {!loadingCreatorDetail && creatorDetail && creatorDetail.profile && (
+                  <div className="space-y-6">
+                    {/* Profile Header */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#0a0a0a] border border-white/10 overflow-hidden flex-shrink-0">
+                        {creatorDetail.profile.avatar_url ? (
+                          <img src={creatorDetail.profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-2xl text-gray-500">
+                            {(creatorDetail.profile.full_name || '?').charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-xl sm:text-2xl font-bold">{creatorDetail.profile.full_name || 'Unnamed Creator'}</h3>
+                          {creatorDetail.profile.is_creator && (
+                            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full border border-green-500/20">Creator</span>
+                          )}
+                          {creatorDetail.profile.is_admin && (
+                            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20">Admin</span>
+                          )}
+                        </div>
+                        {creatorDetail.profile.tagline && (
+                          <p className="text-gray-300 text-sm italic mt-0.5">"{creatorDetail.profile.tagline}"</p>
+                        )}
+                        {creatorDetail.profile.location && (
+                          <p className="text-gray-500 text-xs mt-0.5">{creatorDetail.profile.location}</p>
+                        )}
+                        {creatorDetail.profile.created_at && (
+                          <p className="text-gray-500 text-xs mt-0.5">
+                            Joined {new Date(creatorDetail.profile.created_at).toLocaleDateString()}
+                          </p>
+                        )}
+                        <p className="text-gray-500 text-[10px] mt-1 font-mono">ID: {creatorDetail.profile.id}</p>
+                      </div>
+                    </div>
+
+                    {creatorDetail.profile.bio && (
+                      <p className="text-gray-400 text-sm border-t border-white/5 pt-3">{creatorDetail.profile.bio}</p>
+                    )}
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+                      <div className="bg-[#0a0a0a] rounded-lg p-3 border border-white/5">
+                        <p className="text-gray-400 text-[9px] sm:text-[10px] uppercase tracking-wider font-medium">Projects</p>
+                        <p className="text-lg sm:text-xl font-bold mt-0.5">{creatorDetail.stats.totalProjects}</p>
+                      </div>
+                      <div className="bg-[#0a0a0a] rounded-lg p-3 border border-white/5">
+                        <p className="text-gray-400 text-[9px] sm:text-[10px] uppercase tracking-wider font-medium">Approved</p>
+                        <p className="text-lg sm:text-xl font-bold mt-0.5 text-green-400">{creatorDetail.stats.approvedProjects}</p>
+                      </div>
+                      <div className="bg-[#0a0a0a] rounded-lg p-3 border border-white/5">
+                        <p className="text-gray-400 text-[9px] sm:text-[10px] uppercase tracking-wider font-medium">Pending</p>
+                        <p className="text-lg sm:text-xl font-bold mt-0.5 text-yellow-400">{creatorDetail.stats.pendingProjects}</p>
+                      </div>
+                      <div className="bg-[#0a0a0a] rounded-lg p-3 border border-white/5">
+                        <p className="text-gray-400 text-[9px] sm:text-[10px] uppercase tracking-wider font-medium">Views</p>
+                        <p className="text-lg sm:text-xl font-bold mt-0.5 text-purple-400">{creatorDetail.stats.totalViews}</p>
+                      </div>
+                      <div className="bg-[#0a0a0a] rounded-lg p-3 border border-white/5">
+                        <p className="text-gray-400 text-[9px] sm:text-[10px] uppercase tracking-wider font-medium">Sales</p>
+                        <p className="text-lg sm:text-xl font-bold mt-0.5 text-blue-400">{creatorDetail.stats.totalSales}</p>
+                      </div>
+                      <div className="bg-[#0a0a0a] rounded-lg p-3 border border-white/5">
+                        <p className="text-gray-400 text-[9px] sm:text-[10px] uppercase tracking-wider font-medium">Revenue</p>
+                        <p className="text-lg sm:text-xl font-bold mt-0.5 text-green-400">KES {formatCurrency(creatorDetail.stats.totalRevenue)}</p>
+                      </div>
+                    </div>
+
+                    {/* Earnings Breakdown */}
+                    <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Earnings Breakdown</h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        <div>
+                          <p className="text-gray-500 text-xs">Earnings (85%)</p>
+                          <p className="text-[#f5c518] font-bold text-sm sm:text-base">KES {formatCurrency(creatorDetail.stats.yourEarnings)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">Platform Fee (15%)</p>
+                          <p className="text-yellow-400 font-bold text-sm sm:text-base">KES {formatCurrency(creatorDetail.stats.platformFees)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">Paid Out</p>
+                          <p className="text-purple-400 font-bold text-sm sm:text-base">KES {formatCurrency(creatorDetail.stats.totalPaid)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">Pending Payout</p>
+                          <p className="text-orange-400 font-bold text-sm sm:text-base">KES {formatCurrency(creatorDetail.stats.totalPending)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs">Available Balance</p>
+                          <p className="text-green-400 font-bold text-sm sm:text-base">KES {formatCurrency(creatorDetail.stats.availableBalance)}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Projects List */}
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Projects ({creatorDetail.content.length})</h4>
+                      {creatorDetail.content.length === 0 ? (
+                        <div className="bg-[#0a0a0a] rounded-lg p-6 text-center text-gray-500 text-sm border border-white/5">No projects uploaded yet.</div>
+                      ) : (
+                        <div className="bg-[#0a0a0a] rounded-xl border border-white/5 overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs sm:text-sm">
+                              <thead className="bg-[#1a1a1a] border-b border-white/5">
+                                <tr>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Title</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden sm:table-cell">Category</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Views</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Sales</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden md:table-cell">Revenue</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/5">
+                                {creatorDetail.content.map((p) => (
+                                  <tr key={p.id} className="hover:bg-white/5 transition">
+                                    <td className="px-3 sm:px-4 py-2 font-medium truncate max-w-[120px] sm:max-w-[180px]">{p.title}</td>
+                                    <td className="px-3 sm:px-4 py-2 text-gray-400 hidden sm:table-cell">{p.category || 'Film'}</td>
+                                    <td className="px-3 sm:px-4 py-2 text-gray-400">{p.views}</td>
+                                    <td className="px-3 sm:px-4 py-2 text-gray-400">{p.purchase_count}</td>
+                                    <td className="px-3 sm:px-4 py-2 text-green-400 hidden md:table-cell">KES {formatCurrency(p.price * p.purchase_count)}</td>
+                                    <td className="px-3 sm:px-4 py-2">
+                                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-xs font-medium ${
+                                        p.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                                        p.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                                        p.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                                        'bg-gray-500/20 text-gray-400'
+                                      }`}>
+                                        {p.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Payout History */}
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Payout History ({creatorDetail.payouts.length})</h4>
+                      {creatorDetail.payouts.length === 0 ? (
+                        <div className="bg-[#0a0a0a] rounded-lg p-6 text-center text-gray-500 text-sm border border-white/5">No payout requests yet.</div>
+                      ) : (
+                        <div className="bg-[#0a0a0a] rounded-xl border border-white/5 overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs sm:text-sm">
+                              <thead className="bg-[#1a1a1a] border-b border-white/5">
+                                <tr>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Amount</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden sm:table-cell">Phone</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Status</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden md:table-cell">Requested</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/5">
+                                {creatorDetail.payouts.map((p) => (
+                                  <tr key={p.id} className="hover:bg-white/5 transition">
+                                    <td className="px-3 sm:px-4 py-2 text-green-400 font-semibold">KES {formatCurrency(p.amount)}</td>
+                                    <td className="px-3 sm:px-4 py-2 text-gray-400 hidden sm:table-cell">{p.phone}</td>
+                                    <td className="px-3 sm:px-4 py-2">
+                                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-xs font-medium ${
+                                        p.status === 'processed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                                      }`}>
+                                        {p.status === 'processed' ? '✅ Paid' : '⏳ Pending'}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 sm:px-4 py-2 text-gray-400 hidden md:table-cell">{new Date(p.requested_at).toLocaleDateString()}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Recent Transactions for this creator's content */}
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Recent Purchases ({creatorDetail.purchases.length})</h4>
+                      {creatorDetail.purchases.length === 0 ? (
+                        <div className="bg-[#0a0a0a] rounded-lg p-6 text-center text-gray-500 text-sm border border-white/5">No purchases yet.</div>
+                      ) : (
+                        <div className="bg-[#0a0a0a] rounded-xl border border-white/5 overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs sm:text-sm">
+                              <thead className="bg-[#1a1a1a] border-b border-white/5">
+                                <tr>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Project</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Amount</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium">Status</th>
+                                  <th className="px-3 sm:px-4 py-2 text-left text-gray-500 text-[8px] sm:text-xs uppercase tracking-wider font-medium hidden md:table-cell">Date</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/5">
+                                {creatorDetail.purchases.slice(0, 20).map((p) => (
+                                  <tr key={p.id} className="hover:bg-white/5 transition">
+                                    <td className="px-3 sm:px-4 py-2 truncate max-w-[120px] sm:max-w-[180px]">{p.content?.title || 'N/A'}</td>
+                                    <td className="px-3 sm:px-4 py-2 text-[#f5c518] font-semibold">KES {formatCurrency(p.amount_paid)}</td>
+                                    <td className="px-3 sm:px-4 py-2">
+                                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-xs font-medium ${
+                                        p.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                                      }`}>
+                                        {p.status}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 sm:px-4 py-2 text-gray-400 hidden md:table-cell">{new Date(p.created_at).toLocaleDateString()}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
