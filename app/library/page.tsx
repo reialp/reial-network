@@ -36,7 +36,6 @@ export default function LibraryPage() {
   useEffect(() => {
     loadPurchases()
 
-    // Real-time subscription for purchases
     const channel = supabase
       .channel('library-updates')
       .on(
@@ -66,7 +65,6 @@ export default function LibraryPage() {
     }
     setUserId(session.user.id)
 
-    // First, get all purchases for this user
     const { data: purchasesData, error: purchasesError } = await supabase
       .from('purchases')
       .select(`
@@ -90,7 +88,6 @@ export default function LibraryPage() {
 
     console.log('Found purchases:', purchasesData.length)
 
-    // Get all content IDs from purchases
     const contentIds = purchasesData.map(p => p.content_id).filter(id => id)
 
     if (contentIds.length === 0) {
@@ -98,7 +95,6 @@ export default function LibraryPage() {
       return
     }
 
-    // Fetch content details for all purchased content
     const { data: contentData, error: contentError } = await supabase
       .from('content')
       .select(`
@@ -125,18 +121,11 @@ export default function LibraryPage() {
 
     console.log('Found content:', contentData?.length)
 
-    // Map content to a lookup object
     const contentMap: { [key: string]: any } = {}
     contentData?.forEach((content: any) => {
       contentMap[content.id] = content
     })
 
-    // 🔧 Helper: PostgREST returns an embedded belongs-to relationship
-    // (many content rows -> one profile) as a single OBJECT, not an array.
-    // The old code assumed it was always an array (`profiles[0].full_name`),
-    // which silently failed and fell back to "Unknown Creator" every time,
-    // even when the creator data loaded correctly. This handles both shapes
-    // safely, in case Supabase's return shape ever changes.
     const getCreatorName = (profilesField: any): string => {
       if (!profilesField) return 'Unknown Creator'
       if (Array.isArray(profilesField)) {
@@ -145,9 +134,8 @@ export default function LibraryPage() {
       return profilesField.full_name || 'Unknown Creator'
     }
 
-    // Build the purchase list with content details
     const mapped = purchasesData
-      .filter(purchase => contentMap[purchase.content_id]) // Only include if content exists
+      .filter(purchase => contentMap[purchase.content_id])
       .map((purchase: any) => {
         const content = contentMap[purchase.content_id]
         const creatorName = getCreatorName(content?.profiles)
@@ -174,7 +162,6 @@ export default function LibraryPage() {
     setLoading(false)
   }
 
-  // Filter purchases by search term
   const filteredPurchases = useMemo(() => {
     if (!searchTerm.trim()) return purchases
     const term = searchTerm.toLowerCase()
@@ -184,7 +171,6 @@ export default function LibraryPage() {
     )
   }, [purchases, searchTerm])
 
-  // Group by category for streaming rows
   const groupedPurchases = useMemo(() => {
     const grouped: Record<string, Purchase[]> = {}
     filteredPurchases.forEach(purchase => {
@@ -195,7 +181,6 @@ export default function LibraryPage() {
     return grouped
   }, [filteredPurchases])
 
-  // Recent purchases (first 10)
   const recentPurchases = filteredPurchases.slice(0, 10)
 
   const scrollRow = (direction: 'left' | 'right', rowId: string) => {
@@ -209,7 +194,6 @@ export default function LibraryPage() {
   }
 
   const renderFilmCard = (purchase: Purchase, isLarge: boolean = false) => {
-    // Generate a unique key for the watch URL
     const watchUrl = `/watch/${purchase.film.category}/${purchase.film.slug}?token=${encodeURIComponent(purchase.token)}`
     
     return (
@@ -258,8 +242,8 @@ export default function LibraryPage() {
   const renderRow = (title: string, items: Purchase[], rowId: string, isLarge: boolean = false) => {
     if (items.length === 0) return null
     return (
-      <div className="mb-4 sm:mb-8 md:mb-10 group/row">
-        <div className="flex justify-between items-center mb-2 sm:mb-3 md:mb-4 px-4 sm:px-0">
+      <div className="mb-4 sm:mb-8 md:mb-10 px-4 sm:px-6 md:px-8 lg:px-10 group/row">
+        <div className="flex justify-between items-center mb-2 sm:mb-3 md:mb-4">
           <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-white">
             {title}
           </h2>
@@ -276,7 +260,6 @@ export default function LibraryPage() {
           )}
         </div>
         <div className="relative">
-          {/* Scroll buttons */}
           <button
             onClick={() => scrollRow('left', rowId)}
             className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white p-1.5 sm:p-2 rounded-full transition-all duration-300 opacity-0 group-hover/row:opacity-100 hover:scale-110 hidden sm:flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10"
@@ -294,11 +277,8 @@ export default function LibraryPage() {
             </svg>
           </button>
 
-          {/* Gradient fades */}
-          <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-r from-[#0a0a0a] to-transparent z-10 pointer-events-none hidden sm:block" />
-          <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-[#0a0a0a] to-transparent z-10 pointer-events-none hidden sm:block" />
+          {/* Gradient fades REMOVED - no more haze */}
 
-          {/* Scroll container */}
           <div
             ref={(el) => { scrollContainerRefs.current[rowId] = el }}
             className="overflow-x-auto scrollbar-hide px-4 sm:px-0 pb-3 sm:pb-4 -mx-4 sm:mx-0 scroll-smooth"
@@ -308,7 +288,6 @@ export default function LibraryPage() {
             </div>
           </div>
 
-          {/* Mobile swipe indicator */}
           <div className="flex justify-center mt-1 sm:hidden">
             <span className="text-[8px] text-gray-600 animate-pulse">← Swipe to browse →</span>
           </div>
@@ -330,8 +309,8 @@ export default function LibraryPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
-      {/* Header */}
-      <div className="border-b border-white/5 px-4 sm:px-6 py-4 sm:py-6 md:py-8">
+      {/* Header - with consistent padding */}
+      <div className="border-b border-white/5 px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 md:py-8">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold">Your Library</h1>
           <p className="text-gray-400 text-xs sm:text-sm mt-0.5 sm:mt-1">
@@ -342,7 +321,7 @@ export default function LibraryPage() {
       </div>
 
       {filteredPurchases.length === 0 ? (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-12 sm:py-16 md:py-24">
           <div className="bg-[#1a1a1a] rounded-2xl p-8 sm:p-12 md:p-16 text-center border border-white/5">
             <div className="text-5xl sm:text-6xl mb-4">🎬</div>
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-2">
@@ -379,7 +358,7 @@ export default function LibraryPage() {
           })}
 
           {/* All Purchased */}
-          <div id="all-purchased" className="mt-4 sm:mt-6 md:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-white/5 px-4 sm:px-0">
+          <div id="all-purchased" className="mt-4 sm:mt-6 md:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-white/5 px-4 sm:px-6 md:px-8 lg:px-10">
             <div className="flex justify-between items-center mb-3 sm:mb-4">
               <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">All Purchased</h2>
               <span className="text-gray-500 text-xs sm:text-sm">{filteredPurchases.length} films</span>
