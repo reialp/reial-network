@@ -177,9 +177,9 @@ export default function CreatorAnalyticsPage() {
       const previousSales = previousPurchases.length
       const salesGrowth = previousSales > 0 ? ((recentSales - previousSales) / previousSales) * 100 : 0
 
-      // UPDATED: 70% creator earnings, 30% platform fee
-      const yourEarnings = Math.round(totalRevenue * 0.70)
-      const platformFees = Math.round(totalRevenue * 0.30)
+      // UPDATED: 70% creator earnings, 30% platform fee (exact values, no rounding)
+      const yourEarnings = totalRevenue * 0.70
+      const platformFees = totalRevenue * 0.30
 
       const { data: payouts } = await supabase
         .from('payout_requests')
@@ -258,7 +258,7 @@ export default function CreatorAnalyticsPage() {
           : 'Revenue is steady compared to last month'
 
       const recommendation = totalSales > 0 && bestProject
-        ? `Your best performing project "${bestProject.title}" has generated KES ${bestProject.revenue.toLocaleString()}. Consider creating similar content.`
+        ? `Your best performing project "${bestProject.title}" has generated KES ${bestProject.revenue.toFixed(2)}. Consider creating similar content.`
         : 'Start uploading content to begin earning'
 
       setData({
@@ -308,8 +308,9 @@ export default function CreatorAnalyticsPage() {
     loadAnalytics()
   }, [supabase, router, creatorId])
 
+  // UPDATED: Format currency with 2 decimal places
   const formatCurrency = (amount: number) => {
-    return amount.toLocaleString()
+    return amount.toFixed(2)
   }
 
   const selectedProject = data?.projects.find(p => p.id === selectedProjectId)
@@ -421,7 +422,7 @@ export default function CreatorAnalyticsPage() {
             </div>
           </div>
 
-          {/* Project Details & Revenue Breakdown - UPDATED with 70/30 split */}
+          {/* Project Details & Revenue Breakdown - UPDATED with 70/30 split and decimals */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5 min-w-0">
               <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 truncate">Project Details</h3>
@@ -454,11 +455,11 @@ export default function CreatorAnalyticsPage() {
                 </div>
                 <div className="flex justify-between items-center border-b border-white/5 pb-2 gap-2">
                   <span className="text-xs sm:text-sm text-gray-400 truncate">Your Earnings (70%)</span>
-                  <span className="text-xs sm:text-sm font-bold text-[#f5c518] whitespace-nowrap">KES {formatCurrency(Math.round(totalRevenue * 0.70))}</span>
+                  <span className="text-xs sm:text-sm font-bold text-[#f5c518] whitespace-nowrap">KES {formatCurrency(totalRevenue * 0.70)}</span>
                 </div>
                 <div className="flex justify-between items-center gap-2">
                   <span className="text-xs sm:text-sm text-gray-400 truncate">Platform Fee (30%)</span>
-                  <span className="text-xs sm:text-sm font-bold text-yellow-400 whitespace-nowrap">KES {formatCurrency(Math.round(totalRevenue * 0.30))}</span>
+                  <span className="text-xs sm:text-sm font-bold text-yellow-400 whitespace-nowrap">KES {formatCurrency(totalRevenue * 0.30)}</span>
                 </div>
               </div>
             </div>
@@ -607,7 +608,7 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
-        {/* Financial Breakdown - UPDATED with 70/30 split */}
+        {/* Financial Breakdown - UPDATED with 70/30 split and decimals */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5 min-w-0">
             <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate mb-3">Revenue Split</h3>
