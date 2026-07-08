@@ -90,6 +90,11 @@ async function getCreatorData(userId: string) {
   }
 }
 
+// Helper function to format currency with 2 decimal places
+function formatCurrency(amount: number): string {
+  return amount.toFixed(2)
+}
+
 export default async function CreatorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const data = await getCreatorData(id)
@@ -191,7 +196,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
               {profile.bio || 'No bio yet'}
             </p>
             
-            {/* Stats - Public */}
+            {/* Stats - Public - UPDATED with 2 decimal places */}
             <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3">
               <div className="flex items-center gap-1 text-sm text-gray-400">
                 <span className="font-bold text-white">{stats.totalProjects}</span> Projects
@@ -203,7 +208,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
                 <span className="font-bold text-white">{stats.totalPurchases}</span> Purchases
               </div>
               <div className="flex items-center gap-1 text-sm text-gray-400">
-                <span className="font-bold text-white">KES {stats.totalRevenue.toLocaleString()}</span> Revenue
+                <span className="font-bold text-white">KES {formatCurrency(stats.totalRevenue)}</span> Revenue
               </div>
             </div>
           </div>
