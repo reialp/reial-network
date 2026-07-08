@@ -101,7 +101,7 @@ export default function TermsPage() {
             </div>
             <div className="bg-[#0a0a0a] rounded-xl p-4 sm:p-6 border border-white/5">
               <h2 className="text-base sm:text-lg font-semibold text-[#f5c518] mb-2 sm:mb-3">Revenue Share</h2>
-              <p>You earn <span className="text-[#f5c518] font-bold">85%</span> of all sales. Reial Network retains <span className="text-yellow-400 font-bold">15%</span>.</p>
+              <p>You earn <span className="text-[#f5c518] font-bold">70%</span> of all sales. Reial Network retains <span className="text-yellow-400 font-bold">30%</span>.</p>
             </div>
             <div className="bg-[#0a0a0a] rounded-xl p-4 sm:p-6 border border-white/5">
               <h2 className="text-base sm:text-lg font-semibold text-[#f5c518] mb-2 sm:mb-3">Content Guidelines</h2>
