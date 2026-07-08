@@ -116,9 +116,9 @@ export default function DashboardPage() {
     const totalSales = contentData?.reduce((sum, c) => sum + (c.purchase_count || 0), 0) || 0
     const grossRevenue = contentData?.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0) || 0
     
-    // UPDATED: 70% creator earnings, 30% platform fee
-    const yourEarnings = Math.round(grossRevenue * 0.70)
-    const platformFees = Math.round(grossRevenue * 0.30)
+    // UPDATED: 70% creator earnings, 30% platform fee (exact values, no rounding)
+    const yourEarnings = grossRevenue * 0.70
+    const platformFees = grossRevenue * 0.30
 
     // FIX: Get creator earnings ONLY for this creator's content
     const contentIds = contentData?.map(c => c.id) || []
@@ -173,7 +173,7 @@ export default function DashboardPage() {
     }
 
     if (amount > stats.availableBalance) {
-      setPayoutMessage(`You can only request up to KES ${stats.availableBalance.toLocaleString()}. Your available balance is KES ${stats.availableBalance.toLocaleString()}.`)
+      setPayoutMessage(`You can only request up to KES ${stats.availableBalance.toFixed(2)}. Your available balance is KES ${stats.availableBalance.toFixed(2)}.`)
       return
     }
 
@@ -250,8 +250,9 @@ export default function DashboardPage() {
     }
   }
 
+  // UPDATED: Format currency with 2 decimal places
   const formatCurrency = (amount: number) => {
-    return amount.toLocaleString()
+    return amount.toFixed(2)
   }
 
   if (loading) {
