@@ -1,4 +1,8 @@
+'use client'
+
+import { useState } from 'react'
 import type { CreatorStats } from '../types'
+import CreatorDetailModal from './CreatorDetailModal'
 
 export default function CreatorAnalyticsTable({
   filteredCreators, creatorSearchTerm, setCreatorSearchTerm,
@@ -10,23 +14,7 @@ export default function CreatorAnalyticsTable({
   creatorSortBy: 'name' | 'revenue' | 'films' | 'views'
   setCreatorSortBy: (v: 'name' | 'revenue' | 'films' | 'views') => void
 }) {
-  const viewCreatorDetails = (creator: CreatorStats) => {
-    const revenue = Number(creator.total_revenue) || 0
-    const fees = revenue * 0.15
-    const earnings = revenue * 0.85
-    alert(
-      `Creator: ${creator.creator_name}\n` +
-      `Email: ${creator.email || 'N/A'}\n` +
-      `Total Films: ${creator.total_films}\n` +
-      `Total Revenue: KES ${revenue.toFixed(2)}\n` +
-      `Platform Fees (15%): KES ${fees.toFixed(2)}\n` +
-      `Creator Earnings (85%): KES ${earnings.toFixed(2)}\n` +
-      `Approved Films: ${creator.approved_films}\n` +
-      `Pending Films: ${creator.pending_films}\n` +
-      `Rejected Films: ${creator.rejected_films}\n` +
-      `Phone: ${creator.phone || 'N/A'}`
-    )
-  }
+  const [selectedCreator, setSelectedCreator] = useState<CreatorStats | null>(null)
 
   return (
     <div className="mb-6 sm:mb-8">
@@ -105,7 +93,7 @@ export default function CreatorAnalyticsTable({
                     <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right font-semibold text-green-400 text-xs sm:text-sm">KES {Number(creator.total_revenue).toFixed(2)}</td>
                     <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right font-semibold text-yellow-400 text-xs sm:text-sm hidden lg:table-cell">KES {Number(creator.total_earnings).toFixed(2)}</td>
                     <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-center">
-                      <button onClick={() => viewCreatorDetails(creator)} className="bg-[#f5c518] text-black px-2 sm:px-3 py-0.5 sm:py-1 rounded text-[8px] sm:text-xs font-semibold hover:bg-[#e0b010] transition whitespace-nowrap">
+                      <button onClick={() => setSelectedCreator(creator)} className="bg-[#f5c518] text-black px-2 sm:px-3 py-0.5 sm:py-1 rounded text-[8px] sm:text-xs font-semibold hover:bg-[#e0b010] transition whitespace-nowrap">
                         View Details
                       </button>
                     </td>
@@ -116,6 +104,10 @@ export default function CreatorAnalyticsTable({
           </table>
         </div>
       </div>
+
+      {selectedCreator && (
+        <CreatorDetailModal creator={selectedCreator} onClose={() => setSelectedCreator(null)} />
+      )}
     </div>
   )
 }
