@@ -115,8 +115,10 @@ export default function DashboardPage() {
     const pendingApprovals = contentData?.filter(c => c.status === 'pending').length || 0
     const totalSales = contentData?.reduce((sum, c) => sum + (c.purchase_count || 0), 0) || 0
     const grossRevenue = contentData?.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0) || 0
-    const yourEarnings = Math.round(grossRevenue * 0.85)
-    const platformFees = Math.round(grossRevenue * 0.15)
+    
+    // UPDATED: 70% creator earnings, 30% platform fee
+    const yourEarnings = Math.round(grossRevenue * 0.70)
+    const platformFees = Math.round(grossRevenue * 0.30)
 
     // FIX: Get creator earnings ONLY for this creator's content
     const contentIds = contentData?.map(c => c.id) || []
@@ -313,7 +315,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Revenue Breakdown */}
+        {/* Revenue Breakdown - UPDATED with 70/30 split */}
         <div className="bg-gradient-to-r from-[#1a1a1a] to-[#2a1a0a] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#f5c518]/20 mb-4 sm:mb-6 md:mb-8">
           <h3 className="text-sm sm:text-base md:text-lg font-bold mb-2 sm:mb-3 text-[#f5c518]">Revenue Breakdown</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -322,11 +324,11 @@ export default function DashboardPage() {
               <p className="text-xl sm:text-2xl font-bold text-blue-400">{stats.totalSales}</p>
             </div>
             <div className="bg-[#0a0a0a] rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/5">
-              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">You Earn (85%)</p>
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">You Earn (70%)</p>
               <p className="text-xl sm:text-2xl font-bold text-[#f5c518]">KES {formatCurrency(stats.yourEarnings)}</p>
             </div>
             <div className="bg-[#0a0a0a] rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/5">
-              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">Platform Fee (15%)</p>
+              <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium">Platform Fee (30%)</p>
               <p className="text-xl sm:text-2xl font-bold text-yellow-400">KES {formatCurrency(stats.platformFees)}</p>
             </div>
           </div>
@@ -351,7 +353,7 @@ export default function DashboardPage() {
             <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-green-400">KES {formatCurrency(stats.grossRevenue)}</p>
           </div>
           <div className="bg-gradient-to-br from-[#1a1a1a] to-[#2a1a0a] rounded-xl p-3 sm:p-4 md:p-5 border border-[#f5c518]/20 relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-[#f5c518]/10 px-2 sm:px-3 py-0.5 rounded-bl-lg text-[8px] sm:text-[10px] text-[#f5c518] font-semibold">85%</div>
+            <div className="absolute top-0 right-0 bg-[#f5c518]/10 px-2 sm:px-3 py-0.5 rounded-bl-lg text-[8px] sm:text-[10px] text-[#f5c518] font-semibold">70%</div>
             <p className="text-gray-400 text-[8px] sm:text-[10px] md:text-xs uppercase tracking-wider font-medium">Earnings</p>
             <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-[#f5c518]">KES {formatCurrency(stats.yourEarnings)}</p>
           </div>
