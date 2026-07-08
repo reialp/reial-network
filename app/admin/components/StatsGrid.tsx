@@ -7,7 +7,8 @@ export default function StatsGrid({ stats }: { stats: Stats }) {
     { label: 'Views', value: stats.totalViews, color: 'text-cyan-400' },
     { label: 'Sales', value: stats.totalSales, color: 'text-blue-400' },
     { label: 'Revenue', value: `KES ${Number(stats.totalRevenue).toFixed(2)}`, color: 'text-green-400' },
-    { label: 'Fees (15%)', value: `KES ${Number(stats.totalPlatformFees).toFixed(2)}`, color: 'text-yellow-400' },
+    // UPDATED: Changed from 15% to 30% platform fee
+    { label: 'Fees (30%)', value: `KES ${Number(stats.totalPlatformFees).toFixed(2)}`, color: 'text-yellow-400' },
     { label: 'Payouts', value: `KES ${Number(stats.pendingPayouts).toFixed(2)}`, color: 'text-orange-400' },
   ]
 
