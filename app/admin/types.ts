@@ -102,4 +102,5 @@ export interface Stats {
   flaggedContent: number
 }
 
-export const PLATFORM_FEE_PERCENTAGE = 0.15
+// UPDATED: Changed from 0.15 to 0.30 (15% to 30%)
+export const PLATFORM_FEE_PERCENTAGE = 0.30
