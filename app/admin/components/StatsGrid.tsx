@@ -14,14 +14,16 @@ export default function StatsGrid({ stats }: { stats: Stats }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
       {items.map((item) => (
-        <div key={item.label} className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-white/5">
-          <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">{item.label}</p>
-          <p className={`text-lg sm:text-xl md:text-2xl font-bold mt-0.5 ${item.color}`}>{item.value}</p>
+        <div key={item.label} className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-white/5 min-w-0">
+          <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium truncate">{item.label}</p>
+          <p className={`text-sm sm:text-base md:text-lg font-bold mt-0.5 truncate ${item.color}`} title={String(item.value)}>
+            {item.value}
+          </p>
         </div>
       ))}
-      <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-yellow-500/20 bg-yellow-500/5">
-        <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium">Pending</p>
-        <p className="text-lg sm:text-xl md:text-2xl font-bold mt-0.5 text-yellow-400">{stats.pendingSubmissions}</p>
+      <div className="bg-[#1a1a1a] rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 border border-yellow-500/20 bg-yellow-500/5 min-w-0">
+        <p className="text-gray-400 text-[8px] sm:text-[10px] uppercase tracking-wider font-medium truncate">Pending</p>
+        <p className="text-sm sm:text-base md:text-lg font-bold mt-0.5 text-yellow-400 truncate">{stats.pendingSubmissions}</p>
       </div>
     </div>
   )
