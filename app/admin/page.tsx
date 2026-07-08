@@ -7,9 +7,6 @@ import { exportReport } from './lib/exportReport'
 import StatsGrid from './components/StatsGrid'
 import ActivityLogPanel from './components/ActivityLogPanel'
 
-// ✅ Code-split: each tab's component (and its dependencies) is only
-// downloaded and rendered when that tab is actually opened, instead of all
-// six sections hydrating on every admin page load.
 const ContentModerationTable = dynamic(() => import('./components/ContentModerationTable'), {
   loading: () => <TabSkeleton />,
 })
@@ -127,7 +124,6 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Only the active tab's component tree exists in the DOM/bundle at a time */}
         {activeTab === 'content' && (
           <ContentModerationTable
             filteredContent={data.filteredContent}
