@@ -27,8 +27,10 @@ export function exportReport(
     report.push('EXECUTIVE SUMMARY')
     report.push('-'.repeat(80))
     report.push(`Total Revenue:              KES ${totalRevenue.toFixed(2)}`)
-    report.push(`Platform Fees (15%):        KES ${totalFees.toFixed(2)}`)
-    report.push(`Creator Earnings (85%):     KES ${totalEarnings.toFixed(2)}`)
+    // UPDATED: Changed from 15% to 30%
+    report.push(`Platform Fees (30%):        KES ${totalFees.toFixed(2)}`)
+    // UPDATED: Changed from 85% to 70%
+    report.push(`Creator Earnings (70%):     KES ${totalEarnings.toFixed(2)}`)
     report.push(`Total Sales:                ${stats.totalSales}`)
     report.push(`Total Films:                ${stats.totalFilms}`)
     report.push(`Total Creators:             ${stats.totalCreators}`)
@@ -97,7 +99,8 @@ export function exportReport(
     const activeCreators = creatorStats.filter(c => c.total_films > 0)
     if (activeCreators.length > 0) {
       activeCreators.forEach(creator => {
-        const earnings = Number(creator.total_revenue) * 0.85
+        // UPDATED: Changed from 0.85 to 0.70
+        const earnings = Number(creator.total_revenue) * 0.70
         report.push(
           creator.creator_name.substring(0, 23).padEnd(25) +
           creator.total_films.toString().padEnd(10) +
