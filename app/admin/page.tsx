@@ -65,11 +65,11 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header - UPDATED: Changed from 15% to 30% platform fee */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">Admin Panel</h1>
-            <p className="text-gray-400 text-xs sm:text-sm mt-0.5">Manage content, approvals, and payouts. (15% Platform Fee)</p>
+            <p className="text-gray-400 text-xs sm:text-sm mt-0.5">Manage content, approvals, and payouts. (30% Platform Fee)</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
