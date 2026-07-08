@@ -48,8 +48,8 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }: 
       description: 'Once you have filled in all the details, submit your project for approval. Our admin team will review it.',
     },
     {
-      title: 'Earn 85% of Every Sale',
-      description: 'You keep 85% of every sale. Request payouts once you reach KES 500.',
+      title: 'Earn 70% of Every Sale',
+      description: 'You keep 70% of every sale. Request payouts once you reach KES 500.',
     },
     {
       title: 'Track Your Performance',
