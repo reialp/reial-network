@@ -331,6 +331,7 @@ export function useAdminData() {
 
   // ✅ Now goes through the secured server action instead of a raw client-side
   // Supabase write — admin status and fee calculation happen server-side.
+  // Note: Platform fee is now 30% (70% to creators, 30% to platform)
   const handleConfirmTransaction = useCallback(async (transactionId: string, confirmationCode: string) => {
     const result = await confirmTransaction(transactionId, confirmationCode)
     if (result.success) {
