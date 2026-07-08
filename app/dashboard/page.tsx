@@ -285,6 +285,14 @@ export default function DashboardPage() {
               </svg>
               Refresh
             </button>
+            {isCreator && userId && (
+              <Link
+                href={`/creator/${userId}/analytics`}
+                className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
+              >
+                <span>📊</span> Full Analytics
+              </Link>
+            )}
             {isCreator && (
               <button
                 onClick={() => setIsOnboardingOpen(true)}
@@ -570,7 +578,7 @@ export default function DashboardPage() {
           <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 sm:mb-4">Contact Us</h3>
             <div className="space-y-3">
-              <a
+              
                 href="mailto:reialproduction@gmail.com"
                 className="flex items-center gap-3 p-3 bg-[#0a0a0a] rounded-lg hover:bg-white/5 transition group"
               >
@@ -586,7 +594,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
               </a>
-              <a
+              
                 href="https://wa.me/254704908255"
                 target="_blank"
                 rel="noopener noreferrer"
