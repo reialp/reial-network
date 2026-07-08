@@ -159,7 +159,8 @@ export async function confirmTransaction(transactionId: string, confirmationCode
 
     if (fetchError || !purchase) throw new Error('Transaction not found')
 
-    const PLATFORM_FEE_PERCENTAGE = 0.15
+    // UPDATED: Changed from 15% to 30% platform fee
+    const PLATFORM_FEE_PERCENTAGE = 0.30
     const amountPaid = Number(purchase.amount_paid || 0)
     const platformFee = Number((amountPaid * PLATFORM_FEE_PERCENTAGE).toFixed(2))
     const creatorEarnings = Number((amountPaid - platformFee).toFixed(2))
