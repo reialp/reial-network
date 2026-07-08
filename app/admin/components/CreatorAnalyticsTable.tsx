@@ -1,8 +1,5 @@
-'use client'
-
-import { useState } from 'react'
+import Link from 'next/link'
 import type { CreatorStats } from '../types'
-import CreatorDetailModal from './CreatorDetailModal'
 
 export default function CreatorAnalyticsTable({
   filteredCreators, creatorSearchTerm, setCreatorSearchTerm,
@@ -14,8 +11,6 @@ export default function CreatorAnalyticsTable({
   creatorSortBy: 'name' | 'revenue' | 'films' | 'views'
   setCreatorSortBy: (v: 'name' | 'revenue' | 'films' | 'views') => void
 }) {
-  const [selectedCreator, setSelectedCreator] = useState<CreatorStats | null>(null)
-
   return (
     <div className="mb-6 sm:mb-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
@@ -93,9 +88,12 @@ export default function CreatorAnalyticsTable({
                     <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right font-semibold text-green-400 text-xs sm:text-sm">KES {Number(creator.total_revenue).toFixed(2)}</td>
                     <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right font-semibold text-yellow-400 text-xs sm:text-sm hidden lg:table-cell">KES {Number(creator.total_earnings).toFixed(2)}</td>
                     <td className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-center">
-                      <button onClick={() => setSelectedCreator(creator)} className="bg-[#f5c518] text-black px-2 sm:px-3 py-0.5 sm:py-1 rounded text-[8px] sm:text-xs font-semibold hover:bg-[#e0b010] transition whitespace-nowrap">
+                      <Link
+                        href={`/creator/${creator.creator_id}/analytics`}
+                        className="bg-[#f5c518] text-black px-2 sm:px-3 py-0.5 sm:py-1 rounded text-[8px] sm:text-xs font-semibold hover:bg-[#e0b010] transition whitespace-nowrap inline-block"
+                      >
                         View Details
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))
@@ -104,10 +102,6 @@ export default function CreatorAnalyticsTable({
           </table>
         </div>
       </div>
-
-      {selectedCreator && (
-        <CreatorDetailModal creator={selectedCreator} onClose={() => setSelectedCreator(null)} />
-      )}
     </div>
   )
 }
