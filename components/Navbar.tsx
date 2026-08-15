@@ -151,26 +151,32 @@ export default function Navbar() {
     <nav className="bg-[#0a0a0a] border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm bg-black/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
-          {/* Logo + Brand - Clean Marketplace Style */}
-          <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
-            <div className="relative w-8 h-8 sm:w-10 sm:h-10">
+          
+          {/* LOGO + BRAND – FILM START HOVER EFFECT */}
+          <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group relative">
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10 group-hover:animate-pulse transition-all duration-200">
               <Image
                 src="/logo.png"
-                alt="Cheki marketplace powered by Reial Production"
+                alt="Cheki"
                 fill
                 className="object-contain"
                 sizes="(max-width: 640px) 32px, 40px"
                 priority
               />
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2">
-              <span className="text-lg sm:text-xl font-bold leading-none text-white group-hover:text-[#f5c518] transition-colors">
-                Cheki
+
+            {/* Brand name with cinema spotlight + flicker on hover */}
+            <span className="text-lg sm:text-xl font-bold leading-none text-white relative transition-all duration-150 group-hover:text-[#f5c518] group-hover:scale-105 group-hover:drop-shadow-[0_0_15px_rgba(245,197,24,0.6)]">
+              Cheki
+
+              {/* Spinning film reel – appears on hover */}
+              <span className="absolute -right-6 sm:-right-7 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:animate-spin text-[#f5c518] text-sm sm:text-base transition-opacity duration-200 pointer-events-none">
+                🎞️
               </span>
-              <span className="text-[8px] sm:text-[10px] text-gray-500 font-light group-hover:text-gray-300 transition-colors">
-                powered by Reial Production
-              </span>
-            </div>
+
+              {/* Flicker overlay – only runs on hover */}
+              <span className="absolute inset-0 pointer-events-none mix-blend-overlay rounded-sm film-flicker"></span>
+            </span>
           </Link>
 
           {/* Search Bar - Desktop */}
@@ -297,6 +303,56 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* CSS for the film flicker effect */}
+      <style jsx>{`
+        .film-flicker {
+          animation: none;
+        }
+
+        .group:hover .film-flicker {
+          animation: filmStart 0.6s ease-in-out forwards;
+        }
+
+        @keyframes filmStart {
+          0% {
+            opacity: 0;
+            background: rgba(245, 197, 24, 0);
+          }
+          10% {
+            opacity: 0.2;
+            background: rgba(245, 197, 24, 0.15);
+            transform: scale(1.02);
+          }
+          20% {
+            opacity: 0;
+            background: rgba(245, 197, 24, 0);
+          }
+          30% {
+            opacity: 0.15;
+            background: rgba(245, 197, 24, 0.1);
+            transform: scale(1.01);
+          }
+          45% {
+            opacity: 0;
+            background: rgba(245, 197, 24, 0);
+          }
+          60% {
+            opacity: 0.25;
+            background: rgba(245, 197, 24, 0.2);
+            transform: scale(1.03);
+          }
+          80% {
+            opacity: 0.05;
+            background: rgba(245, 197, 24, 0.05);
+          }
+          100% {
+            opacity: 0;
+            background: rgba(245, 197, 24, 0);
+            transform: scale(1);
+          }
+        }
+      `}</style>
     </nav>
   )
 }
