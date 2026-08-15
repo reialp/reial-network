@@ -154,22 +154,28 @@ export default function Navbar() {
     <nav className="bg-[#0a0a0a] border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm bg-black/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
-          {/* Logo + Brand Name */}
+          {/* Logo + Brand Name - UPGRADED & CREATIVE */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
                 src="/logo.png"
-                alt="Cheki – powered by Reial Production"
+                alt="Cheki powered by Reial Production"
                 fill
                 className="object-contain"
                 sizes="(max-width: 640px) 32px, 40px"
                 priority
               />
             </div>
-            <span className="text-lg sm:text-xl font-bold leading-none group-hover:text-[#f5c518] transition-colors flex items-center gap-1 sm:gap-2">
-              Cheki
-              <span className="text-xs sm:text-sm font-normal text-gray-400 group-hover:text-gray-300 transition-colors">
-                – powered by Reial Production
+            <span className="text-lg sm:text-xl font-bold leading-none flex items-center gap-1.5 sm:gap-2">
+              {/* Creative gradient on "Cheki" that swaps on hover */}
+              <span className="bg-gradient-to-r from-white via-white to-[#f5c518] bg-clip-text text-transparent group-hover:from-[#f5c518] group-hover:via-[#f5c518] group-hover:to-white transition-all duration-700">
+                Cheki
+              </span>
+              {/* Gold diamond separator */}
+              <span className="text-[#f5c518]/60 text-[10px] sm:text-xs">✦</span>
+              {/* Sleek uppercase tagline with wide tracking */}
+              <span className="text-[8px] sm:text-[10px] font-light text-gray-500 tracking-[0.15em] uppercase group-hover:text-gray-300 transition-colors">
+                powered by Reial Production
               </span>
             </span>
           </Link>
