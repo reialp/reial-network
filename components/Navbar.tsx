@@ -152,9 +152,9 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
           
-          {/* LOGO + BRAND – FILM START HOVER EFFECT */}
-          <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group relative">
-            <div className="relative w-8 h-8 sm:w-10 sm:h-10 group-hover:animate-pulse transition-all duration-200">
+          {/* LOGO + BRAND – Text-only film-start animation */}
+          <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
                 src="/logo.png"
                 alt="Cheki"
@@ -165,17 +165,9 @@ export default function Navbar() {
               />
             </div>
 
-            {/* Brand name with cinema spotlight + flicker on hover */}
-            <span className="text-lg sm:text-xl font-bold leading-none text-white relative transition-all duration-150 group-hover:text-[#f5c518] group-hover:scale-105 group-hover:drop-shadow-[0_0_15px_rgba(245,197,24,0.6)]">
+            {/* "Cheki" – hover triggers cinematic film-start flicker + glow */}
+            <span className="text-lg sm:text-xl font-bold leading-none text-white cheki-text">
               Cheki
-
-              {/* Spinning film reel – appears on hover */}
-              <span className="absolute -right-6 sm:-right-7 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:animate-spin text-[#f5c518] text-sm sm:text-base transition-opacity duration-200 pointer-events-none">
-                🎞️
-              </span>
-
-              {/* Flicker overlay – only runs on hover */}
-              <span className="absolute inset-0 pointer-events-none mix-blend-overlay rounded-sm film-flicker"></span>
             </span>
           </Link>
 
@@ -304,52 +296,48 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* CSS for the film flicker effect */}
+      {/* CSS – PURE TEXT ANIMATION, no icons, no extras */}
       <style jsx>{`
-        .film-flicker {
-          animation: none;
+        .cheki-text {
+          transition: color 0.15s ease, text-shadow 0.15s ease;
         }
 
-        .group:hover .film-flicker {
-          animation: filmStart 0.6s ease-in-out forwards;
+        .group:hover .cheki-text {
+          animation: filmStart 0.8s ease-in-out forwards;
+          color: #f5c518;
+          text-shadow: 0 0 15px rgba(245, 197, 24, 0.3);
         }
 
         @keyframes filmStart {
           0% {
-            opacity: 0;
-            background: rgba(245, 197, 24, 0);
-          }
-          10% {
             opacity: 0.2;
-            background: rgba(245, 197, 24, 0.15);
-            transform: scale(1.02);
+            transform: scale(0.95);
+            text-shadow: none;
           }
           20% {
-            opacity: 0;
-            background: rgba(245, 197, 24, 0);
+            opacity: 1;
+            transform: scale(1.05);
+            text-shadow: 0 0 30px #f5c518, 0 0 60px #f5c518;
           }
-          30% {
-            opacity: 0.15;
-            background: rgba(245, 197, 24, 0.1);
-            transform: scale(1.01);
-          }
-          45% {
-            opacity: 0;
-            background: rgba(245, 197, 24, 0);
+          40% {
+            opacity: 0.5;
+            transform: scale(1);
+            text-shadow: 0 0 10px #f5c518;
           }
           60% {
-            opacity: 0.25;
-            background: rgba(245, 197, 24, 0.2);
-            transform: scale(1.03);
+            opacity: 1;
+            transform: scale(1.08);
+            text-shadow: 0 0 40px #f5c518, 0 0 80px #f5c518;
           }
           80% {
-            opacity: 0.05;
-            background: rgba(245, 197, 24, 0.05);
+            opacity: 0.9;
+            transform: scale(1.02);
+            text-shadow: 0 0 20px #f5c518;
           }
           100% {
-            opacity: 0;
-            background: rgba(245, 197, 24, 0);
+            opacity: 1;
             transform: scale(1);
+            text-shadow: 0 0 15px rgba(245, 197, 24, 0.3);
           }
         }
       `}</style>
