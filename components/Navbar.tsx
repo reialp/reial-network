@@ -152,7 +152,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
           
-          {/* LOGO + BRAND – "Cheki." with yellow dot, film‑start on hover */}
+          {/* LOGO + BRAND – "Cheki." with yellow dot, continuous flicker on hover */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
@@ -165,9 +165,8 @@ export default function Navbar() {
               />
             </div>
 
-            {/* "Cheki" with yellow dot – all animation on the whole text */}
-            <span className="text-lg sm:text-xl font-bold leading-none text-white cheki-text">
-              Cheki<span className="text-[#f5c518]">.</span>
+            <span className="text-lg sm:text-xl font-bold leading-none text-white cheki-text font-cinema">
+              Cheki<span className="text-[#f5c518] dot">.</span>
             </span>
           </Link>
 
@@ -296,65 +295,60 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* CSS – only text animation, yellow dot stays yellow */}
+      {/* CSS – continuous flicker + glow while hovering, dot stays yellow */}
       <style jsx>{`
-        .cheki-text {
-          transition: color 0.2s ease, text-shadow 0.2s ease;
+        /* Optional: Use a more cinematic font – add to global CSS or import */
+        .font-cinema {
+          font-family: 'Playfair Display', 'Cinzel', serif;
         }
 
+        .cheki-text {
+          transition: color 0.2s ease, text-shadow 0.2s ease;
+          display: inline-block;
+        }
+
+        /* The dot stays yellow always */
+        .dot {
+          color: #f5c518;
+        }
+
+        /* On hover, start the flicker animation (continuous loop) */
         .group:hover .cheki-text {
-          animation: filmFlicker 1s ease-in-out forwards;
+          animation: filmFlicker 0.6s infinite alternate ease-in-out;
           color: #ffd700;
           text-shadow: 0 0 20px #ffd700, 0 0 40px #ffa500;
         }
 
-        /* The yellow dot inherits the glow but keeps its color */
-        .group:hover .cheki-text .text-\\[\\#f5c518\\] {
-          color: #ffd700; /* it will glow together */
+        /* The dot also gets the glow but stays yellow */
+        .group:hover .cheki-text .dot {
+          color: #f5c518;
           text-shadow: inherit;
         }
 
         @keyframes filmFlicker {
           0% {
-            opacity: 0.1;
-            transform: scale(0.9) rotate(-1.5deg);
-            color: #fff;
-            text-shadow: none;
+            opacity: 0.7;
+            transform: scale(1) rotate(0deg);
+            text-shadow: 0 0 10px #ffd700;
           }
-          15% {
+          25% {
             opacity: 1;
-            transform: scale(1.1) rotate(1deg);
-            color: #ffd700;
+            transform: scale(1.02) rotate(0.5deg);
             text-shadow: 0 0 30px #ffd700, 0 0 60px #ffa500;
           }
-          30% {
-            opacity: 0.3;
-            transform: scale(0.95) rotate(0deg);
-            color: #fff;
-            text-shadow: none;
+          50% {
+            opacity: 0.5;
+            transform: scale(0.98) rotate(-0.5deg);
+            text-shadow: 0 0 5px #ffd700;
           }
-          45% {
+          75% {
             opacity: 1;
-            transform: scale(1.15) rotate(-1deg);
-            color: #ffd700;
+            transform: scale(1.04) rotate(0.5deg);
             text-shadow: 0 0 40px #ffd700, 0 0 80px #ffa500;
           }
-          65% {
-            opacity: 0.6;
-            transform: scale(1.05) rotate(0.5deg);
-            color: #ffd700;
-            text-shadow: 0 0 20px #ffd700;
-          }
-          80% {
-            opacity: 1;
-            transform: scale(1.08) rotate(-0.5deg);
-            color: #ffd700;
-            text-shadow: 0 0 50px #ffd700, 0 0 100px #ffa500;
-          }
           100% {
-            opacity: 1;
+            opacity: 0.8;
             transform: scale(1) rotate(0deg);
-            color: #ffd700;
             text-shadow: 0 0 20px #ffd700, 0 0 40px #ffa500;
           }
         }
