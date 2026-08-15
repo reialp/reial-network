@@ -152,7 +152,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
           
-          {/* LOGO + BRAND – letters change one at a time */}
+          {/* LOGO + BRAND – each letter changes in random order */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
@@ -166,12 +166,12 @@ export default function Navbar() {
             </div>
 
             <span className="text-lg sm:text-xl font-bold leading-none text-white">
-              {/* Each letter gets a class with a delay */}
-              <span className="letter letter-1">C</span>
-              <span className="letter letter-2">h</span>
-              <span className="letter letter-3">e</span>
-              <span className="letter letter-4">k</span>
-              <span className="letter letter-5">i</span>
+              {/* Each letter gets a unique class with random-seeming delays */}
+              <span className="letter l1">C</span>
+              <span className="letter l2">h</span>
+              <span className="letter l3">e</span>
+              <span className="letter l4">k</span>
+              <span className="letter l5">i</span>
               <span className="letter dot-letter">.</span>
             </span>
           </Link>
@@ -301,26 +301,25 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* ===== STYLES – staggered letter animation ===== */}
+      {/* ===== STYLES – random-looking staggered delays ===== */}
       <style>{`
         .letter {
           display: inline-block;
           transition: color 0.2s ease;
         }
 
-        /* Dot is always yellow initially */
+        /* Dot is always yellow */
         .dot-letter {
           color: #f5c518;
         }
 
-        /* On group hover, each letter turns gold with a delay */
-        .group:hover .letter-1 { transition-delay: 0.0s; color: #f5c518; }
-        .group:hover .letter-2 { transition-delay: 0.1s; color: #f5c518; }
-        .group:hover .letter-3 { transition-delay: 0.2s; color: #f5c518; }
-        .group:hover .letter-4 { transition-delay: 0.3s; color: #f5c518; }
-        .group:hover .letter-5 { transition-delay: 0.4s; color: #f5c518; }
-        .group:hover .dot-letter { transition-delay: 0.5s; color: #f5c518; } /* dot also turns gold */
-        /* If you want the dot to stay yellow permanently, remove the last line */
+        /* Each letter gets a different delay – random order */
+        .group:hover .l1 { transition-delay: 0.3s; color: #f5c518; }
+        .group:hover .l2 { transition-delay: 0.0s; color: #f5c518; }  /* first */
+        .group:hover .l3 { transition-delay: 0.5s; color: #f5c518; }
+        .group:hover .l4 { transition-delay: 0.1s; color: #f5c518; }
+        .group:hover .l5 { transition-delay: 0.4s; color: #f5c518; }
+        .group:hover .dot-letter { transition-delay: 0.2s; color: #f5c518; }
       `}</style>
     </nav>
   )
