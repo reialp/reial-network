@@ -159,15 +159,18 @@ export default function Navbar() {
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
                 src="/logo.png"
-                alt="Reial Network"
+                alt="Cheki – powered by Reial Production"
                 fill
                 className="object-contain"
                 sizes="(max-width: 640px) 32px, 40px"
                 priority
               />
             </div>
-            <span className="text-lg sm:text-xl font-bold leading-none group-hover:text-[#f5c518] transition-colors">
-              Reial<span className="text-[#f5c518] group-hover:text-white transition-colors">.</span>
+            <span className="text-lg sm:text-xl font-bold leading-none group-hover:text-[#f5c518] transition-colors flex items-center gap-1 sm:gap-2">
+              Cheki
+              <span className="text-xs sm:text-sm font-normal text-gray-400 group-hover:text-gray-300 transition-colors">
+                – powered by Reial Production
+              </span>
             </span>
           </Link>
 
