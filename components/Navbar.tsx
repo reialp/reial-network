@@ -152,7 +152,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
           
-          {/* LOGO + BRAND – flashlight sweep + subtle breathing */}
+          {/* LOGO + BRAND */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
@@ -165,7 +165,6 @@ export default function Navbar() {
               />
             </div>
 
-            {/* The text that gets the effect */}
             <span className="text-lg sm:text-xl font-bold leading-none text-white cheki-brand">
               Cheki<span className="dot">.</span>
             </span>
@@ -296,7 +295,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* ===== STYLES – flashlight sweep + subtle breathing ===== */}
+      {/* ===== STYLES – SLOWER ANIMATIONS ===== */}
       <style>{`
         .cheki-brand {
           display: inline-block;
@@ -308,13 +307,7 @@ export default function Navbar() {
           color: #f5c518;
         }
 
-        /* On hover: flashlight sweep and breathing */
-        .group:hover .cheki-brand {
-          /* Breathing: gentle scale pulse */
-          animation: breathe 2s ease-in-out infinite;
-        }
-
-        /* Flashlight effect: we use a gradient on the text itself */
+        /* On hover: flashlight sweep and breathing – both now 4 seconds */
         .group:hover .cheki-brand {
           background: linear-gradient(
             120deg,
@@ -329,10 +322,10 @@ export default function Navbar() {
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
-          animation: flashlight 1.5s ease-in-out infinite, breathe 2s ease-in-out infinite;
+          /* Slowed down to 4s each */
+          animation: flashlight 4s ease-in-out infinite, breathe 4s ease-in-out infinite;
         }
 
-        /* The dot should also be part of the glow – we can let it inherit */
         .group:hover .cheki-brand .dot {
           color: inherit; /* Let the gradient color the dot too */
         }
@@ -352,8 +345,8 @@ export default function Navbar() {
             opacity: 1;
           }
           50% {
-            transform: scale(1.03);
-            opacity: 0.95;
+            transform: scale(1.02);
+            opacity: 0.98;
           }
           100% {
             transform: scale(1);
