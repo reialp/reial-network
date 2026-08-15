@@ -72,10 +72,8 @@ export default function Navbar() {
     }
   }, [supabase])
 
-  // Scroll to search results when search term changes
   useEffect(() => {
     if (searchTerm && searchTerm.length > 0) {
-      // Small delay to let the results render
       setTimeout(() => {
         const resultsContainer = document.getElementById('search-results')
         if (resultsContainer) {
@@ -84,7 +82,6 @@ export default function Navbar() {
             block: 'start' 
           })
         } else {
-          // If no results container, scroll to a reasonable position
           window.scrollTo({
             top: window.innerHeight * 0.6,
             behavior: 'smooth'
@@ -154,30 +151,26 @@ export default function Navbar() {
     <nav className="bg-[#0a0a0a] border-b border-white/10 sticky top-0 z-50 backdrop-blur-sm bg-black/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
-          {/* Logo + Brand Name - UPGRADED & CREATIVE */}
+          {/* Logo + Brand - Clean Marketplace Style */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
                 src="/logo.png"
-                alt="Cheki powered by Reial Production"
+                alt="Cheki marketplace powered by Reial Production"
                 fill
                 className="object-contain"
                 sizes="(max-width: 640px) 32px, 40px"
                 priority
               />
             </div>
-            <span className="text-lg sm:text-xl font-bold leading-none flex items-center gap-1.5 sm:gap-2">
-              {/* Creative gradient on "Cheki" that swaps on hover */}
-              <span className="bg-gradient-to-r from-white via-white to-[#f5c518] bg-clip-text text-transparent group-hover:from-[#f5c518] group-hover:via-[#f5c518] group-hover:to-white transition-all duration-700">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2">
+              <span className="text-lg sm:text-xl font-bold leading-none text-white group-hover:text-[#f5c518] transition-colors">
                 Cheki
               </span>
-              {/* Gold diamond separator */}
-              <span className="text-[#f5c518]/60 text-[10px] sm:text-xs">✦</span>
-              {/* Sleek uppercase tagline with wide tracking */}
-              <span className="text-[8px] sm:text-[10px] font-light text-gray-500 tracking-[0.15em] uppercase group-hover:text-gray-300 transition-colors">
+              <span className="text-[8px] sm:text-[10px] text-gray-500 font-light group-hover:text-gray-300 transition-colors">
                 powered by Reial Production
               </span>
-            </span>
+            </div>
           </Link>
 
           {/* Search Bar - Desktop */}
