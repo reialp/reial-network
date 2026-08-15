@@ -152,7 +152,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
           
-          {/* LOGO + BRAND – each letter changes in random order */}
+          {/* LOGO + BRAND – flashlight sweep + subtle breathing */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
@@ -165,14 +165,9 @@ export default function Navbar() {
               />
             </div>
 
-            <span className="text-lg sm:text-xl font-bold leading-none text-white">
-              {/* Each letter gets a unique class with random-seeming delays */}
-              <span className="letter l1">C</span>
-              <span className="letter l2">h</span>
-              <span className="letter l3">e</span>
-              <span className="letter l4">k</span>
-              <span className="letter l5">i</span>
-              <span className="letter dot-letter">.</span>
+            {/* The text that gets the effect */}
+            <span className="text-lg sm:text-xl font-bold leading-none text-white cheki-brand">
+              Cheki<span className="dot">.</span>
             </span>
           </Link>
 
@@ -301,25 +296,70 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* ===== STYLES – random-looking staggered delays ===== */}
+      {/* ===== STYLES – flashlight sweep + subtle breathing ===== */}
       <style>{`
-        .letter {
+        .cheki-brand {
           display: inline-block;
-          transition: color 0.2s ease;
+          transition: transform 0.3s ease;
         }
 
         /* Dot is always yellow */
-        .dot-letter {
+        .dot {
           color: #f5c518;
         }
 
-        /* Each letter gets a different delay – random order */
-        .group:hover .l1 { transition-delay: 0.3s; color: #f5c518; }
-        .group:hover .l2 { transition-delay: 0.0s; color: #f5c518; }  /* first */
-        .group:hover .l3 { transition-delay: 0.5s; color: #f5c518; }
-        .group:hover .l4 { transition-delay: 0.1s; color: #f5c518; }
-        .group:hover .l5 { transition-delay: 0.4s; color: #f5c518; }
-        .group:hover .dot-letter { transition-delay: 0.2s; color: #f5c518; }
+        /* On hover: flashlight sweep and breathing */
+        .group:hover .cheki-brand {
+          /* Breathing: gentle scale pulse */
+          animation: breathe 2s ease-in-out infinite;
+        }
+
+        /* Flashlight effect: we use a gradient on the text itself */
+        .group:hover .cheki-brand {
+          background: linear-gradient(
+            120deg,
+            #fff 0%,
+            #f5c518 20%,
+            #f5c518 40%,
+            #fff 60%,
+            #f5c518 80%,
+            #fff 100%
+          );
+          background-size: 300% 100%;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          animation: flashlight 1.5s ease-in-out infinite, breathe 2s ease-in-out infinite;
+        }
+
+        /* The dot should also be part of the glow – we can let it inherit */
+        .group:hover .cheki-brand .dot {
+          color: inherit; /* Let the gradient color the dot too */
+        }
+
+        @keyframes flashlight {
+          0% {
+            background-position: -100% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+
+        @keyframes breathe {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.03);
+            opacity: 0.95;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
       `}</style>
     </nav>
   )
