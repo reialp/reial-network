@@ -152,7 +152,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
           
-          {/* LOGO + BRAND – "Cheki." with yellow dot, continuous flicker on hover */}
+          {/* LOGO + BRAND */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
@@ -165,8 +165,9 @@ export default function Navbar() {
               />
             </div>
 
-            <span className="text-lg sm:text-xl font-bold leading-none text-white cheki-text font-cinema">
-              Cheki<span className="text-[#f5c518] dot">.</span>
+            {/* "Cheki." – dot is yellow */}
+            <span className="text-lg sm:text-xl font-bold leading-none text-white cheki-text">
+              Cheki<span className="dot">.</span>
             </span>
           </Link>
 
@@ -295,60 +296,62 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* CSS – continuous flicker + glow while hovering, dot stays yellow */}
+      {/* ===== ANIMATION ===== */}
+      {/* This is where the animation lives. Look below. */}
       <style jsx>{`
-        /* Optional: Use a more cinematic font – add to global CSS or import */
-        .font-cinema {
-          font-family: 'Playfair Display', 'Cinzel', serif;
-        }
-
-        .cheki-text {
-          transition: color 0.2s ease, text-shadow 0.2s ease;
-          display: inline-block;
-        }
-
-        /* The dot stays yellow always */
+        /* The dot is always yellow */
         .dot {
           color: #f5c518;
         }
 
-        /* On hover, start the flicker animation (continuous loop) */
+        /* The text starts white, with a smooth transition */
+        .cheki-text {
+          display: inline-block;
+          transition: color 0.1s ease, text-shadow 0.1s ease;
+        }
+
+        /* ===== ON HOVER – HERE IS THE ANIMATION ===== */
         .group:hover .cheki-text {
-          animation: filmFlicker 0.6s infinite alternate ease-in-out;
+          animation: filmFlicker 0.6s ease-in-out forwards;
           color: #ffd700;
           text-shadow: 0 0 20px #ffd700, 0 0 40px #ffa500;
         }
 
-        /* The dot also gets the glow but stays yellow */
+        /* The dot stays yellow and inherits the glow */
         .group:hover .cheki-text .dot {
           color: #f5c518;
           text-shadow: inherit;
         }
 
+        /* ===== THE ACTUAL ANIMATION KEYFRAMES ===== */
         @keyframes filmFlicker {
           0% {
-            opacity: 0.7;
-            transform: scale(1) rotate(0deg);
-            text-shadow: 0 0 10px #ffd700;
+            opacity: 0.2;
+            transform: scale(0.9);
           }
-          25% {
+          20% {
             opacity: 1;
-            transform: scale(1.02) rotate(0.5deg);
+            transform: scale(1.15);
             text-shadow: 0 0 30px #ffd700, 0 0 60px #ffa500;
           }
-          50% {
+          40% {
             opacity: 0.5;
-            transform: scale(0.98) rotate(-0.5deg);
-            text-shadow: 0 0 5px #ffd700;
+            transform: scale(0.95);
+            text-shadow: 0 0 10px #ffd700;
           }
-          75% {
+          60% {
             opacity: 1;
-            transform: scale(1.04) rotate(0.5deg);
+            transform: scale(1.2);
             text-shadow: 0 0 40px #ffd700, 0 0 80px #ffa500;
           }
-          100% {
+          80% {
             opacity: 0.8;
-            transform: scale(1) rotate(0deg);
+            transform: scale(1.05);
+            text-shadow: 0 0 20px #ffd700;
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
             text-shadow: 0 0 20px #ffd700, 0 0 40px #ffa500;
           }
         }
