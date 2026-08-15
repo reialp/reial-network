@@ -152,7 +152,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
           
-          {/* LOGO + BRAND – SIMPLE HOVER: color + scale */}
+          {/* LOGO + BRAND – letters change one at a time */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
@@ -165,8 +165,14 @@ export default function Navbar() {
               />
             </div>
 
-            <span className="text-lg sm:text-xl font-bold leading-none text-white transition-all duration-300 group-hover:text-[#f5c518] group-hover:scale-105">
-              Cheki<span className="text-[#f5c518]">.</span>
+            <span className="text-lg sm:text-xl font-bold leading-none text-white">
+              {/* Each letter gets a class with a delay */}
+              <span className="letter letter-1">C</span>
+              <span className="letter letter-2">h</span>
+              <span className="letter letter-3">e</span>
+              <span className="letter letter-4">k</span>
+              <span className="letter letter-5">i</span>
+              <span className="letter dot-letter">.</span>
             </span>
           </Link>
 
@@ -294,6 +300,28 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* ===== STYLES – staggered letter animation ===== */}
+      <style>{`
+        .letter {
+          display: inline-block;
+          transition: color 0.2s ease;
+        }
+
+        /* Dot is always yellow initially */
+        .dot-letter {
+          color: #f5c518;
+        }
+
+        /* On group hover, each letter turns gold with a delay */
+        .group:hover .letter-1 { transition-delay: 0.0s; color: #f5c518; }
+        .group:hover .letter-2 { transition-delay: 0.1s; color: #f5c518; }
+        .group:hover .letter-3 { transition-delay: 0.2s; color: #f5c518; }
+        .group:hover .letter-4 { transition-delay: 0.3s; color: #f5c518; }
+        .group:hover .letter-5 { transition-delay: 0.4s; color: #f5c518; }
+        .group:hover .dot-letter { transition-delay: 0.5s; color: #f5c518; } /* dot also turns gold */
+        /* If you want the dot to stay yellow permanently, remove the last line */
+      `}</style>
     </nav>
   )
 }
