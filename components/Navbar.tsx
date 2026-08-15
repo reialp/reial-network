@@ -152,7 +152,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
           
-          {/* LOGO + BRAND – PURE TEXT, FILM-START FLICKER */}
+          {/* LOGO + BRAND – "Cheki." with yellow dot, film‑start on hover */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
@@ -165,9 +165,9 @@ export default function Navbar() {
               />
             </div>
 
-            {/* Only "Cheki" – all animation happens here */}
+            {/* "Cheki" with yellow dot – all animation on the whole text */}
             <span className="text-lg sm:text-xl font-bold leading-none text-white cheki-text">
-              Cheki
+              Cheki<span className="text-[#f5c518]">.</span>
             </span>
           </Link>
 
@@ -296,7 +296,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* CSS – ONLY TEXT ANIMATION, VIVID YELLOW/GOLD FLICKER */}
+      {/* CSS – only text animation, yellow dot stays yellow */}
       <style jsx>{`
         .cheki-text {
           transition: color 0.2s ease, text-shadow 0.2s ease;
@@ -304,14 +304,20 @@ export default function Navbar() {
 
         .group:hover .cheki-text {
           animation: filmFlicker 1s ease-in-out forwards;
-          color: #ffd700; /* bright gold */
-          text-shadow: 0 0 20px #ffd700, 0 0 40px #ffd700, 0 0 80px #ffd700;
+          color: #ffd700;
+          text-shadow: 0 0 20px #ffd700, 0 0 40px #ffa500;
+        }
+
+        /* The yellow dot inherits the glow but keeps its color */
+        .group:hover .cheki-text .text-\\[\\#f5c518\\] {
+          color: #ffd700; /* it will glow together */
+          text-shadow: inherit;
         }
 
         @keyframes filmFlicker {
           0% {
             opacity: 0.1;
-            transform: scale(0.9) rotate(-2deg);
+            transform: scale(0.9) rotate(-1.5deg);
             color: #fff;
             text-shadow: none;
           }
@@ -349,7 +355,7 @@ export default function Navbar() {
             opacity: 1;
             transform: scale(1) rotate(0deg);
             color: #ffd700;
-            text-shadow: 0 0 20px #ffd700, 0 0 40px #ffd700;
+            text-shadow: 0 0 20px #ffd700, 0 0 40px #ffa500;
           }
         }
       `}</style>
