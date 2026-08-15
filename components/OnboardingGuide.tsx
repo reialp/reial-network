@@ -16,7 +16,7 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }: 
 
   const steps = [
     {
-      title: 'Welcome to Reial Network',
+      title: 'Welcome to Cheki',
       description: 'You are now a creator. Here is how to get started.',
     },
     {
@@ -35,7 +35,7 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }: 
     },
     {
       title: 'Add a Poster',
-      description: 'Upload your poster image directly on Reial Network. JPEG, PNG, GIF, or WebP up to 5MB.',
+      description: 'Upload your poster image directly on Cheki. JPEG, PNG, GIF, or WebP up to 5MB.',
       details: [
         'Click the poster upload area on the upload form',
         'Select your image file from your computer',
@@ -108,17 +108,14 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }: 
       <div className="bg-[#1a1a1a] rounded-xl sm:rounded-2xl max-w-lg w-full border border-white/10 shadow-2xl mx-auto">
         <div className="p-4 sm:p-5 md:p-6">
           <div className="text-center">
-            {/* Title - Responsive */}
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-1.5 sm:mb-2">
               {currentStep.title}
             </h2>
             
-            {/* Description - Responsive */}
             <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4">
               {currentStep.description}
             </p>
             
-            {/* Details List - Mobile optimized */}
             {currentStep.details && (
               <div className="text-left space-y-1.5 sm:space-y-2 mb-4 sm:mb-5">
                 {currentStep.details.map((detail, index) => (
@@ -137,7 +134,6 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }: 
               </div>
             )}
 
-            {/* Progress Dots - Responsive */}
             <div className="flex justify-center gap-1.5 sm:gap-2 mb-4 sm:mb-5">
               {steps.map((_, i) => (
                 <div
@@ -151,7 +147,6 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }: 
               ))}
             </div>
 
-            {/* Buttons - Mobile optimized */}
             <div className="flex gap-2 sm:gap-3">
               {step > 0 && (
                 <button
