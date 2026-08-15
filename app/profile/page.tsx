@@ -361,7 +361,7 @@ function ProfileForm() {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className="w-16 h-16 rounded-full bg-[#f5c518]/10 flex items-center justify-center mx-auto">
-                <span className="text-3xl">🎬</span>
+                <span className="text-2xl text-gray-500">No cover</span>
               </div>
               <p className="text-gray-500 text-sm mt-2">Add a cover image</p>
             </div>
@@ -385,8 +385,8 @@ function ProfileForm() {
                     className="object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-4xl text-gray-500">
-                    {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : '👤'}
+                  <div className="w-full h-full flex items-center justify-center text-xl text-gray-500">
+                    No avatar
                   </div>
                 )}
               </div>
@@ -406,11 +406,7 @@ function ProfileForm() {
                     </span>
                   )}
                   {profile.location && (
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
+                    <span className="text-xs text-gray-400">
                       {profile.location}
                     </span>
                   )}
@@ -432,11 +428,8 @@ function ProfileForm() {
                 )}
                 <button
                   onClick={handleEdit}
-                  className="px-4 py-2 bg-[#f5c518] text-black rounded-lg text-sm font-medium hover:bg-[#e0b010] transition flex items-center gap-2 shadow-lg shadow-[#f5c518]/20"
+                  className="px-4 py-2 bg-[#f5c518] text-black rounded-lg text-sm font-medium hover:bg-[#e0b010] transition shadow-lg shadow-[#f5c518]/20"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
                   Edit Profile
                 </button>
               </div>
@@ -454,39 +447,27 @@ function ProfileForm() {
               </div>
             )}
 
-            {/* Social Links */}
+            {/* Social Links - no icons, just plain text links */}
             {(profile.social_instagram || profile.social_twitter || profile.social_youtube || profile.social_website) && (
               <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/5">
                 {profile.social_instagram && (
-                  <a href={profile.social_instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-1.5">
-                    <span>Instagram</span>
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
+                  <a href={profile.social_instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm">
+                    Instagram
                   </a>
                 )}
                 {profile.social_twitter && (
-                  <a href={profile.social_twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-1.5">
-                    <span>Twitter</span>
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
+                  <a href={profile.social_twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm">
+                    Twitter
                   </a>
                 )}
                 {profile.social_youtube && (
-                  <a href={profile.social_youtube} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-1.5">
-                    <span>YouTube</span>
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
+                  <a href={profile.social_youtube} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm">
+                    YouTube
                   </a>
                 )}
                 {profile.social_website && (
-                  <a href={profile.social_website} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-1.5">
-                    <span>Website</span>
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
+                  <a href={profile.social_website} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm">
+                    Website
                   </a>
                 )}
               </div>
@@ -511,20 +492,14 @@ function ProfileForm() {
                   href="https://wa.me/254704908255"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                  className="px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded-lg text-xs font-medium transition"
                 >
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                  </svg>
                   WhatsApp
                 </a>
                 <button
                   onClick={handleLogout}
-                  className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+                  className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-lg text-xs font-medium transition"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
                   Logout
                 </button>
               </div>
@@ -540,9 +515,6 @@ function ProfileForm() {
               <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce">
                 <div className="bg-[#f5c518] text-black px-6 py-3 rounded-full font-semibold shadow-2xl flex items-center gap-3">
                   <span>Scroll down to edit your profile</span>
-                  <svg className="w-5 h-5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
                 </div>
               </div>
             )}
@@ -560,8 +532,8 @@ function ProfileForm() {
                   </div>
                 )}
                 {success && (
-                  <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-                    <span>Profile saved successfully</span>
+                  <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl text-sm">
+                    Profile saved successfully
                   </div>
                 )}
 
@@ -720,7 +692,8 @@ function ProfileForm() {
                     </div>
                     <div>
                       <label className="block text-xs text-gray-500">Twitter</label>
-                      <input                        type="url"
+                      <input
+                        type="url"
                         value={profile.social_twitter}
                         onChange={(e) => setProfile({ ...profile, social_twitter: e.target.value })}
                         className="mt-1 block w-full px-4 py-2 bg-[#0a0a0a] border border-white/10 rounded-xl focus:ring-2 focus:ring-[#f5c518] focus:border-transparent outline-none text-white placeholder-gray-500 text-sm transition"
@@ -794,7 +767,7 @@ function ProfileForm() {
                     />
                     <div>
                       <p className="text-sm font-medium text-gray-300">Become a Creator</p>
-                      <p className="text-xs text-gray-500">Upload and sell your content to earn 85% of every sale</p>
+                      <p className="text-xs text-gray-500">Upload and sell your content to earn 70% of every sale</p>
                     </div>
                   </label>
                 </div>
@@ -803,11 +776,11 @@ function ProfileForm() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="flex-1 bg-[#f5c518] text-black py-3 rounded-xl font-semibold hover:bg-[#e0b010] transition disabled:opacity-50 text-sm sm:text-base flex items-center justify-center gap-2"
+                    className="flex-1 bg-[#f5c518] text-black py-3 rounded-xl font-semibold hover:bg-[#e0b010] transition disabled:opacity-50 text-sm sm:text-base"
                   >
                     {saving ? (
                       <>
-                        <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        <span className="inline-block w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin mr-2" />
                         Saving...
                       </>
                     ) : (
@@ -828,7 +801,7 @@ function ProfileForm() {
         )}
       </div>
 
-      {/* Floating WhatsApp Button */}
+      {/* Floating WhatsApp Button - keeping only the text link, removed icon, but we can keep as a simple text button for clarity */}
       <a
         href="https://wa.me/254704908255"
         target="_blank"
@@ -837,10 +810,8 @@ function ProfileForm() {
       >
         <div className="relative">
           <div className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75" />
-          <div className="relative w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300">
-            <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-            </svg>
+          <div className="relative w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300 text-white text-sm font-bold">
+            WA
           </div>
         </div>
       </a>
