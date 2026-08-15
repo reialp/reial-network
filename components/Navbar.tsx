@@ -152,7 +152,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
           
-          {/* LOGO + BRAND – Text-only film-start animation */}
+          {/* LOGO + BRAND – PURE TEXT, FILM-START FLICKER */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
@@ -165,7 +165,7 @@ export default function Navbar() {
               />
             </div>
 
-            {/* "Cheki" – hover triggers cinematic film-start flicker + glow */}
+            {/* Only "Cheki" – all animation happens here */}
             <span className="text-lg sm:text-xl font-bold leading-none text-white cheki-text">
               Cheki
             </span>
@@ -296,48 +296,60 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* CSS – PURE TEXT ANIMATION, no icons, no extras */}
+      {/* CSS – ONLY TEXT ANIMATION, VIVID YELLOW/GOLD FLICKER */}
       <style jsx>{`
         .cheki-text {
-          transition: color 0.15s ease, text-shadow 0.15s ease;
+          transition: color 0.2s ease, text-shadow 0.2s ease;
         }
 
         .group:hover .cheki-text {
-          animation: filmStart 0.8s ease-in-out forwards;
-          color: #f5c518;
-          text-shadow: 0 0 15px rgba(245, 197, 24, 0.3);
+          animation: filmFlicker 1s ease-in-out forwards;
+          color: #ffd700; /* bright gold */
+          text-shadow: 0 0 20px #ffd700, 0 0 40px #ffd700, 0 0 80px #ffd700;
         }
 
-        @keyframes filmStart {
+        @keyframes filmFlicker {
           0% {
-            opacity: 0.2;
-            transform: scale(0.95);
+            opacity: 0.1;
+            transform: scale(0.9) rotate(-2deg);
+            color: #fff;
             text-shadow: none;
           }
-          20% {
+          15% {
             opacity: 1;
-            transform: scale(1.05);
-            text-shadow: 0 0 30px #f5c518, 0 0 60px #f5c518;
+            transform: scale(1.1) rotate(1deg);
+            color: #ffd700;
+            text-shadow: 0 0 30px #ffd700, 0 0 60px #ffa500;
           }
-          40% {
-            opacity: 0.5;
-            transform: scale(1);
-            text-shadow: 0 0 10px #f5c518;
+          30% {
+            opacity: 0.3;
+            transform: scale(0.95) rotate(0deg);
+            color: #fff;
+            text-shadow: none;
           }
-          60% {
+          45% {
             opacity: 1;
-            transform: scale(1.08);
-            text-shadow: 0 0 40px #f5c518, 0 0 80px #f5c518;
+            transform: scale(1.15) rotate(-1deg);
+            color: #ffd700;
+            text-shadow: 0 0 40px #ffd700, 0 0 80px #ffa500;
+          }
+          65% {
+            opacity: 0.6;
+            transform: scale(1.05) rotate(0.5deg);
+            color: #ffd700;
+            text-shadow: 0 0 20px #ffd700;
           }
           80% {
-            opacity: 0.9;
-            transform: scale(1.02);
-            text-shadow: 0 0 20px #f5c518;
+            opacity: 1;
+            transform: scale(1.08) rotate(-0.5deg);
+            color: #ffd700;
+            text-shadow: 0 0 50px #ffd700, 0 0 100px #ffa500;
           }
           100% {
             opacity: 1;
-            transform: scale(1);
-            text-shadow: 0 0 15px rgba(245, 197, 24, 0.3);
+            transform: scale(1) rotate(0deg);
+            color: #ffd700;
+            text-shadow: 0 0 20px #ffd700, 0 0 40px #ffd700;
           }
         }
       `}</style>
