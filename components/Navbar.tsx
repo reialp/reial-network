@@ -152,7 +152,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between py-3 gap-2">
           
-          {/* LOGO + BRAND */}
+          {/* LOGO + BRAND – SIMPLE HOVER: color + scale */}
           <Link href="/" className="flex items-center gap-1 sm:gap-2 flex-shrink-0 group">
             <div className="relative w-8 h-8 sm:w-10 sm:h-10">
               <Image
@@ -165,9 +165,8 @@ export default function Navbar() {
               />
             </div>
 
-            {/* "Cheki." – dot is yellow */}
-            <span className="text-lg sm:text-xl font-bold leading-none text-white cheki-text">
-              Cheki<span className="dot">.</span>
+            <span className="text-lg sm:text-xl font-bold leading-none text-white transition-all duration-300 group-hover:text-[#f5c518] group-hover:scale-105">
+              Cheki<span className="text-[#f5c518]">.</span>
             </span>
           </Link>
 
@@ -295,96 +294,6 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-
-      {/* ===== CHEKI BRAND ANIMATION ===== */}
-      <style jsx>{`
-        .group {
-          isolation: isolate;
-        }
-
-        .group > div:first-child {
-          transition: transform 240ms ease, filter 240ms ease;
-        }
-
-        .cheki-text {
-          position: relative;
-          display: inline-block;
-          transform-origin: left center;
-          transition: color 180ms ease, text-shadow 180ms ease;
-        }
-
-        .dot {
-          color: #f5c518;
-          display: inline-block;
-          transition: transform 180ms ease, text-shadow 180ms ease;
-        }
-
-        .cheki-text::after {
-          content: '';
-          position: absolute;
-          inset: 0 -8px;
-          pointer-events: none;
-          background: linear-gradient(110deg, transparent 25%, rgba(255, 215, 0, 0.8) 50%, transparent 75%);
-          background-size: 220% 100%;
-          -webkit-background-clip: text;
-          background-clip: text;
-          opacity: 0;
-          transform: translateX(-35%);
-        }
-
-        .group:hover > div:first-child {
-          transform: rotate(-4deg) scale(1.08);
-          filter: drop-shadow(0 0 10px rgba(245, 197, 24, 0.55));
-        }
-
-        .group:hover .cheki-text {
-          color: #ffd700;
-          text-shadow: 0 0 10px rgba(255, 215, 0, 0.85), 0 0 28px rgba(255, 165, 0, 0.55);
-          animation: chekiReveal 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
-        }
-
-        .group:hover .cheki-text::after {
-          opacity: 1;
-          animation: chekiShimmer 720ms ease-out both;
-        }
-
-        .group:hover .dot {
-          color: #f5c518;
-          text-shadow: 0 0 12px #ffd700;
-          animation: chekiDot 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
-        }
-
-        @keyframes chekiReveal {
-          0% { opacity: 0.25; transform: translateX(-6px) scale(0.94); letter-spacing: 0.08em; }
-          35% { opacity: 1; transform: translateX(2px) scale(1.08); letter-spacing: 0.01em; }
-          65% { transform: translateX(-1px) scale(0.98); }
-          100% { opacity: 1; transform: translateX(0) scale(1); letter-spacing: normal; }
-        }
-
-        @keyframes chekiShimmer {
-          0% { background-position: 120% 0; }
-          100% { background-position: -30% 0; }
-        }
-
-        @keyframes chekiDot {
-          0% { transform: translateY(4px) scale(0.6); }
-          45% { transform: translateY(-3px) scale(1.35); }
-          100% { transform: translateY(0) scale(1); }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .group > div:first-child,
-          .cheki-text,
-          .dot {
-            animation: none !important;
-            transition: color 180ms ease, text-shadow 180ms ease !important;
-          }
-
-          .cheki-text::after {
-            display: none;
-          }
-        }
-      `}</style>
     </nav>
   )
 }
