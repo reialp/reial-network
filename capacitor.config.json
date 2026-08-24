@@ -1,0 +1,9 @@
+{
+  "appId": "com.cheki.app",
+  "appName": "Cheki",
+  "webDir": "out",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
