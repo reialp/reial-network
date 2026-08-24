@@ -1,9 +1,8 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  output: 'export', // 👈 ADD THIS – enables static export for Capacitor
   images: {
-    unoptimized: true, // 👈 ADD THIS – required for static export
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
