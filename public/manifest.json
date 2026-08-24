@@ -3,6 +3,7 @@
   "short_name": "Cheki",
   "description": "Discover and buy premium films, documentaries, series and more directly from independent creators.",
   "start_url": "/",
+  "id": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#f5c518",
@@ -10,9 +11,9 @@
   "icons": [
     {
       "src": "/logo.png",
-      "sizes": "512x512",
+      "sizes": "500x500",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
