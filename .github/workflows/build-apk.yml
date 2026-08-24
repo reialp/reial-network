@@ -23,15 +23,18 @@ jobs:
 
       - name: Build Next.js app
         run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Install Capacitor
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init Cheki com.cheki.app
-          npx cap add android
 
-      - name: Copy web assets
-        run: npx cap copy android
+      - name: Copy web assets to Capacitor
+        run: |
+          npx cap add android
+          npx cap copy android
 
       - name: Setup Java
         uses: actions/setup-java@v4
