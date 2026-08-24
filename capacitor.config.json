@@ -1,7 +1,7 @@
 {
   "appId": "com.cheki.app",
   "appName": "Cheki",
-  "webDir": "out",
+  "webDir": ".next",
   "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https"
