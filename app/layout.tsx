@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/Navbar'
 import { SearchProvider } from '@/context/SearchContext'
+import InstallButton from '@/components/InstallButton' // ← ADD THIS
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -52,6 +53,7 @@ export default function RootLayout({
         <SearchProvider>
           <Navbar />
           <main>{children}</main>
+          <InstallButton /> {/* ← ADD THIS */}
         </SearchProvider>
       </body>
     </html>
