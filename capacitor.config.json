@@ -1,9 +1,10 @@
 {
   "appId": "com.cheki.app",
   "appName": "Cheki",
-  "webDir": ".next",
-  "bundledWebRuntime": false,
+  "webDir": "dist",
   "server": {
+    "url": "https://reial-network.vercel.app",
     "androidScheme": "https"
-  }
+  },
+  "bundledWebRuntime": false
 }
