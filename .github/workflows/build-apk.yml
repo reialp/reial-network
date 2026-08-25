@@ -1,8 +1,6 @@
-name: Build Android APK
+name: Build APK from Vercel
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -18,18 +16,14 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build Next.js app
-        run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-
       - name: Install Capacitor
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Download Vercel build
+        run: |
+          # Download the Vercel build output (adjust URL as needed)
+          curl -L -o vercel-build.zip https://reial-network.vercel.app/_next/static/...
 
       - name: Copy web assets to Capacitor
         run: |
