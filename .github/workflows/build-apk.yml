@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Next.js app (optional – we're using server.url, but keep for safety)
+      - name: Build Next.js app (optional – using server.url)
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -31,6 +31,9 @@ jobs:
       - name: Install Capacitor
         run: |
           npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+
+      - name: Create dummy webDir for Capacitor
+        run: mkdir -p dist
 
       - name: Copy web assets to Capacitor
         run: |
