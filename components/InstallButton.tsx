@@ -7,24 +7,30 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
+const DISMISS_KEY = 'cheki-install-prompt-dismissed'
+
 export default function InstallButton() {
   const [installPrompt, setInstallPrompt] =
     useState<BeforeInstallPromptEvent | null>(null)
   const [isInstalled, setIsInstalled] = useState(false)
+  const [isDismissed, setIsDismissed] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [isBrowser, setIsBrowser] = useState(false)
 
   useEffect(() => {
     const standalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone)
+      Boolean(
+        (window.navigator as Navigator & { standalone?: boolean }).standalone
+      )
+
+    const dismissed = window.localStorage.getItem(DISMISS_KEY) === 'true'
+    const userAgent = window.navigator.userAgent.toLowerCase()
 
     setIsInstalled(standalone)
+    setIsDismissed(dismissed)
+    setIsIOS(/iphone|ipad|ipod/.test(userAgent))
     setIsBrowser(true)
-
-    const userAgent = window.navigator.userAgent.toLowerCase()
-    const ios = /iphone|ipad|ipod/.test(userAgent)
-    setIsIOS(ios)
 
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault()
@@ -44,6 +50,12 @@ export default function InstallButton() {
       window.removeEventListener('appinstalled', handleAppInstalled)
     }
   }, [])
+
+  const closeInstallPrompt = () => {
+    window.localStorage.setItem(DISMISS_KEY, 'true')
+    setIsDismissed(true)
+    setInstallPrompt(null)
+  }
 
   const handleInstall = async () => {
     if (installPrompt) {
@@ -70,31 +82,43 @@ export default function InstallButton() {
     )
   }
 
-  if (!isBrowser || isInstalled) return null
+  if (!isBrowser || isInstalled || isDismissed) return null
 
   return (
     <div className="fixed bottom-6 left-4 right-4 z-50 flex justify-center">
-      <button
-        type="button"
-        onClick={handleInstall}
-        className="flex items-center gap-2 rounded-full bg-[#f5c518] px-6 py-3 font-semibold text-black shadow-2xl shadow-[#f5c518]/30 transition-all duration-300 hover:scale-105"
-      >
-        <svg
-          className="h-5 w-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
+      <div className="relative flex items-center gap-3 rounded-full bg-[#f5c518] px-5 py-3 text-black shadow-2xl shadow-[#f5c518]/30">
+        <button
+          type="button"
+          onClick={handleInstall}
+          className="flex items-center gap-2 pr-6 font-semibold transition-transform duration-300 hover:scale-105"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-          />
-        </svg>
-        Install Cheki App
-      </button>
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
+          </svg>
+          Install Cheki App
+        </button>
+
+        <button
+          type="button"
+          onClick={closeInstallPrompt}
+          aria-label="Close install prompt"
+          title="Close"
+          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-xl leading-none text-black/70 transition-colors hover:bg-black/10 hover:text-black"
+        >
+          ×
+        </button>
+      </div>
     </div>
   )
 }
