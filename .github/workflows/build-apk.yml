@@ -64,3 +64,4 @@ jobs:
         with:
           name: Cheki-App
           path: android/app/build/outputs/apk/debug/*.apk
+
