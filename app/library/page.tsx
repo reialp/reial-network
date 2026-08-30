@@ -95,6 +95,7 @@ export default function LibraryPage() {
       return
     }
 
+    // ✅ FIXED: Use correct join syntax - profiles:creator_id instead of profiles!content_creator_id_fkey
     const { data: contentData, error: contentError } = await supabase
       .from('content')
       .select(`
@@ -106,7 +107,7 @@ export default function LibraryPage() {
         slug,
         category,
         creator_id,
-        profiles!content_creator_id_fkey (
+        profiles:creator_id (
           full_name
         )
       `)
@@ -276,8 +277,6 @@ export default function LibraryPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
-
-          {/* Gradient fades REMOVED - no more haze */}
 
           <div
             ref={(el) => { scrollContainerRefs.current[rowId] = el }}
