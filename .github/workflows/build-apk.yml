@@ -34,27 +34,21 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Install Capacitor packages
-        run: npm install --no-save @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+        run: |
+          npm install @capacitor/core@6.2.1 @capacitor/android@6.2.1
+          npm install --save-dev @capacitor/cli@6.2.1
 
-      - name: Install Capacitor assets tool
-        run: npm install --no-save @capacitor/assets
+      - name: Verify Android platform package
+        run: npm ls @capacitor/android
 
       - name: Prepare Capacitor web directory
         run: mkdir -p dist
 
       - name: Add Android platform
-        run: npx cap add android
-
-      - name: Prepare Cheki native icon
-        run: |
-          mkdir -p resources
-          cp public/icons/512.png resources/icon.png
-
-      - name: Generate Android icons
-        run: npx capacitor-assets generate --android
+        run: ./node_modules/.bin/cap add android
 
       - name: Synchronize Capacitor
-        run: npx cap sync android
+        run: ./node_modules/.bin/cap sync android
 
       - name: Set up Java
         uses: actions/setup-java@v4
