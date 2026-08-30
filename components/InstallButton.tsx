@@ -14,6 +14,7 @@ export default function InstallButton() {
     useState<BeforeInstallPromptEvent | null>(null)
   const [isInstalled, setIsInstalled] = useState(false)
   const [isDismissed, setIsDismissed] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [isBrowser, setIsBrowser] = useState(false)
 
@@ -40,6 +41,11 @@ export default function InstallButton() {
     const handleAppInstalled = () => {
       setIsInstalled(true)
       setInstallPrompt(null)
+      setShowConfirmation(true)
+
+      window.setTimeout(() => {
+        setShowConfirmation(false)
+      }, 7000)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
@@ -57,13 +63,22 @@ export default function InstallButton() {
     setInstallPrompt(null)
   }
 
+  const closeConfirmation = () => {
+    setShowConfirmation(false)
+  }
+
   const handleInstall = async () => {
     if (installPrompt) {
       await installPrompt.prompt()
       const result = await installPrompt.userChoice
 
       if (result.outcome === 'accepted') {
+        setShowConfirmation(true)
         setIsInstalled(true)
+
+        window.setTimeout(() => {
+          setShowConfirmation(false)
+        }, 7000)
       }
 
       setInstallPrompt(null)
@@ -72,17 +87,42 @@ export default function InstallButton() {
 
     if (isIOS) {
       window.alert(
-        'To install Cheki on iPhone or iPad, tap the Share button in Safari, then choose “Add to Home Screen”.'
+        'To add Cheki to your home screen, tap the Share button in Safari, then choose “Add to Home Screen”.'
       )
       return
     }
 
     window.alert(
-      'To install Cheki, open your browser menu and choose “Install app” or “Add to Home screen”.'
+      'Open your browser menu and choose “Install app” or “Add to Home screen”. Cheki will then appear on your phone’s home screen.'
     )
   }
 
-  if (!isBrowser || isInstalled || isDismissed) return null
+  if (!isBrowser || isDismissed) return null
+
+  if (isInstalled && !showConfirmation) return null
+
+  if (showConfirmation) {
+    return (
+      <div className="fixed bottom-6 left-4 right-4 z-50 flex justify-center">
+        <div className="relative max-w-sm rounded-2xl bg-[#f5c518] px-5 py-4 pr-12 text-sm font-medium text-black shadow-2xl shadow-[#f5c518]/30">
+          <p className="font-bold">Cheki has been added.</p>
+          <p className="mt-1">
+            Look for the Cheki icon on your phone’s home screen. You can move it
+            wherever you prefer.
+          </p>
+
+          <button
+            type="button"
+            onClick={closeConfirmation}
+            aria-label="Close confirmation"
+            className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-xl leading-none text-black/70 hover:bg-black/10 hover:text-black"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed bottom-6 left-4 right-4 z-50 flex justify-center">
@@ -106,7 +146,7 @@ export default function InstallButton() {
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
             />
           </svg>
-          Install Cheki App
+          Add Cheki to Home Screen
         </button>
 
         <button
@@ -114,7 +154,7 @@ export default function InstallButton() {
           onClick={closeInstallPrompt}
           aria-label="Close install prompt"
           title="Close"
-          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-xl leading-none text-black/70 transition-colors hover:bg-black/10 hover:text-black"
+          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-xl leading-none text-black/70 hover:bg-black/10 hover:text-black"
         >
           ×
         </button>
