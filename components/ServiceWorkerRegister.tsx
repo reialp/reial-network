@@ -9,16 +9,10 @@ export default function ServiceWorkerRegister() {
     navigator.serviceWorker
       .register('/sw.js', { scope: '/' })
       .then((registration) => {
-        console.log(
-          'Cheki service worker registered:',
-          registration.scope
-        )
+        console.log('Cheki service worker registered:', registration.scope)
       })
       .catch((error) => {
-        console.error(
-          'Cheki service worker registration failed:',
-          error
-        )
+        console.error('Cheki service worker registration failed:', error)
       })
   }, [])
 
