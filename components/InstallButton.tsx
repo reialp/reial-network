@@ -42,10 +42,6 @@ export default function InstallButton() {
       setIsInstalled(true)
       setInstallPrompt(null)
       setShowConfirmation(true)
-
-      window.setTimeout(() => {
-        setShowConfirmation(false)
-      }, 7000)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
@@ -73,12 +69,8 @@ export default function InstallButton() {
       const result = await installPrompt.userChoice
 
       if (result.outcome === 'accepted') {
-        setShowConfirmation(true)
         setIsInstalled(true)
-
-        window.setTimeout(() => {
-          setShowConfirmation(false)
-        }, 7000)
+        setShowConfirmation(true)
       }
 
       setInstallPrompt(null)
