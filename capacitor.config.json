@@ -3,7 +3,7 @@
   "appName": "Cheki",
   "webDir": "dist",
   "server": {
-    "url": "https://reial-network.vercel.app",
+    "url": "https://tucheki.com/",
     "androidScheme": "https"
   }
 }
