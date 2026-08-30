@@ -36,11 +36,22 @@ jobs:
       - name: Install Capacitor packages
         run: npm install --no-save @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
 
+      - name: Install Capacitor assets tool
+        run: npm install --no-save @capacitor/assets
+
       - name: Prepare Capacitor web directory
         run: mkdir -p dist
 
       - name: Add Android platform
         run: npx cap add android
+
+      - name: Prepare Cheki native icon
+        run: |
+          mkdir -p resources
+          cp public/icons/512.png resources/icon.png
+
+      - name: Generate Android icons
+        run: npx capacitor-assets generate --android
 
       - name: Synchronize Capacitor
         run: npx cap sync android
