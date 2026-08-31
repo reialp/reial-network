@@ -1,0 +1,207 @@
+diff --git a/app/page.tsx b/app/page.tsx
+index bb62f21..f7d3239 100644
+--- a/app/page.tsx
++++ b/app/page.tsx
+@@ -266,7 +266,7 @@ export default function HomePage() {
+ 
+       if (profile.is_creator) {
+         if (profile.terms_accepted) {
+-          window.location.href = '/upload'
++          window.location.href = '/dashboard'
+         } else {
+           window.location.href = '/terms'
+         }
+diff --git a/app/profile/page.tsx b/app/profile/page.tsx
+index 461d2d6..d2fc4ea 100644
+--- a/app/profile/page.tsx
++++ b/app/profile/page.tsx
+@@ -12,6 +12,7 @@ interface Profile {
+   bio: string
+   avatar_url: string
+   is_creator: boolean
++  terms_accepted: boolean
+   payout_phone: string
+   cover_image: string
+   tagline: string
+@@ -52,6 +53,7 @@ function ProfileForm() {
+     bio: '',
+     avatar_url: '',
+     is_creator: false,
++    terms_accepted: false,
+     payout_phone: '',
+     cover_image: '',
+     tagline: '',
+@@ -70,6 +72,7 @@ function ProfileForm() {
+     bio: '',
+     avatar_url: '',
+     is_creator: false,
++    terms_accepted: false,
+     payout_phone: '',
+     cover_image: '',
+     tagline: '',
+@@ -127,6 +130,7 @@ function ProfileForm() {
+           bio: data.bio || '',
+           avatar_url: data.avatar_url || '',
+           is_creator: data.is_creator || false,
++          terms_accepted: data.terms_accepted || false,
+           payout_phone: data.payout_phone || '',
+           cover_image: data.cover_image || '',
+           tagline: data.tagline || '',
+@@ -272,9 +276,13 @@ function ProfileForm() {
+       featured_project_id: featuredProjectId,
+     }
+ 
+-    // 🔥 Reset terms if they just became a creator
+-    const justBecameCreator = currentProfile.is_creator && !wasCreator
+-    if (justBecameCreator) {
++    // New creators must accept the creator agreement before accessing creator tools.
++    // The intent check also covers a creator who was sent back here by the access gate.
++    const shouldAcceptCreatorTerms =
++      currentProfile.is_creator &&
++      (!wasCreator || (!currentProfile.terms_accepted && intent === 'creator'))
++
++    if (shouldAcceptCreatorTerms) {
+       updateData.terms_accepted = false
+     }
+ 
+@@ -301,8 +309,8 @@ function ProfileForm() {
+     setIsEditing(false)
+     setShowScrollHint(false)
+ 
+-    // 🚀 Redirect to terms if they just became a creator
+-    if (justBecameCreator) {
++    // 🚀 Redirect to terms before allowing access to the creator dashboard
++    if (shouldAcceptCreatorTerms) {
+       console.log('🚀 Redirecting to /terms...')
+       // Use a small delay to let the success message show
+       setTimeout(() => {
+diff --git a/app/terms/page.tsx b/app/terms/page.tsx
+index 54a3cd9..73d5baa 100644
+--- a/app/terms/page.tsx
++++ b/app/terms/page.tsx
+@@ -11,6 +11,7 @@ export default function TermsPage() {
+   const [loading, setLoading] = useState(false)
+   const [error, setError] = useState<string | null>(null)
+   const [userId, setUserId] = useState<string | null>(null)
++  const [isCreator, setIsCreator] = useState(false)
+   const [checking, setChecking] = useState(true)
+ 
+   useEffect(() => {
+@@ -25,13 +26,21 @@ export default function TermsPage() {
+ 
+       const { data: profile } = await supabase
+         .from('profiles')
+-        .select('terms_accepted')
++        .select('is_creator, terms_accepted')
+         .eq('id', session.user.id)
+         .single()
+ 
+       setChecking(false)
+ 
+-      if (profile?.terms_accepted === true) {
++      // The agreement is part of creator onboarding, not a general account step.
++      if (!profile?.is_creator) {
++        router.replace('/profile?intent=creator')
++        return
++      }
++
++      setIsCreator(true)
++
++      if (profile.terms_accepted === true) {
+         window.location.href = '/dashboard'
+         return
+       }
+@@ -45,6 +54,11 @@ export default function TermsPage() {
+       return
+     }
+ 
++    if (!isCreator) {
++      setError('Enable Creator mode from your profile before accepting this agreement.')
++      return
++    }
++
+     setLoading(true)
+     setError(null)
+ 
+@@ -65,7 +79,7 @@ export default function TermsPage() {
+ 
+       window.location.href = '/dashboard'
+ 
+-    } catch (err: any) {
++    } catch {
+       setError('Something went wrong. Please try again.')
+       setLoading(false)
+     }
+@@ -179,13 +193,13 @@ export default function TermsPage() {
+               disabled={loading}
+               className="flex-1 bg-[#f5c518] text-black py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50 text-sm sm:text-base"
+             >
+-              {loading ? 'Accepting...' : 'I Accept'}
++              {loading ? 'Accepting...' : 'Accept and Continue to Dashboard'}
+             </button>
+             <Link
+-              href="/dashboard"
++              href="/profile?intent=creator"
+               className="flex-1 border border-white/20 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-white/5 transition text-center text-sm sm:text-base"
+             >
+-              Decline
++              Not now
+             </Link>
+           </div>
+ 
+diff --git a/middleware.ts b/middleware.ts
+index ac403ba..6852992 100644
+--- a/middleware.ts
++++ b/middleware.ts
+@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
+ import { NextResponse, type NextRequest } from 'next/server'
+ 
+ export async function middleware(request: NextRequest) {
+-  let response = NextResponse.next({
++  const response = NextResponse.next({
+     request: {
+       headers: request.headers,
+     },
+@@ -49,9 +49,9 @@ export async function middleware(request: NextRequest) {
+     pathname.startsWith('/checkout/') ||
+     pathname.startsWith('/watch/')
+ 
+-  // ✅ Creator-only routes (login + terms + creator status required)
+-  const isCreatorRoute =
+-    pathname.startsWith('/upload')
++  // ✅ Creator routes (login + terms + creator status required)
++  const isCreatorRoute = pathname.startsWith('/upload')
++  const isCreatorDashboard = pathname.startsWith('/dashboard')
+ 
+   // ✅ If protected and no session, redirect to login with redirectTo
+   if (isProtected && !session) {
+@@ -68,8 +68,8 @@ export async function middleware(request: NextRequest) {
+     return NextResponse.redirect(new URL('/', request.url))
+   }
+ 
+-  // ✅ ONLY check terms for upload route
+-  if (session && isCreatorRoute) {
++  // ✅ Check creator status and agreement before creator tools or the creator dashboard
++  if (session && (isCreatorRoute || isCreatorDashboard)) {
+     try {
+       const { data: profile, error } = await supabase
+         .from('profiles')
+@@ -83,13 +83,14 @@ export async function middleware(request: NextRequest) {
+         return NextResponse.redirect(new URL('/profile', request.url))
+       }
+ 
+-      // If not a creator, redirect to profile
+-      if (!profile?.is_creator) {
++      // Keep the dashboard available for non-creators so they can start onboarding.
++      // Uploading, however, always requires creator status.
++      if (isCreatorRoute && !profile?.is_creator) {
+         return NextResponse.redirect(new URL('/profile?intent=creator', request.url))
+       }
+ 
+-      // If creator but hasn't accepted terms, redirect to terms
+-      if (!profile?.terms_accepted) {
++      // Creator dashboards and tools require an accepted creator agreement.
++      if (profile?.is_creator && !profile?.terms_accepted) {
+         return NextResponse.redirect(new URL('/terms', request.url))
+       }
+     } catch (err) {
