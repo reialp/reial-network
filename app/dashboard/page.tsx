@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import OnboardingGuide from '@/components/OnboardingGuide'
 
 interface Content {
   id: string
@@ -42,7 +41,6 @@ export default function DashboardPage() {
   const [isRequesting, setIsRequesting] = useState(false)
   const [payoutMessage, setPayoutMessage] = useState('')
 
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
   const [userId, setUserId] = useState('')
 
   useEffect(() => {
@@ -110,17 +108,14 @@ export default function DashboardPage() {
 
     setContent(contentData || [])
 
-    // Calculate stats from creator's content
     const totalFilms = contentData?.length || 0
     const pendingApprovals = contentData?.filter(c => c.status === 'pending').length || 0
     const totalSales = contentData?.reduce((sum, c) => sum + (c.purchase_count || 0), 0) || 0
     const grossRevenue = contentData?.reduce((sum, c) => sum + (c.price * (c.purchase_count || 0)), 0) || 0
     
-    // UPDATED: 70% creator earnings, 30% platform fee (exact values, no rounding)
     const yourEarnings = grossRevenue * 0.70
     const platformFees = grossRevenue * 0.30
 
-    // FIX: Get creator earnings ONLY for this creator's content
     const contentIds = contentData?.map(c => c.id) || []
     
     let totalEarningsFromPurchases = 0
@@ -129,12 +124,11 @@ export default function DashboardPage() {
         .from('purchases')
         .select('creator_earnings')
         .eq('status', 'completed')
-        .in('content_id', contentIds) // Only purchases for this creator's content
+        .in('content_id', contentIds)
       
       totalEarningsFromPurchases = purchasesData?.reduce((sum, p) => sum + (p.creator_earnings || 0), 0) || 0
     }
 
-    // Get payouts for this creator only
     const { data: payoutData } = await supabase
       .from('payout_requests')
       .select('amount, status')
@@ -250,7 +244,6 @@ export default function DashboardPage() {
     }
   }
 
-  // UPDATED: Format currency with 2 decimal places
   const formatCurrency = (amount: number) => {
     return amount.toFixed(2)
   }
@@ -266,6 +259,67 @@ export default function DashboardPage() {
     )
   }
 
+  // ──────────────────────────────────────────────────────────────
+  // 🚀 ONBOARDING FOR NON-CREATORS (FULL PAGE, NO STATS)
+  // ──────────────────────────────────────────────────────────────
+  if (!isCreator) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 p-8 sm:p-12 text-center">
+            <div className="text-6xl mb-4">🎬</div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">
+              You're not a creator yet.
+            </h1>
+            <p className="text-gray-400 mt-3 text-base max-w-lg mx-auto">
+              To upload films, earn 70% of every sale, and build your audience, you need to set up your creator profile first.
+            </p>
+
+            <div className="bg-[#0a0a0a] rounded-xl p-4 sm:p-6 mt-6 text-left border border-white/5 max-w-md mx-auto">
+              <p className="text-sm text-gray-300">
+                <span className="text-[#f5c518] font-bold">Step 1:</span> Go to your <strong>Profile</strong>
+              </p>
+              <p className="text-sm text-gray-300 mt-2">
+                <span className="text-[#f5c518] font-bold">Step 2:</span> Toggle <strong>"Become a Creator"</strong> on
+              </p>
+              <p className="text-sm text-gray-300 mt-2">
+                <span className="text-[#f5c518] font-bold">Step 3:</span> Fill in your creator details and start uploading! 🚀
+              </p>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-3 mt-6">
+              <Link
+                href="/profile"
+                className="bg-[#f5c518] text-black px-8 py-3 rounded-full font-semibold hover:scale-105 transition-all duration-300"
+              >
+                Go to Profile → Become a Creator
+              </Link>
+              <Link
+                href="/how-it-works"
+                className="border border-white/30 text-white px-8 py-3 rounded-full font-semibold hover:bg-white/10 transition-all duration-300"
+              >
+                Learn More
+              </Link>
+            </div>
+            <p className="text-gray-500 text-sm mt-4">
+              ⏳ Takes less than 2 minutes to set up
+            </p>
+
+            {/* Contact */}
+            <div className="mt-8 pt-6 border-t border-white/10 text-sm text-gray-500 flex flex-wrap justify-center gap-4">
+              <span>📧 reialproduction@gmail.com</span>
+              <span>📧 habari@tucheki.com</span>
+              <span>💬 WhatsApp: Chat with us</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // 🎬 CREATOR DASHBOARD (FULL STATS & CONTENT)
+  // ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
@@ -296,27 +350,10 @@ export default function DashboardPage() {
                 <span>📊</span> Full Analytics
               </Link>
             )}
-            {isCreator && (
-              <button
-                onClick={() => setIsOnboardingOpen(true)}
-                className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
-              >
-                <span>📖</span> How it works
-              </button>
-            )}
           </div>
         </div>
 
-        {/* Not Creator Banner */}
-        {!isCreator && (
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-            <p className="text-yellow-400 text-xs sm:text-sm">
-              You're not a creator yet. <Link href="/profile?intent=creator" className="text-[#f5c518] hover:underline">Become a creator</Link> to upload films and earn money.
-            </p>
-          </div>
-        )}
-
-        {/* Revenue Breakdown - UPDATED with 70/30 split */}
+        {/* Revenue Breakdown */}
         <div className="bg-gradient-to-r from-[#1a1a1a] to-[#2a1a0a] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#f5c518]/20 mb-4 sm:mb-6 md:mb-8">
           <h3 className="text-sm sm:text-base md:text-lg font-bold mb-2 sm:mb-3 text-[#f5c518]">Revenue Breakdown</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -633,14 +670,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
-      {isCreator && userId && (
-        <OnboardingGuide
-          userId={userId}
-          forceOpen={isOnboardingOpen}
-          onClose={() => setIsOnboardingOpen(false)}
-        />
-      )}
     </div>
   )
 }
