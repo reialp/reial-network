@@ -105,55 +105,49 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
   const { profile, content, stats, featuredProject, isOwner, userId } = data
 
   // ──────────────────────────────────────────────────────────────
-  // 🚀 ONBOARDING CARD FOR NON-CREATORS
+  // 🚀 ONBOARDING FOR NON-CREATORS (CLEAR & DIRECT)
   // ──────────────────────────────────────────────────────────────
   if (isOwner && !profile.is_creator) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
           <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 p-8 sm:p-12 text-center">
-            <div className="text-6xl mb-4">🚀</div>
+            <div className="text-6xl mb-4">🎬</div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">
-              Welcome to Cheki, {profile.full_name || 'Creator'}!
+              You're not a creator yet.
             </h1>
             <p className="text-gray-400 mt-3 text-base max-w-lg mx-auto">
-              You're one step away from becoming a creator. Set up your profile to start uploading films, earning 70% of every sale, and building your audience.
+              To upload films, earn 70% of every sale, and build your audience, you need to set up your creator profile first.
             </p>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 text-left">
-              <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
-                <div className="text-2xl mb-2">📝</div>
-                <h3 className="font-semibold text-sm">Complete Your Profile</h3>
-                <p className="text-gray-500 text-xs mt-1">Add your bio, avatar, and cover image</p>
-              </div>
-              <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
-                <div className="text-2xl mb-2">🎬</div>
-                <h3 className="font-semibold text-sm">Upload Your First Film</h3>
-                <p className="text-gray-500 text-xs mt-1">Share your stories with the world</p>
-              </div>
-              <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
-                <div className="text-2xl mb-2">💰</div>
-                <h3 className="font-semibold text-sm">Start Earning</h3>
-                <p className="text-gray-500 text-xs mt-1">Get 70% of every sale you make</p>
-              </div>
+
+            <div className="bg-[#0a0a0a] rounded-xl p-4 sm:p-6 mt-6 text-left border border-white/5 max-w-md mx-auto">
+              <p className="text-sm text-gray-300">
+                <span className="text-[#f5c518] font-bold">Step 1:</span> Go to your <strong>Profile</strong>
+              </p>
+              <p className="text-sm text-gray-300 mt-2">
+                <span className="text-[#f5c518] font-bold">Step 2:</span> Toggle <strong>"Become a Creator"</strong> on
+              </p>
+              <p className="text-sm text-gray-300 mt-2">
+                <span className="text-[#f5c518] font-bold">Step 3:</span> Fill in your creator details and start uploading! 🚀
+              </p>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-3 mt-8">
+            <div className="flex flex-wrap justify-center gap-3 mt-6">
               <Link
-                href="/profile?tab=creator"
+                href="/profile"
                 className="bg-[#f5c518] text-black px-8 py-3 rounded-full font-semibold hover:scale-105 transition-all duration-300"
               >
-                Set Up Creator Profile →
+                Go to Profile → Become a Creator
               </Link>
               <Link
                 href="/how-it-works"
                 className="border border-white/30 text-white px-8 py-3 rounded-full font-semibold hover:bg-white/10 transition-all duration-300"
               >
-                Learn How It Works
+                Learn More
               </Link>
             </div>
             <p className="text-gray-500 text-sm mt-4">
-              ⏳ Takes less than 2 minutes to get started
+              ⏳ Takes less than 2 minutes to set up
             </p>
           </div>
         </div>
@@ -495,6 +489,23 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
           </div>
         </>
       )}
+
+      {/* ────────────────────────────────────────────────────────────── */}
+      {/* CONTACT / FOOTER – UPDATED WITH SECOND EMAIL */}
+      {/* ────────────────────────────────────────────────────────────── */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-8">
+        <div className="mt-12 pt-6 border-t border-white/10 text-sm text-gray-500 flex flex-wrap justify-between gap-4">
+          <div className="space-y-1">
+            <p className="font-medium text-white">Contact Us</p>
+            <p>Email: reialproduction@gmail.com</p>
+            <p>Email: habari@tucheki.com</p>
+            <p>WhatsApp: Chat with us</p>
+          </div>
+          <div className="text-right">
+            <p>© 2026 Cheki. All rights reserved.</p>
+          </div>
+        </div>
+      </div>
 
       {/* Floating WhatsApp */}
       <a
