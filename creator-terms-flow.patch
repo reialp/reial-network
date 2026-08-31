@@ -235,6 +235,25 @@ index 54a3cd9..73d5baa 100644
              </Link>
            </div>
  
+diff --git a/app/upload/page.tsx b/app/upload/page.tsx
+index 3e855af..2ff7704 100644
+--- a/app/upload/page.tsx
++++ b/app/upload/page.tsx
+@@ -368,6 +368,14 @@ export default function UploadPage() {
+                   <option value="Series">Series</option>
+                   <option value="Short Film">Short Film</option>
+                   <option value="Music">Music</option>
++                  <option value="Animation">Animation</option>
++                  <option value="Comedy">Comedy</option>
++                  <option value="Educational">Educational</option>
++                  <option value="Lifestyle">Lifestyle</option>
++                  <option value="Travel & Adventure">Travel & Adventure</option>
++                  <option value="Culture & Heritage">Culture & Heritage</option>
++                  <option value="Sports">Sports</option>
++                  <option value="Poetry">Poetry</option>
+                 </select>
+               </div>
+               <div>
 diff --git a/components/OnboardingGuide.tsx b/components/OnboardingGuide.tsx
 index b30561f..6b96f35 100644
 --- a/components/OnboardingGuide.tsx
