@@ -38,6 +38,7 @@ export default function HomePage() {
   const scrollContainerRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
   const resultsRef = useRef<HTMLDivElement>(null)
 
+  // Auth listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -51,6 +52,7 @@ export default function HomePage() {
     }
   }, [supabase])
 
+  // Fetch films (content)
   useEffect(() => {
     async function fetchFilms() {
       const { data: { session } } = await supabase.auth.getSession()
@@ -115,14 +117,17 @@ export default function HomePage() {
     fetchFilms()
   }, [supabase])
 
+  // Fetch purchases (only completed) + real‑time subscription
   useEffect(() => {
-    async function fetchPurchases() {
+    // Function to load purchases
+    const fetchPurchases = async () => {
       if (!userId) return
       
       const { data, error } = await supabase
         .from('purchases')
         .select('content_id, watch_token')
         .eq('buyer_id', userId)
+        .eq('status', 'completed')   // ✅ FIXED: only completed purchases
         .is('revoked_at', null)
       
       if (error) {
@@ -141,9 +146,51 @@ export default function HomePage() {
         setPurchaseTokens(tokens)
       }
     }
+
+    // Initial load
     fetchPurchases()
+
+    // 🔥 Real‑time subscription for purchases (auto‑refresh)
+    const channel = supabase
+      .channel('home-purchases')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'purchases',
+        },
+        (payload) => {
+          // Only react if it's for this user and completed
+          if (payload.new.buyer_id === userId && payload.new.status === 'completed') {
+            console.log('🔄 New completed purchase detected, refreshing homepage...')
+            fetchPurchases()
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'purchases',
+        },
+        (payload) => {
+          // If a purchase updates to 'completed' for this user
+          if (payload.new.buyer_id === userId && payload.new.status === 'completed') {
+            console.log('🔄 Purchase status updated to completed, refreshing homepage...')
+            fetchPurchases()
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [userId, supabase])
 
+  // Auto-play carousel
   useEffect(() => {
     if (allFilms.length === 0) return
     intervalRef.current = setInterval(() => {
@@ -156,6 +203,7 @@ export default function HomePage() {
     }
   }, [allFilms, isPaused])
 
+  // Scroll to results on search
   useEffect(() => {
     if (searchTerm && searchTerm.length > 0) {
       setTimeout(() => {
@@ -309,7 +357,6 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="relative">
-          {/* Scroll buttons */}
           <button
             onClick={() => scrollRow('left', rowId)}
             className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white p-1.5 sm:p-2 rounded-full transition-all duration-300 opacity-0 group-hover/row:opacity-100 hover:scale-110 hidden sm:flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10"
@@ -326,8 +373,6 @@ export default function HomePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
-
-          {/* Gradient fades removed - no more haze! */}
 
           <div
             ref={(el) => { scrollContainerRefs.current[rowId] = el }}
@@ -400,7 +445,7 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* Hero Content - With padding on edges */}
+        {/* Hero Content */}
         <div className="relative z-10 h-full flex flex-col justify-center px-6 sm:px-10 md:px-16 lg:px-20">
           <div className="max-w-3xl">
             <div className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] text-xs sm:text-sm font-medium mb-3 sm:mb-4">
@@ -462,7 +507,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CATEGORY FILTERS - Sticky with padding */}
+      {/* CATEGORY FILTERS - Sticky */}
       <div className="sticky top-0 z-40 bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-white/5 py-2 sm:py-3 px-6 sm:px-10 md:px-16 lg:px-20">
         <div className="max-w-7xl mx-auto">
           <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide">
@@ -483,7 +528,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* CONTENT ROWS - With consistent padding */}
+      {/* CONTENT ROWS */}
       <div ref={resultsRef} id="search-results" className="py-4 sm:py-6 md:py-8">
         {filteredFilms.length === 0 ? (
           <div className="max-w-7xl mx-auto px-6 sm:px-10 md:px-16 lg:px-20">
@@ -509,13 +554,13 @@ export default function HomePage() {
         ) : (
           <div className="max-w-7xl mx-auto">
             
-            {/* STREAMING ROWS - Each row now has its own padding */}
+            {/* STREAMING ROWS */}
             {Object.entries(groupedFilms).map(([category, films]) => {
               if (category === 'Other' && films.length < 3) return null
               return renderRow(category, films, `category-${category}`)
             })}
 
-            {/* ALL FILMS - Grid view with padding */}
+            {/* ALL FILMS - Grid view */}
             <div className="mt-4 sm:mt-6 md:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-white/5 px-6 sm:px-10 md:px-16 lg:px-20">
               <div className="flex justify-between items-center mb-3 sm:mb-4">
                 <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold">All Content</h2>
