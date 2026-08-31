@@ -11,7 +11,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Cheki – powered by Reial Production',
   description:
-    'Discover and buy premium films, documentaries, series and more directly from independent creators.',
+    'Discover bold films, documentaries, series, music, poetry, and more from independent creators. Choose, pay securely, and watch anytime.',
   manifest: '/manifest.json',
   themeColor: '#f5c518',
   appleWebApp: {
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Cheki – powered by Reial Production',
     description:
-      'Discover and buy premium films, documentaries, series and more directly from independent creators.',
+      'Discover bold films, documentaries, series, music, poetry, and more from independent creators. Choose, pay securely, and watch anytime.',
     type: 'website',
     siteName: 'Cheki',
   },
