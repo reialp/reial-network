@@ -171,7 +171,6 @@ function ProfileForm() {
     loadProfile()
   }, [router, supabase])
 
-  // Scroll to edit form when editing starts
   useEffect(() => {
     if (isEditing && editFormRef.current) {
       setShowScrollHint(true)
@@ -254,24 +253,32 @@ function ProfileForm() {
 
     const featuredProjectId = currentProfile.featured_project_id === '' ? null : currentProfile.featured_project_id
 
+    // 🔥 Build update object – conditionally reset terms if becoming a creator
+    const updateData: any = {
+      full_name: currentProfile.full_name,
+      bio: currentProfile.bio,
+      avatar_url: currentProfile.avatar_url,
+      is_creator: currentProfile.is_creator,
+      payout_phone: currentProfile.payout_phone,
+      cover_image: currentProfile.cover_image,
+      tagline: currentProfile.tagline,
+      location: currentProfile.location,
+      skills: currentProfile.skills,
+      social_instagram: currentProfile.social_instagram,
+      social_twitter: currentProfile.social_twitter,
+      social_youtube: currentProfile.social_youtube,
+      social_website: currentProfile.social_website,
+      featured_project_id: featuredProjectId,
+    }
+
+    // Only set terms_accepted to false if they just became a creator
+    if (currentProfile.is_creator && !wasCreator) {
+      updateData.terms_accepted = false
+    }
+
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({
-        full_name: currentProfile.full_name,
-        bio: currentProfile.bio,
-        avatar_url: currentProfile.avatar_url,
-        is_creator: currentProfile.is_creator,
-        payout_phone: currentProfile.payout_phone,
-        cover_image: currentProfile.cover_image,
-        tagline: currentProfile.tagline,
-        location: currentProfile.location,
-        skills: currentProfile.skills,
-        social_instagram: currentProfile.social_instagram,
-        social_twitter: currentProfile.social_twitter,
-        social_youtube: currentProfile.social_youtube,
-        social_website: currentProfile.social_website,
-        featured_project_id: featuredProjectId,
-      })
+      .update(updateData)
       .eq('id', userId)
 
     if (updateError) {
@@ -299,6 +306,7 @@ function ProfileForm() {
     setIsEditing(false)
     setShowScrollHint(false)
 
+    // 🚀 If they just became a creator, redirect to terms
     if (intent === 'creator' && currentProfile.is_creator && !wasCreator) {
       setTimeout(() => {
         router.push('/terms')
@@ -804,7 +812,7 @@ function ProfileForm() {
         )}
       </div>
 
-      {/* Floating WhatsApp Button – with actual icon */}
+      {/* Floating WhatsApp Button */}
       <a
         href="https://wa.me/254704908255"
         target="_blank"
