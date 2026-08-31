@@ -260,7 +260,7 @@ export default function DashboardPage() {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // COMPACT ONBOARDING FOR NON-CREATORS (no emojis, no "Learn more")
+  // COMPACT ONBOARDING FOR NON-CREATORS (no emojis)
   // ──────────────────────────────────────────────────────────────
   if (!isCreator) {
     return (
@@ -350,7 +350,7 @@ export default function DashboardPage() {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // CREATOR DASHBOARD (no emojis, clean)
+  // CREATOR DASHBOARD (no emojis, with "How it works")
   // ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -375,12 +375,20 @@ export default function DashboardPage() {
               Refresh
             </button>
             {isCreator && userId && (
-              <Link
-                href={`/creator/${userId}/analytics`}
-                className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
-              >
-                <span>Full Analytics</span>
-              </Link>
+              <>
+                <Link
+                  href={`/creator/${userId}/analytics`}
+                  className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
+                >
+                  Full Analytics
+                </Link>
+                <Link
+                  href="/how-it-works"
+                  className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
+                >
+                  How it works
+                </Link>
+              </>
             )}
           </div>
         </div>
