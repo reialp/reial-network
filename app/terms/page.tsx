@@ -11,6 +11,7 @@ export default function TermsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const [isCreator, setIsCreator] = useState(false)
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
@@ -25,13 +26,21 @@ export default function TermsPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('terms_accepted')
+        .select('is_creator, terms_accepted')
         .eq('id', session.user.id)
         .single()
 
       setChecking(false)
 
-      if (profile?.terms_accepted === true) {
+      // The agreement is part of creator onboarding, not a general account step.
+      if (!profile?.is_creator) {
+        router.replace('/profile?intent=creator')
+        return
+      }
+
+      setIsCreator(true)
+
+      if (profile.terms_accepted === true) {
         window.location.href = '/dashboard'
         return
       }
@@ -42,6 +51,11 @@ export default function TermsPage() {
   const acceptTerms = async () => {
     if (!userId) {
       setError('Please log in first.')
+      return
+    }
+
+    if (!isCreator) {
+      setError('Enable Creator mode from your profile before accepting this agreement.')
       return
     }
 
@@ -65,7 +79,7 @@ export default function TermsPage() {
 
       window.location.href = '/dashboard'
 
-    } catch (err: any) {
+    } catch {
       setError('Something went wrong. Please try again.')
       setLoading(false)
     }
@@ -179,13 +193,13 @@ export default function TermsPage() {
               disabled={loading}
               className="flex-1 bg-[#f5c518] text-black py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-[#e0b010] transition disabled:opacity-50 text-sm sm:text-base"
             >
-              {loading ? 'Accepting...' : 'I Accept'}
+              {loading ? 'Accepting...' : 'Accept and Continue to Dashboard'}
             </button>
             <Link
-              href="/dashboard"
+              href="/profile?intent=creator"
               className="flex-1 border border-white/20 py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-white/5 transition text-center text-sm sm:text-base"
             >
-              Decline
+              Not now
             </Link>
           </div>
 
