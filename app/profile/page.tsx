@@ -12,6 +12,7 @@ interface Profile {
   bio: string
   avatar_url: string
   is_creator: boolean
+  terms_accepted: boolean
   payout_phone: string
   cover_image: string
   tagline: string
@@ -52,6 +53,7 @@ function ProfileForm() {
     bio: '',
     avatar_url: '',
     is_creator: false,
+    terms_accepted: false,
     payout_phone: '',
     cover_image: '',
     tagline: '',
@@ -70,6 +72,7 @@ function ProfileForm() {
     bio: '',
     avatar_url: '',
     is_creator: false,
+    terms_accepted: false,
     payout_phone: '',
     cover_image: '',
     tagline: '',
@@ -127,6 +130,7 @@ function ProfileForm() {
           bio: data.bio || '',
           avatar_url: data.avatar_url || '',
           is_creator: data.is_creator || false,
+          terms_accepted: data.terms_accepted || false,
           payout_phone: data.payout_phone || '',
           cover_image: data.cover_image || '',
           tagline: data.tagline || '',
@@ -272,9 +276,13 @@ function ProfileForm() {
       featured_project_id: featuredProjectId,
     }
 
-    // 🔥 Reset terms if they just became a creator
-    const justBecameCreator = currentProfile.is_creator && !wasCreator
-    if (justBecameCreator) {
+    // New creators must accept the creator agreement before accessing creator tools.
+    // The intent check also covers a creator who was sent back here by the access gate.
+    const shouldAcceptCreatorTerms =
+      currentProfile.is_creator &&
+      (!wasCreator || (!currentProfile.terms_accepted && intent === 'creator'))
+
+    if (shouldAcceptCreatorTerms) {
       updateData.terms_accepted = false
     }
 
@@ -301,8 +309,8 @@ function ProfileForm() {
     setIsEditing(false)
     setShowScrollHint(false)
 
-    // 🚀 Redirect to terms if they just became a creator
-    if (justBecameCreator) {
+    // 🚀 Redirect to terms before allowing access to the creator dashboard
+    if (shouldAcceptCreatorTerms) {
       console.log('🚀 Redirecting to /terms...')
       // Use a small delay to let the success message show
       setTimeout(() => {
