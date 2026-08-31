@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
+import OnboardingGuide from '@/components/OnboardingGuide'
 
 interface Project {
   id: string
@@ -83,6 +84,7 @@ export default function CreatorAnalyticsPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
 
   const loadAnalytics = async (showRefresh = false) => {
     if (!creatorId) {
@@ -565,16 +567,18 @@ export default function CreatorAnalyticsPage() {
               <span className="hidden sm:inline">Back</span>
             </button>
 
-            {/* ✅ NEW: How it works link */}
-            <Link
-              href="/how-it-works"
+            {/* Open the onboarding guide from the Analytics header */}
+            <button
+              type="button"
+              onClick={() => setIsOnboardingOpen(true)}
+              aria-label="Open creator onboarding guide"
               className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1 whitespace-nowrap"
             >
               <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               How it works
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -807,6 +811,12 @@ export default function CreatorAnalyticsPage() {
           )}
         </div>
       </div>
+
+      <OnboardingGuide
+        userId={creatorId}
+        forceOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+      />
     </div>
   )
 }
