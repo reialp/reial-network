@@ -236,6 +236,9 @@ function ProfileForm() {
     if (coverInputRef.current) coverInputRef.current.value = ''
   }
 
+  // ──────────────────────────────────────────────────────────────
+  // UPDATED handleSubmit – uses window.location.href for redirect
+  // ──────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -273,7 +276,6 @@ function ProfileForm() {
     const justBecameCreator = currentProfile.is_creator && !wasCreator
     if (justBecameCreator) {
       updateData.terms_accepted = false
-      console.log('🔍 Just became creator – resetting terms_accepted to false')
     }
 
     console.log('📦 Updating profile with:', updateData)
@@ -292,36 +294,25 @@ function ProfileForm() {
 
     console.log('✅ Profile updated successfully')
 
-    if (currentProfile.featured_project_id) {
-      const { data: featured } = await supabase
-        .from('content')
-        .select('title')
-        .eq('id', currentProfile.featured_project_id)
-        .single()
-      if (featured) {
-        setFeaturedProjectTitle(featured.title)
-      }
-    } else {
-      setFeaturedProjectTitle('')
-    }
-
+    // Update local state and UI
+    setOriginalProfile({ ...currentProfile })
     setSuccess(true)
     setSaving(false)
-    setOriginalProfile({ ...currentProfile })
     setIsEditing(false)
     setShowScrollHint(false)
 
-    // 🚀 If they just became a creator, redirect to terms
+    // 🚀 Redirect to terms if they just became a creator
     if (justBecameCreator) {
       console.log('🚀 Redirecting to /terms...')
-      // Use window.location for hard redirect (bypasses router issues)
+      // Use a small delay to let the success message show
       setTimeout(() => {
         window.location.href = '/terms'
-      }, 1000)
+      }, 800)
       return
     }
 
-    setTimeout(() => setSuccess(false), 2000)
+    // If they didn't become a creator, just show success and stay
+    setTimeout(() => setSuccess(false), 3000)
   }
 
   const handleCancel = () => {
