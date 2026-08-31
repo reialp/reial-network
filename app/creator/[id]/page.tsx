@@ -104,6 +104,66 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
 
   const { profile, content, stats, featuredProject, isOwner, userId } = data
 
+  // ──────────────────────────────────────────────────────────────
+  // 🚀 ONBOARDING CARD FOR NON-CREATORS
+  // ──────────────────────────────────────────────────────────────
+  if (isOwner && !profile.is_creator) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 p-8 sm:p-12 text-center">
+            <div className="text-6xl mb-4">🚀</div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">
+              Welcome to Cheki, {profile.full_name || 'Creator'}!
+            </h1>
+            <p className="text-gray-400 mt-3 text-base max-w-lg mx-auto">
+              You're one step away from becoming a creator. Set up your profile to start uploading films, earning 70% of every sale, and building your audience.
+            </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 text-left">
+              <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
+                <div className="text-2xl mb-2">📝</div>
+                <h3 className="font-semibold text-sm">Complete Your Profile</h3>
+                <p className="text-gray-500 text-xs mt-1">Add your bio, avatar, and cover image</p>
+              </div>
+              <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
+                <div className="text-2xl mb-2">🎬</div>
+                <h3 className="font-semibold text-sm">Upload Your First Film</h3>
+                <p className="text-gray-500 text-xs mt-1">Share your stories with the world</p>
+              </div>
+              <div className="bg-[#0a0a0a] rounded-xl p-4 border border-white/5">
+                <div className="text-2xl mb-2">💰</div>
+                <h3 className="font-semibold text-sm">Start Earning</h3>
+                <p className="text-gray-500 text-xs mt-1">Get 70% of every sale you make</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-3 mt-8">
+              <Link
+                href="/profile?tab=creator"
+                className="bg-[#f5c518] text-black px-8 py-3 rounded-full font-semibold hover:scale-105 transition-all duration-300"
+              >
+                Set Up Creator Profile →
+              </Link>
+              <Link
+                href="/how-it-works"
+                className="border border-white/30 text-white px-8 py-3 rounded-full font-semibold hover:bg-white/10 transition-all duration-300"
+              >
+                Learn How It Works
+              </Link>
+            </div>
+            <p className="text-gray-500 text-sm mt-4">
+              ⏳ Takes less than 2 minutes to get started
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ──────────────────────────────────────────────────────────────
+  // 🎬 FULL CREATOR PROFILE (Existing)
+  // ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       
@@ -192,7 +252,6 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
               {profile.bio || 'No bio yet'}
             </p>
             
-            {/* Stats - Only show if creator */}
             {profile.is_creator && (
               <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3">
                 <div className="flex items-center gap-1 text-sm text-gray-400">
@@ -277,38 +336,11 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      {/* ──────────────── ONBOARDING FOR NON-CREATORS ──────────────── */}
-      {isOwner && !profile.is_creator && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-6">
-          <div className="bg-gradient-to-r from-[#f5c518]/10 to-[#f5c518]/5 border border-[#f5c518]/20 rounded-2xl p-6 sm:p-8 text-center">
-            <div className="text-5xl mb-3">🚀</div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white">Start Your Creator Journey</h2>
-            <p className="text-gray-400 mt-2 max-w-lg mx-auto text-sm sm:text-base">
-              You're one step away from becoming a creator on Cheki. Set up your creator profile to start uploading films, earning 70% of every sale, and building your audience.
-            </p>
-            <div className="flex flex-wrap justify-center gap-3 mt-5">
-              <Link
-                href="/profile?tab=creator"
-                className="bg-[#f5c518] text-black px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold hover:scale-105 transition-all duration-300 text-sm sm:text-base"
-              >
-                Set Up Creator Profile →
-              </Link>
-              <Link
-                href="/how-it-works"
-                className="border border-white/30 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 text-sm sm:text-base"
-              >
-                Learn How It Works
-              </Link>
-            </div>
-            <p className="text-gray-500 text-xs mt-3">⏳ Takes less than 2 minutes to get started</p>
-          </div>
-        </div>
-      )}
-
-      {/* ──────────────── CREATOR CONTENT ──────────────── */}
+      {/* ────────────────────────────────────────────────────────────── */}
+      {/* SOCIAL LINKS & CONTENT (only shown if creator) */}
+      {/* ────────────────────────────────────────────────────────────── */}
       {profile.is_creator && (
         <>
-          {/* Social Links */}
           {(profile.social_instagram || profile.social_twitter || profile.social_youtube || profile.social_website) && (
             <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-4">
               <div className="flex flex-wrap gap-3">
@@ -336,7 +368,6 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          {/* Featured Project */}
           {featuredProject && (
             <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
               <div className="flex justify-between items-center mb-4">
@@ -389,7 +420,6 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          {/* Project Grid */}
           <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">All Projects</h2>
