@@ -4,54 +4,96 @@ import crypto from 'crypto'
 
 export async function POST(req: Request) {
   try {
-    const { contentId, buyerId } = await req.json()
+    const { contentId } = await req.json()
 
-    if (!contentId || !buyerId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    if (!contentId) {
+      return NextResponse.json(
+        { error: 'Missing content ID' },
+        { status: 400 }
+      )
     }
 
     const supabase = await createClient()
 
-    // ✅ Check if already purchased
-    const { data: existingPurchase } = await supabase
+    // Get the buyer from the logged-in session.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'You must be logged in' },
+        { status: 401 }
+      )
+    }
+
+    const buyerId = user.id
+
+    // Check whether this buyer already purchased this content.
+    const { data: existingPurchase, error: existingError } = await supabase
       .from('purchases')
-      .select('watch_token, id')
+      .select('id, watch_token, status')
       .eq('buyer_id', buyerId)
       .eq('content_id', contentId)
       .is('revoked_at', null)
       .maybeSingle()
 
+    if (existingError) {
+      console.error('Existing purchase lookup failed:', existingError)
+      return NextResponse.json(
+        { error: 'Could not check existing purchase' },
+        { status: 500 }
+      )
+    }
+
     if (existingPurchase) {
+      // If payment was already completed, send the buyer directly to watch.
+      if (existingPurchase.status === 'completed') {
+        return NextResponse.json({
+          purchaseId: existingPurchase.id,
+          watchToken: existingPurchase.watch_token,
+          alreadyPurchased: true,
+        })
+      }
+
+      // Do not create duplicate pending purchases.
       return NextResponse.json({
         purchaseId: existingPurchase.id,
         watchToken: existingPurchase.watch_token,
-        alreadyPurchased: true,
+        alreadyPurchased: false,
+        paymentPending: true,
       })
     }
 
-    // Get content details
+    // Get the content and its price from the database.
     const { data: content, error: contentError } = await supabase
       .from('content')
-      .select('price, creator_id')
+      .select('price, creator_id, status')
       .eq('id', contentId)
+      .eq('status', 'approved')
       .single()
 
     if (contentError || !content) {
-      console.error('Content fetch error:', contentError)
-      return NextResponse.json({ error: 'Content not found' }, { status: 404 })
+      console.error('Content lookup failed:', contentError)
+      return NextResponse.json(
+        { error: 'Content not found or not approved' },
+        { status: 404 }
+      )
     }
 
-    const amount = content.price
+    const amount = Number(content.price)
 
-    // ✅ FIXED: Calculate fees correctly
-    // Platform fee is 15% of the amount, rounded up to the nearest whole number
-    const platformFee = Math.max(Math.ceil(amount * 0.15), 1) // Minimum 1 KES
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid content price' },
+        { status: 400 }
+      )
+    }
+
+    const platformFee = Math.max(Math.ceil(amount * 0.15), 1)
     const creatorEarnings = amount - platformFee
-
-    // Generate watch token
     const watchToken = crypto.randomBytes(32).toString('hex')
 
-    // ✅ Create purchase with status 'pending'
     const { data: purchase, error: purchaseError } = await supabase
       .from('purchases')
       .insert({
@@ -64,21 +106,27 @@ export async function POST(req: Request) {
         status: 'pending',
         created_at: new Date().toISOString(),
       })
-      .select()
+      .select('id, watch_token')
       .single()
 
-    if (purchaseError) {
-      console.error('Purchase insert error:', purchaseError)
-      return NextResponse.json({ error: 'Failed to create purchase: ' + purchaseError.message }, { status: 500 })
+    if (purchaseError || !purchase) {
+      console.error('Purchase creation failed:', purchaseError)
+      return NextResponse.json(
+        { error: 'Failed to create purchase' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({
       purchaseId: purchase.id,
-      watchToken: watchToken,
+      watchToken: purchase.watch_token,
       alreadyPurchased: false,
     })
-  } catch (error: any) {
-    console.error('API error:', error)
-    return NextResponse.json({ error: 'Server error: ' + error.message }, { status: 500 })
+  } catch (error) {
+    console.error('Purchase API error:', error)
+    return NextResponse.json(
+      { error: 'Server error' },
+      { status: 500 }
+    )
   }
 }
