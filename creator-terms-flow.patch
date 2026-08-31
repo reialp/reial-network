@@ -1,3 +1,89 @@
+diff --git a/app/creator/[id]/analytics/page.tsx b/app/creator/[id]/analytics/page.tsx
+index 89774ad..d708563 100644
+--- a/app/creator/[id]/analytics/page.tsx
++++ b/app/creator/[id]/analytics/page.tsx
+@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
+ import { createClient } from '@/lib/supabase/client'
+ import Link from 'next/link'
+ import Image from 'next/image'
++import OnboardingGuide from '@/components/OnboardingGuide'
+ 
+ interface Project {
+   id: string
+@@ -83,6 +84,7 @@ export default function CreatorAnalyticsPage() {
+   const [error, setError] = useState<string | null>(null)
+   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
++  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
+ 
+   const loadAnalytics = async (showRefresh = false) => {
+     if (!creatorId) {
+@@ -565,16 +567,18 @@ export default function CreatorAnalyticsPage() {
+               <span className="hidden sm:inline">Back</span>
+             </button>
+ 
+-            {/* ✅ NEW: How it works link */}
+-            <Link
+-              href="/how-it-works"
++            {/* Open the onboarding guide from the Analytics header */}
++            <button
++              type="button"
++              onClick={() => setIsOnboardingOpen(true)}
++              aria-label="Open creator onboarding guide"
+               className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1 whitespace-nowrap"
+             >
+               <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+               </svg>
+               How it works
+-            </Link>
++            </button>
+           </div>
+         </div>
+ 
+@@ -807,6 +811,12 @@ export default function CreatorAnalyticsPage() {
+           )}
+         </div>
+       </div>
++
++      <OnboardingGuide
++        userId={creatorId}
++        forceOpen={isOnboardingOpen}
++        onClose={() => setIsOnboardingOpen(false)}
++      />
+     </div>
+   )
+ }
+diff --git a/app/dashboard/page.tsx b/app/dashboard/page.tsx
+index 93bc97f..585cd7e 100644
+--- a/app/dashboard/page.tsx
++++ b/app/dashboard/page.tsx
+@@ -237,6 +237,10 @@ export default function DashboardPage() {
+     router.refresh()
+   }
+ 
++  const handleHowItWorks = () => {
++    setIsOnboardingOpen(true)
++  }
++
+   const getStatusColor = (status: string) => {
+     switch (status) {
+       case 'approved': return 'bg-green-500/20 text-green-400'
+@@ -384,10 +388,12 @@ export default function DashboardPage() {
+                   Full Analytics
+                 </Link>
+                 <button
+-                  onClick={() => setIsOnboardingOpen(true)}
++                  type="button"
++                  onClick={handleHowItWorks}
++                  aria-label="Open creator onboarding guide"
+                   className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
+                 >
+-                  How it works
++                  How It Works
+                 </button>
+               </>
+             )}
 diff --git a/app/page.tsx b/app/page.tsx
 index bb62f21..f7d3239 100644
 --- a/app/page.tsx
@@ -149,6 +235,18 @@ index 54a3cd9..73d5baa 100644
              </Link>
            </div>
  
+diff --git a/components/OnboardingGuide.tsx b/components/OnboardingGuide.tsx
+index b30561f..3cf65c1 100644
+--- a/components/OnboardingGuide.tsx
++++ b/components/OnboardingGuide.tsx
+@@ -62,6 +62,7 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }:
+   useEffect(() => {
+     const checkFirstVisit = async () => {
+       if (forceOpen) {
++        setStep(0)
+         setIsOpen(true)
+         return
+       }
 diff --git a/middleware.ts b/middleware.ts
 index ac403ba..6852992 100644
 --- a/middleware.ts
