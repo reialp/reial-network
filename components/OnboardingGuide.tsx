@@ -12,6 +12,7 @@ export interface OnboardingGuideProps {
 export default function OnboardingGuide({ userId, forceOpen = false, onClose }: OnboardingGuideProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [step, setStep] = useState(0)
+  const [canClose, setCanClose] = useState(false)
   const supabase = createClient()
 
   const steps = [
@@ -63,6 +64,7 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }: 
     const checkFirstVisit = async () => {
       if (forceOpen) {
         setStep(0)
+        setCanClose(true)
         setIsOpen(true)
         return
       }
@@ -72,7 +74,10 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }: 
         .eq('id', userId)
         .single()
 
-      if (data && !data.onboarding_seen) {
+      const hasCompletedFirstWalkthrough = Boolean(data?.onboarding_seen)
+      setCanClose(hasCompletedFirstWalkthrough)
+
+      if (!hasCompletedFirstWalkthrough) {
         setIsOpen(true)
       }
     }
@@ -86,6 +91,12 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }: 
       .eq('id', userId)
     setIsOpen(false)
     if (onClose) onClose()
+  }
+
+  const closeGuide = () => {
+    if (!canClose) return
+    setIsOpen(false)
+    onClose?.()
   }
 
   const nextStep = () => {
@@ -106,8 +117,20 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }: 
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-[#1a1a1a] rounded-xl sm:rounded-2xl max-w-lg w-full border border-white/10 shadow-2xl mx-auto">
+      <div className="relative bg-[#1a1a1a] rounded-xl sm:rounded-2xl max-w-lg w-full border border-white/10 shadow-2xl mx-auto">
         <div className="p-4 sm:p-5 md:p-6">
+          {canClose && (
+            <button
+              type="button"
+              onClick={closeGuide}
+              aria-label="Close onboarding guide"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-white transition p-1"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          )}
           <div className="text-center">
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-1.5 sm:mb-2">
               {currentStep.title}
