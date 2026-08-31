@@ -177,7 +177,6 @@ export default function CreatorAnalyticsPage() {
       const previousSales = previousPurchases.length
       const salesGrowth = previousSales > 0 ? ((recentSales - previousSales) / previousSales) * 100 : 0
 
-      // UPDATED: 70% creator earnings, 30% platform fee (exact values, no rounding)
       const yourEarnings = totalRevenue * 0.70
       const platformFees = totalRevenue * 0.30
 
@@ -308,7 +307,6 @@ export default function CreatorAnalyticsPage() {
     loadAnalytics()
   }, [supabase, router, creatorId])
 
-  // UPDATED: Format currency with 2 decimal places
   const formatCurrency = (amount: number) => {
     return amount.toFixed(2)
   }
@@ -341,7 +339,9 @@ export default function CreatorAnalyticsPage() {
 
   const { profile, overall, financials, projects, recentTransactions, chartData, insights } = data
 
-  // 🔍 PROJECT DETAIL VIEW
+  // ──────────────────────────────────────────────────────────────
+  // PROJECT DETAIL VIEW
+  // ──────────────────────────────────────────────────────────────
   if (selectedProject) {
     const projectPurchases = recentTransactions.filter(t => t.project_title === selectedProject.title)
     const totalRevenue = selectedProject.revenue
@@ -422,7 +422,7 @@ export default function CreatorAnalyticsPage() {
             </div>
           </div>
 
-          {/* Project Details & Revenue Breakdown - UPDATED with 70/30 split and decimals */}
+          {/* Project Details & Revenue Breakdown */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-6">
             <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5 min-w-0">
               <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 truncate">Project Details</h3>
@@ -507,12 +507,14 @@ export default function CreatorAnalyticsPage() {
     )
   }
 
-  // 📊 OVERALL VIEW
+  // ──────────────────────────────────────────────────────────────
+  // OVERALL VIEW
+  // ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         
-        {/* Header */}
+        {/* Header - Back button now uses router.back() */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-6">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#1a1a1a] border-2 border-white/10 overflow-hidden flex-shrink-0">
@@ -551,14 +553,27 @@ export default function CreatorAnalyticsPage() {
               </svg>
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
-            <Link
-              href={`/profile`}
+            
+            {/* ✅ FIXED: Back button uses router.back() */}
+            <button
+              onClick={() => router.back()}
               className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1 whitespace-nowrap"
             >
               <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
               <span className="hidden sm:inline">Back</span>
+            </button>
+
+            {/* ✅ NEW: How it works link */}
+            <Link
+              href="/how-it-works"
+              className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1 whitespace-nowrap"
+            >
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              How it works
             </Link>
           </div>
         </div>
@@ -608,7 +623,7 @@ export default function CreatorAnalyticsPage() {
           </div>
         </div>
 
-        {/* Financial Breakdown - UPDATED with 70/30 split and decimals */}
+        {/* Financial Breakdown */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 border border-white/5 min-w-0">
             <h3 className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate mb-3">Revenue Split</h3>
@@ -735,8 +750,8 @@ export default function CreatorAnalyticsPage() {
                   </h4>
                   <p className="text-gray-500 text-[8px] sm:text-xs mt-0.5 truncate">{project.category}</p>
                   <div className="flex items-center gap-1 sm:gap-3 mt-1 sm:mt-2 text-[8px] sm:text-xs text-gray-500 flex-wrap">
-                    <span className="whitespace-nowrap">👁 {project.views}</span>
-                    <span className="whitespace-nowrap">📦 {project.purchase_count}</span>
+                    <span className="whitespace-nowrap">Views: {project.views}</span>
+                    <span className="whitespace-nowrap">Sales: {project.purchase_count}</span>
                     <span className="text-green-400 font-semibold text-[8px] sm:text-xs whitespace-nowrap">KES {formatCurrency(project.revenue)}</span>
                   </div>
                   <div className="mt-1 sm:mt-2 text-[8px] sm:text-[10px] text-gray-600 group-hover:text-[#f5c518] transition flex items-center gap-0.5 sm:gap-1 truncate">
