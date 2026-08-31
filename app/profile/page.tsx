@@ -250,10 +250,8 @@ function ProfileForm() {
 
     const wasCreator = profile.is_creator
     const currentProfile = { ...profile }
-
     const featuredProjectId = currentProfile.featured_project_id === '' ? null : currentProfile.featured_project_id
 
-    // 🔥 Build update object – conditionally reset terms if becoming a creator
     const updateData: any = {
       full_name: currentProfile.full_name,
       bio: currentProfile.bio,
@@ -271,7 +269,7 @@ function ProfileForm() {
       featured_project_id: featuredProjectId,
     }
 
-    // Only set terms_accepted to false if they just became a creator
+    // 🔥 Reset terms if they just became a creator
     if (currentProfile.is_creator && !wasCreator) {
       updateData.terms_accepted = false
     }
@@ -306,8 +304,8 @@ function ProfileForm() {
     setIsEditing(false)
     setShowScrollHint(false)
 
-    // 🚀 If they just became a creator, redirect to terms
-    if (intent === 'creator' && currentProfile.is_creator && !wasCreator) {
+    // 🚀 If they just became a creator, redirect to terms (no intent check)
+    if (currentProfile.is_creator && !wasCreator) {
       setTimeout(() => {
         router.push('/terms')
       }, 1000)
@@ -455,7 +453,7 @@ function ProfileForm() {
               </div>
             )}
 
-            {/* Social Links - no icons, just plain text */}
+            {/* Social Links */}
             {(profile.social_instagram || profile.social_twitter || profile.social_youtube || profile.social_website) && (
               <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-white/5">
                 {profile.social_instagram && (
@@ -521,7 +519,6 @@ function ProfileForm() {
         {/* Edit Form */}
         {isEditing && (
           <>
-            {/* Scroll Hint Notification */}
             {showScrollHint && (
               <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce">
                 <div className="bg-[#f5c518] text-black px-6 py-3 rounded-full font-semibold shadow-2xl flex items-center gap-3">
