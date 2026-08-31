@@ -56,7 +56,7 @@ export default function DashboardPage() {
           table: 'purchases',
         },
         () => {
-          console.log('🔄 Purchase detected, refreshing dashboard...')
+          console.log('Purchase detected, refreshing dashboard...')
           loadDashboard()
         }
       )
@@ -68,7 +68,7 @@ export default function DashboardPage() {
           table: 'payout_requests',
         },
         () => {
-          console.log('🔄 Payout detected, refreshing dashboard...')
+          console.log('Payout detected, refreshing dashboard...')
           loadDashboard()
         }
       )
@@ -211,7 +211,7 @@ export default function DashboardPage() {
     if (error) {
       setPayoutMessage('Error requesting payout: ' + error.message)
     } else {
-      setPayoutMessage(`✅ Payout request of KES ${amount.toLocaleString()} submitted! Processing time: 1-3 business days.`)
+      setPayoutMessage(`Payout request of KES ${amount.toLocaleString()} submitted! Processing time: 1-3 business days.`)
       setPayoutAmount('')
       setPhoneNumber('')
       loadDashboard()
@@ -260,83 +260,73 @@ export default function DashboardPage() {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // 🚀 PROFESSIONAL ONBOARDING FOR NON-CREATORS (NO EMOJIS)
+  // COMPACT ONBOARDING FOR NON-CREATORS (no emojis, no "Learn more")
   // ──────────────────────────────────────────────────────────────
   if (!isCreator) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center px-4">
-        <div className="max-w-2xl w-full bg-[#1a1a1a] rounded-2xl border border-white/10 p-8 md:p-12">
+      <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center px-4 py-8">
+        <div className="max-w-lg w-full bg-[#1a1a1a] rounded-2xl border border-white/10 p-6 md:p-8">
           <div className="text-center">
-            {/* Icon – clean SVG, no emoji */}
-            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-[#f5c518]/10 flex items-center justify-center">
-              <svg className="w-8 h-8 text-[#f5c518]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-14 h-14 mx-auto mb-5 rounded-full bg-[#f5c518]/10 flex items-center justify-center">
+              <svg className="w-7 h-7 text-[#f5c518]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-bold text-white">
+            <h1 className="text-xl md:text-2xl font-bold text-white">
               You’re not a creator yet.
             </h1>
-            <p className="text-gray-400 mt-3 text-base leading-relaxed">
+            <p className="text-gray-400 mt-2 text-sm leading-relaxed">
               To upload films, earn 70% of every sale, and build your audience,
-              you need to set up your creator profile first.
+              set up your creator profile.
             </p>
 
-            {/* Steps – clean, numbered */}
-            <div className="mt-8 bg-[#0a0a0a] rounded-xl border border-white/5 p-6 text-left">
-              <div className="flex items-start gap-4">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#f5c518]/20 text-[#f5c518] flex items-center justify-center text-xs font-bold">1</span>
+            <div className="mt-6 bg-[#0a0a0a] rounded-lg border border-white/5 p-4 text-left text-sm">
+              <div className="flex items-start gap-3">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#f5c518]/20 text-[#f5c518] flex items-center justify-center text-[10px] font-bold">1</span>
                 <div>
-                  <p className="text-sm font-medium text-white">Go to your Profile</p>
-                  <p className="text-xs text-gray-500">Access your account settings</p>
+                  <p className="font-medium text-white">Go to your Profile</p>
+                  <p className="text-xs text-gray-500">Account settings</p>
                 </div>
               </div>
-              <div className="flex items-start gap-4 mt-4">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#f5c518]/20 text-[#f5c518] flex items-center justify-center text-xs font-bold">2</span>
+              <div className="flex items-start gap-3 mt-3">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#f5c518]/20 text-[#f5c518] flex items-center justify-center text-[10px] font-bold">2</span>
                 <div>
-                  <p className="text-sm font-medium text-white">Enable Creator mode</p>
-                  <p className="text-xs text-gray-500">Toggle the “Become a Creator” switch</p>
+                  <p className="font-medium text-white">Enable Creator mode</p>
+                  <p className="text-xs text-gray-500">Toggle “Become a Creator”</p>
                 </div>
               </div>
-              <div className="flex items-start gap-4 mt-4">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#f5c518]/20 text-[#f5c518] flex items-center justify-center text-xs font-bold">3</span>
+              <div className="flex items-start gap-3 mt-3">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#f5c518]/20 text-[#f5c518] flex items-center justify-center text-[10px] font-bold">3</span>
                 <div>
-                  <p className="text-sm font-medium text-white">Start uploading</p>
-                  <p className="text-xs text-gray-500">Share your stories and earn</p>
+                  <p className="font-medium text-white">Start uploading</p>
+                  <p className="text-xs text-gray-500">Share your stories</p>
                 </div>
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/profile"
-                className="inline-flex items-center justify-center px-6 py-3 bg-[#f5c518] text-black rounded-lg font-semibold hover:bg-[#e0b010] transition-all duration-200 text-sm"
-              >
-                Go to Profile
-                <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
-              <Link
-                href="/how-it-works"
-                className="inline-flex items-center justify-center px-6 py-3 border border-white/30 text-white rounded-lg font-semibold hover:bg-white/10 transition-all duration-200 text-sm"
-              >
-                Learn more
-              </Link>
-            </div>
-            <p className="text-gray-500 text-xs mt-4">Setup takes less than 2 minutes.</p>
+            <Link
+              href="/profile"
+              className="mt-6 inline-flex items-center justify-center w-full px-5 py-2.5 bg-[#f5c518] text-black rounded-lg font-semibold hover:bg-[#e0b010] transition-all duration-200 text-sm"
+            >
+              Go to Profile
+              <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </Link>
+
+            <p className="text-gray-500 text-xs mt-3">Setup takes less than 2 minutes.</p>
           </div>
 
-          {/* Contact – clean, no emojis */}
-          <div className="mt-8 pt-6 border-t border-white/5 text-xs text-gray-500 flex flex-wrap justify-center gap-x-6 gap-y-2">
-            <span className="flex items-center gap-2">
+          {/* Contact – clean, inline */}
+          <div className="mt-6 pt-4 border-t border-white/5 text-xs text-gray-500 flex flex-wrap justify-center gap-x-5 gap-y-1.5">
+            <span className="flex items-center gap-1.5">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               reialproduction@gmail.com
             </span>
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
@@ -346,7 +336,7 @@ export default function DashboardPage() {
               href="https://wa.me/254704908255"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-gray-500 hover:text-green-400 transition"
+              className="flex items-center gap-1.5 text-gray-500 hover:text-green-400 transition"
             >
               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
@@ -360,7 +350,7 @@ export default function DashboardPage() {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // 🎬 CREATOR DASHBOARD (FULL STATS & CONTENT)
+  // CREATOR DASHBOARD (no emojis, clean)
   // ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -389,7 +379,7 @@ export default function DashboardPage() {
                 href={`/creator/${userId}/analytics`}
                 className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
               >
-                <span>📊</span> Full Analytics
+                <span>Full Analytics</span>
               </Link>
             )}
           </div>
@@ -527,7 +517,7 @@ export default function DashboardPage() {
                                 const url = `${window.location.origin}${filmUrl}`
                                 if (navigator.clipboard) {
                                   navigator.clipboard.writeText(url).then(() => {
-                                    alert('🔗 Link copied to clipboard!')
+                                    alert('Link copied to clipboard!')
                                   }).catch(() => {
                                     prompt('Copy this link:', url)
                                   })
@@ -570,7 +560,7 @@ export default function DashboardPage() {
 
           {payoutMessage && (
             <div className={`mb-3 sm:mb-4 p-2.5 sm:p-3 rounded-lg text-xs sm:text-sm ${
-              payoutMessage.includes('✅') ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+              payoutMessage.includes('submitted') ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
             }`}>
               {payoutMessage}
             </div>
@@ -639,7 +629,7 @@ export default function DashboardPage() {
                           <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-xs font-medium ${
                             payout.status === 'processed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
                           }`}>
-                            {payout.status === 'processed' ? '✅ Paid' : '⏳ Pending'}
+                            {payout.status === 'processed' ? 'Paid' : 'Pending'}
                           </span>
                         </td>
                         <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-gray-400 text-xs hidden xs:table-cell">
