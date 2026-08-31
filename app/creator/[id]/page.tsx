@@ -90,7 +90,6 @@ async function getCreatorData(userId: string) {
   }
 }
 
-// Helper function to format currency with 2 decimal places
 function formatCurrency(amount: number): string {
   return amount.toFixed(2)
 }
@@ -129,8 +128,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
         
-        {/* Edit Cover - Only for owner */}
-        {isOwner && (
+        {isOwner && profile.is_creator && (
           <Link
             href={`/creator/${id}/edit-cover`}
             className="absolute top-4 right-4 z-20 bg-black/60 hover:bg-black/80 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
@@ -161,7 +159,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
                 {profile.full_name.charAt(0).toUpperCase()}
               </div>
             )}
-            {isOwner && (
+            {isOwner && profile.is_creator && (
               <Link
                 href={`/creator/${id}/edit-avatar`}
                 className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs font-medium"
@@ -184,39 +182,38 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
               )}
             </div>
             
-            {/* Tagline */}
             {profile.tagline && (
               <p className="text-gray-300 text-sm sm:text-base mt-1">
                 {profile.tagline}
               </p>
             )}
             
-            {/* Bio */}
             <p className="text-gray-400 text-sm mt-2 max-w-2xl">
               {profile.bio || 'No bio yet'}
             </p>
             
-            {/* Stats - Public - UPDATED with 2 decimal places */}
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3">
-              <div className="flex items-center gap-1 text-sm text-gray-400">
-                <span className="font-bold text-white">{stats.totalProjects}</span> Projects
+            {/* Stats - Only show if creator */}
+            {profile.is_creator && (
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3">
+                <div className="flex items-center gap-1 text-sm text-gray-400">
+                  <span className="font-bold text-white">{stats.totalProjects}</span> Projects
+                </div>
+                <div className="flex items-center gap-1 text-sm text-gray-400">
+                  <span className="font-bold text-white">{stats.totalViews}</span> Views
+                </div>
+                <div className="flex items-center gap-1 text-sm text-gray-400">
+                  <span className="font-bold text-white">{stats.totalPurchases}</span> Purchases
+                </div>
+                <div className="flex items-center gap-1 text-sm text-gray-400">
+                  <span className="font-bold text-white">KES {formatCurrency(stats.totalRevenue)}</span> Revenue
+                </div>
               </div>
-              <div className="flex items-center gap-1 text-sm text-gray-400">
-                <span className="font-bold text-white">{stats.totalViews}</span> Views
-              </div>
-              <div className="flex items-center gap-1 text-sm text-gray-400">
-                <span className="font-bold text-white">{stats.totalPurchases}</span> Purchases
-              </div>
-              <div className="flex items-center gap-1 text-sm text-gray-400">
-                <span className="font-bold text-white">KES {formatCurrency(stats.totalRevenue)}</span> Revenue
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 pb-2">
-            {/* Analytics - Only for owner */}
-            {isOwner && (
+            {isOwner && profile.is_creator && (
               <Link
                 href={`/creator/${id}/analytics`}
                 className="px-4 py-2 bg-[#f5c518]/10 hover:bg-[#f5c518]/20 border border-[#f5c518]/30 text-[#f5c518] rounded-lg text-sm font-medium transition flex items-center gap-2"
@@ -226,7 +223,6 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
               </Link>
             )}
             
-            {/* Edit Profile - Only for owner */}
             {isOwner && (
               <Link
                 href="/profile"
@@ -239,7 +235,6 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
               </Link>
             )}
             
-            {/* Contact Icons - Public */}
             <div className="flex items-center gap-1">
               <a
                 href="mailto:reialproduction@gmail.com"
@@ -263,7 +258,6 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
               </a>
             </div>
             
-            {/* Logout - Only for owner */}
             {isOwner && (
               <button
                 onClick={async () => {
@@ -283,162 +277,194 @@ export default async function CreatorPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      {/* Social Links */}
-      {(profile.social_instagram || profile.social_twitter || profile.social_youtube || profile.social_website) && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-4">
-          <div className="flex flex-wrap gap-3">
-            {profile.social_instagram && (
-              <a href={profile.social_instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2">
-                Instagram
-              </a>
-            )}
-            {profile.social_twitter && (
-              <a href={profile.social_twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2">
-                Twitter
-              </a>
-            )}
-            {profile.social_youtube && (
-              <a href={profile.social_youtube} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2">
-                YouTube
-              </a>
-            )}
-            {profile.social_website && (
-              <a href={profile.social_website} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2">
-                Website
-              </a>
-            )}
+      {/* ──────────────── ONBOARDING FOR NON-CREATORS ──────────────── */}
+      {isOwner && !profile.is_creator && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-6">
+          <div className="bg-gradient-to-r from-[#f5c518]/10 to-[#f5c518]/5 border border-[#f5c518]/20 rounded-2xl p-6 sm:p-8 text-center">
+            <div className="text-5xl mb-3">🚀</div>
+            <h2 className="text-xl sm:text-2xl font-bold text-white">Start Your Creator Journey</h2>
+            <p className="text-gray-400 mt-2 max-w-lg mx-auto text-sm sm:text-base">
+              You're one step away from becoming a creator on Cheki. Set up your creator profile to start uploading films, earning 70% of every sale, and building your audience.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3 mt-5">
+              <Link
+                href="/profile?tab=creator"
+                className="bg-[#f5c518] text-black px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold hover:scale-105 transition-all duration-300 text-sm sm:text-base"
+              >
+                Set Up Creator Profile →
+              </Link>
+              <Link
+                href="/how-it-works"
+                className="border border-white/30 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold hover:bg-white/10 transition-all duration-300 text-sm sm:text-base"
+              >
+                Learn How It Works
+              </Link>
+            </div>
+            <p className="text-gray-500 text-xs mt-3">⏳ Takes less than 2 minutes to get started</p>
           </div>
         </div>
       )}
 
-      {/* Featured Project */}
-      {featuredProject && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-[#f5c518]">Featured Project</h2>
-            {isOwner && (
-              <Link
-                href={`/creator/${id}/edit-featured`}
-                className="text-sm text-gray-400 hover:text-[#f5c518] transition"
-              >
-                Change Featured
-              </Link>
-            )}
-          </div>
-          <Link
-            href={`/${featuredProject.category.toLowerCase()}/${featuredProject.slug || featuredProject.id}`}
-            className="group block bg-[#1a1a1a] rounded-2xl overflow-hidden border border-white/5 hover:border-[#f5c518]/20 transition"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-1 aspect-[16/9] md:aspect-[4/3] bg-[#2a2a2a] relative overflow-hidden">
-                {featuredProject.thumbnail_url ? (
-                  <Image
-                    src={featuredProject.thumbnail_url}
-                    alt={featuredProject.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition duration-500"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-5xl opacity-20">🎬</div>
+      {/* ──────────────── CREATOR CONTENT ──────────────── */}
+      {profile.is_creator && (
+        <>
+          {/* Social Links */}
+          {(profile.social_instagram || profile.social_twitter || profile.social_youtube || profile.social_website) && (
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-4">
+              <div className="flex flex-wrap gap-3">
+                {profile.social_instagram && (
+                  <a href={profile.social_instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2">
+                    Instagram
+                  </a>
+                )}
+                {profile.social_twitter && (
+                  <a href={profile.social_twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2">
+                    Twitter
+                  </a>
+                )}
+                {profile.social_youtube && (
+                  <a href={profile.social_youtube} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2">
+                    YouTube
+                  </a>
+                )}
+                {profile.social_website && (
+                  <a href={profile.social_website} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#f5c518] transition text-sm flex items-center gap-2">
+                    Website
+                  </a>
                 )}
               </div>
-              <div className="md:col-span-2 p-5 flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs bg-[#f5c518]/20 text-[#f5c518] px-2 py-0.5 rounded-full">Featured</span>
-                  <span className="text-xs text-gray-500">{featuredProject.category}</span>
-                </div>
-                <h3 className="text-xl font-bold group-hover:text-[#f5c518] transition">
-                  {featuredProject.title}
-                </h3>
-                <p className="text-gray-400 text-sm mt-2 line-clamp-2">
-                  {featuredProject.description}
-                </p>
-                <div className="flex items-center gap-4 mt-4">
-                  <span className="text-[#f5c518] font-bold">KES {featuredProject.price}</span>
-                  <span className="text-gray-500 text-sm">Views: {featuredProject.views}</span>
-                  <span className="text-gray-500 text-sm">Sold: {featuredProject.purchase_count}</span>
-                </div>
-              </div>
             </div>
-          </Link>
-        </div>
-      )}
-
-      {/* Project Grid */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">All Projects</h2>
-          {isOwner && (
-            <Link
-              href="/upload"
-              className="text-sm bg-[#f5c518] text-black px-4 py-1.5 rounded-lg font-semibold hover:bg-[#e0b010] transition"
-            >
-              Upload New
-            </Link>
           )}
-        </div>
 
-        {content.length === 0 ? (
-          <div className="bg-[#1a1a1a] rounded-xl p-12 text-center border border-white/5">
-            <div className="text-5xl mb-4 opacity-20">🎬</div>
-            <p className="text-gray-400">No projects yet</p>
-            {isOwner && (
-              <Link href="/upload" className="inline-block mt-4 bg-[#f5c518] text-black px-6 py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition">
-                Upload Your First Project
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {content.map((project) => (
-              <div key={project.id} className="group relative">
-                <Link
-                  href={`/${project.category.toLowerCase()}/${project.slug || project.id}`}
-                  className="block bg-[#1a1a1a] rounded-xl overflow-hidden hover:scale-[1.03] transition border border-white/5 hover:border-[#f5c518]/20"
-                >
-                  <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
-                    {project.thumbnail_url ? (
-                      <Image
-                        src={project.thumbnail_url}
-                        alt={project.title}
-                        fill
-                        className="object-cover group-hover:scale-110 transition duration-500"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-20">🎬</div>
-                    )}
-                    {project.category && (
-                      <div className="absolute top-2 right-2 bg-[#f5c518]/90 text-black text-[8px] px-2 py-0.5 rounded font-semibold">
-                        {project.category}
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <h3 className="font-semibold text-sm group-hover:text-[#f5c518] transition line-clamp-1">
-                      {project.title}
-                    </h3>
-                    <p className="text-[#f5c518] font-bold text-sm mt-1">KES {project.price}</p>
-                    <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500">
-                      <span>Views: {project.views}</span>
-                      <span>Sold: {project.purchase_count}</span>
-                    </div>
-                  </div>
-                </Link>
-                
-                {/* View Analytics - Only for owner */}
+          {/* Featured Project */}
+          {featuredProject && (
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-[#f5c518]">Featured Project</h2>
                 {isOwner && (
                   <Link
-                    href={`/creator/${id}/project/${project.id}/analytics`}
-                    className="absolute bottom-2 right-2 bg-[#0a0a0a]/80 hover:bg-[#f5c518] text-white hover:text-black px-2 py-1 rounded text-[8px] font-medium transition opacity-0 group-hover:opacity-100"
+                    href={`/creator/${id}/edit-featured`}
+                    className="text-sm text-gray-400 hover:text-[#f5c518] transition"
                   >
-                    Analytics
+                    Change Featured
                   </Link>
                 )}
               </div>
-            ))}
+              <Link
+                href={`/${featuredProject.category.toLowerCase()}/${featuredProject.slug || featuredProject.id}`}
+                className="group block bg-[#1a1a1a] rounded-2xl overflow-hidden border border-white/5 hover:border-[#f5c518]/20 transition"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-1 aspect-[16/9] md:aspect-[4/3] bg-[#2a2a2a] relative overflow-hidden">
+                    {featuredProject.thumbnail_url ? (
+                      <Image
+                        src={featuredProject.thumbnail_url}
+                        alt={featuredProject.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition duration-500"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-5xl opacity-20">🎬</div>
+                    )}
+                  </div>
+                  <div className="md:col-span-2 p-5 flex flex-col justify-center">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs bg-[#f5c518]/20 text-[#f5c518] px-2 py-0.5 rounded-full">Featured</span>
+                      <span className="text-xs text-gray-500">{featuredProject.category}</span>
+                    </div>
+                    <h3 className="text-xl font-bold group-hover:text-[#f5c518] transition">
+                      {featuredProject.title}
+                    </h3>
+                    <p className="text-gray-400 text-sm mt-2 line-clamp-2">
+                      {featuredProject.description}
+                    </p>
+                    <div className="flex items-center gap-4 mt-4">
+                      <span className="text-[#f5c518] font-bold">KES {featuredProject.price}</span>
+                      <span className="text-gray-500 text-sm">Views: {featuredProject.views}</span>
+                      <span className="text-gray-500 text-sm">Sold: {featuredProject.purchase_count}</span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          )}
+
+          {/* Project Grid */}
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">All Projects</h2>
+              {isOwner && (
+                <Link
+                  href="/upload"
+                  className="text-sm bg-[#f5c518] text-black px-4 py-1.5 rounded-lg font-semibold hover:bg-[#e0b010] transition"
+                >
+                  Upload New
+                </Link>
+              )}
+            </div>
+
+            {content.length === 0 ? (
+              <div className="bg-[#1a1a1a] rounded-xl p-12 text-center border border-white/5">
+                <div className="text-5xl mb-4 opacity-20">🎬</div>
+                <p className="text-gray-400">No projects yet</p>
+                {isOwner && (
+                  <Link href="/upload" className="inline-block mt-4 bg-[#f5c518] text-black px-6 py-2 rounded-lg font-semibold hover:bg-[#e0b010] transition">
+                    Upload Your First Project
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {content.map((project) => (
+                  <div key={project.id} className="group relative">
+                    <Link
+                      href={`/${project.category.toLowerCase()}/${project.slug || project.id}`}
+                      className="block bg-[#1a1a1a] rounded-xl overflow-hidden hover:scale-[1.03] transition border border-white/5 hover:border-[#f5c518]/20"
+                    >
+                      <div className="aspect-[2/3] bg-[#2a2a2a] relative overflow-hidden">
+                        {project.thumbnail_url ? (
+                          <Image
+                            src={project.thumbnail_url}
+                            alt={project.title}
+                            fill
+                            className="object-cover group-hover:scale-110 transition duration-500"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-20">🎬</div>
+                        )}
+                        {project.category && (
+                          <div className="absolute top-2 right-2 bg-[#f5c518]/90 text-black text-[8px] px-2 py-0.5 rounded font-semibold">
+                            {project.category}
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <h3 className="font-semibold text-sm group-hover:text-[#f5c518] transition line-clamp-1">
+                          {project.title}
+                        </h3>
+                        <p className="text-[#f5c518] font-bold text-sm mt-1">KES {project.price}</p>
+                        <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500">
+                          <span>Views: {project.views}</span>
+                          <span>Sold: {project.purchase_count}</span>
+                        </div>
+                      </div>
+                    </Link>
+                    
+                    {isOwner && (
+                      <Link
+                        href={`/creator/${id}/project/${project.id}/analytics`}
+                        className="absolute bottom-2 right-2 bg-[#0a0a0a]/80 hover:bg-[#f5c518] text-white hover:text-black px-2 py-1 rounded text-[8px] font-medium transition opacity-0 group-hover:opacity-100"
+                      >
+                        Analytics
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Floating WhatsApp */}
       <a
