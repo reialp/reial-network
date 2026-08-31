@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-// --- Shared IPN logic ---
+// --- Shared IPN Logic ---
 async function processIPN(orderTrackingId: string | null, orderMerchantReference: string | null) {
   // 1. Validate inputs
   if (!orderTrackingId || !orderMerchantReference) {
@@ -11,19 +11,18 @@ async function processIPN(orderTrackingId: string | null, orderMerchantReference
 
   console.log('📦 IPN received:', { orderTrackingId, orderMerchantReference })
 
-  // 2. Re-verify with Pesapal (don't trust the webhook status)
+  // 2. Re-verify with Pesapal (never trust the webhook status)
   let verified
   try {
     verified = await verifyTransactionStatus(orderTrackingId)
   } catch (verifyErr: any) {
     console.error('❌ Verification failed:', verifyErr.message)
-    // Return 200 so Pesapal retries later
     return NextResponse.json({ message: 'Verification failed, will retry' }, { status: 200 })
   }
 
-  console.log('🔒 Verified status from Pesapal:', verified.payment_status_description, 'status_code:', verified.status_code)
+  console.log('🔒 Verified status:', verified.payment_status_description, 'status_code:', verified.status_code)
 
-  // 3. 🔴 ONLY mark as completed if status_code is 1 (COMPLETED)
+  // 3. ONLY mark as completed if status_code is 1 (COMPLETED)
   if (verified.status_code !== 1) {
     console.log('⏳ Not completed. status_code:', verified.status_code)
     return NextResponse.json({ message: 'Payment not completed' }, { status: 200 })
@@ -72,7 +71,88 @@ async function processIPN(orderTrackingId: string | null, orderMerchantReference
     return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 })
   }
 
-  // 7. ✅ Update purchase to 'completed'
+  // ------------------------------------------------------------
+  // 7. FETCH THE CONTENT TO GET THE CREATOR_ID
+  // ------------------------------------------------------------
+  const { data: content, error: contentError } = await supabase
+    .from('content')
+    .select('creator_id, title')
+    .eq('id', purchase.content_id)
+    .single()
+
+  if (contentError || !content) {
+    console.error('❌ Content not found for content_id:', purchase.content_id)
+    await supabase
+      .from('purchases')
+      .update({
+        pesapal_transaction_id: orderTrackingId,
+        status: 'completed_no_creator',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', purchase.id)
+    return NextResponse.json({ error: 'Content not found' }, { status: 200 })
+  }
+
+  console.log('📊 Content found:', content.title, 'Creator ID:', content.creator_id)
+
+  // ------------------------------------------------------------
+  // 8. CALCULATE 70/30 REVENUE SPLIT
+  // ------------------------------------------------------------
+  const totalAmount = Number(purchase.amount_paid)
+  const creatorShare = Math.round((totalAmount * 0.70) * 100) / 100
+  const platformShare = Math.round((totalAmount * 0.30) * 100) / 100
+
+  console.log(`💰 Total: ${totalAmount} | Creator (70%): ${creatorShare} | Platform (30%): ${platformShare}`)
+
+  // ------------------------------------------------------------
+  // 9. ✅ UPDATE CREATOR'S BALANCE AUTOMATICALLY (LIVE MONEY)
+  // ------------------------------------------------------------
+  // Fetch current balance
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('balance')
+    .eq('id', content.creator_id)
+    .single()
+
+  if (profileError) {
+    console.error('❌ Failed to fetch creator profile:', profileError)
+    await supabase
+      .from('purchases')
+      .update({
+        pesapal_transaction_id: orderTrackingId,
+        status: 'completed_balance_failed',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', purchase.id)
+    return NextResponse.json({ error: 'Creator profile not found' }, { status: 200 })
+  }
+
+  const currentBalance = Number(profile.balance) || 0
+  const newBalance = currentBalance + creatorShare
+
+  const { error: updateBalanceError } = await supabase
+    .from('profiles')
+    .update({ balance: newBalance })
+    .eq('id', content.creator_id)
+
+  if (updateBalanceError) {
+    console.error('❌ Failed to update creator balance:', updateBalanceError)
+    await supabase
+      .from('purchases')
+      .update({
+        pesapal_transaction_id: orderTrackingId,
+        status: 'completed_balance_failed',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', purchase.id)
+    return NextResponse.json({ error: 'Balance update failed' }, { status: 200 })
+  }
+
+  console.log(`✅ Creator ${content.creator_id} balance updated from ${currentBalance} to ${newBalance}`)
+
+  // ------------------------------------------------------------
+  // 10. UPDATE PURCHASE TO 'completed'
+  // ------------------------------------------------------------
   const { error: updateError } = await supabase
     .from('purchases')
     .update({
@@ -89,13 +169,13 @@ async function processIPN(orderTrackingId: string | null, orderMerchantReference
 
   console.log('✅ Purchase updated to completed:', purchase.id)
 
-  // 8. Increment sales (optional)
+  // 11. Increment sales count (optional)
   if (purchase.content_id) {
     try {
       await supabase.rpc('increment_sales', { content_id: purchase.content_id })
       console.log('✅ Sales incremented for content:', purchase.content_id)
     } catch (err) {
-      console.error('❌ RPC error:', err)
+      console.error('❌ RPC error (increment_sales):', err)
     }
   }
 
@@ -143,13 +223,12 @@ async function verifyTransactionStatus(orderTrackingId: string) {
 
 // --- Route Handlers ---
 
-// 🟢 GET: Pesapal sends IPN as query params (based on your registration)
+// 🟢 GET: Pesapal sends IPN as query params
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url)
     const orderTrackingId = url.searchParams.get('OrderTrackingId')
     const orderMerchantReference = url.searchParams.get('OrderMerchantReference')
-    
     console.log('📩 GET IPN received with query:', { orderTrackingId, orderMerchantReference })
     return processIPN(orderTrackingId, orderMerchantReference)
   } catch (error: any) {
@@ -165,7 +244,6 @@ export async function POST(req: Request) {
     const params = new URLSearchParams(body)
     const orderTrackingId = params.get('OrderTrackingId')
     const orderMerchantReference = params.get('OrderMerchantReference')
-    
     console.log('📩 POST IPN received with body:', { orderTrackingId, orderMerchantReference })
     return processIPN(orderTrackingId, orderMerchantReference)
   } catch (error: any) {
