@@ -90,8 +90,11 @@ export async function POST(req: Request) {
       )
     }
 
-    const platformFee = Math.max(Math.ceil(amount * 0.15), 1)
-    const creatorEarnings = amount - platformFee
+    // Revenue policy: creator receives 70%; platform/admin retains 30%.
+    // Keep two-decimal precision so both shares add back to the exact amount
+    // charged to the buyer.
+    const platformFee = Number((amount * 0.30).toFixed(2))
+    const creatorEarnings = Number((amount - platformFee).toFixed(2))
     const watchToken = crypto.randomBytes(32).toString('hex')
 
     const { data: purchase, error: purchaseError } = await supabase
