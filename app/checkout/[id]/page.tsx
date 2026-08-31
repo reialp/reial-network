@@ -194,9 +194,9 @@ export default function CheckoutPage() {
     )
   }
 
-  const total = film.price
-  const platformFee = Math.round(total * 0.15)
-  const creatorEarnings = Math.round(total * 0.85)
+  const total = Number(film.price)
+  const platformFee = Number((total * 0.30).toFixed(2))
+  const creatorEarnings = Number((total - platformFee).toFixed(2))
 
   // ✅ Only show revenue breakdown to creator of the film OR admin
   const showRevenueBreakdown = isOwnFilm || isAdmin
@@ -225,11 +225,11 @@ export default function CheckoutPage() {
               <div className="border-t border-white/10 pt-3 sm:pt-4 space-y-2">
                 <p className="text-xs text-gray-500 mb-2">Revenue Breakdown</p>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Platform Fee (15%)</span>
+                  <span className="text-gray-400">Platform/Admin Fee (30%)</span>
                   <span className="text-gray-400">KES {platformFee}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Creator Earnings (85%)</span>
+                  <span className="text-gray-400">Creator Earnings (70%)</span>
                   <span className="text-[#f5c518] font-semibold">KES {creatorEarnings}</span>
                 </div>
               </div>
