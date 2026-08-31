@@ -62,6 +62,7 @@ export default function OnboardingGuide({ userId, forceOpen = false, onClose }: 
   useEffect(() => {
     const checkFirstVisit = async () => {
       if (forceOpen) {
+        setStep(0)
         setIsOpen(true)
         return
       }
