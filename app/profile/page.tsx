@@ -270,9 +270,13 @@ function ProfileForm() {
     }
 
     // 🔥 Reset terms if they just became a creator
-    if (currentProfile.is_creator && !wasCreator) {
+    const justBecameCreator = currentProfile.is_creator && !wasCreator
+    if (justBecameCreator) {
       updateData.terms_accepted = false
+      console.log('🔍 Just became creator – resetting terms_accepted to false')
     }
+
+    console.log('📦 Updating profile with:', updateData)
 
     const { error: updateError } = await supabase
       .from('profiles')
@@ -280,10 +284,13 @@ function ProfileForm() {
       .eq('id', userId)
 
     if (updateError) {
+      console.error('❌ Update error:', updateError)
       setError('Failed to save: ' + updateError.message)
       setSaving(false)
       return
     }
+
+    console.log('✅ Profile updated successfully')
 
     if (currentProfile.featured_project_id) {
       const { data: featured } = await supabase
@@ -304,10 +311,12 @@ function ProfileForm() {
     setIsEditing(false)
     setShowScrollHint(false)
 
-    // 🚀 If they just became a creator, redirect to terms (no intent check)
-    if (currentProfile.is_creator && !wasCreator) {
+    // 🚀 If they just became a creator, redirect to terms
+    if (justBecameCreator) {
+      console.log('🚀 Redirecting to /terms...')
+      // Use window.location for hard redirect (bypasses router issues)
       setTimeout(() => {
-        router.push('/terms')
+        window.location.href = '/terms'
       }, 1000)
       return
     }
