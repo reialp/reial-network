@@ -368,6 +368,14 @@ export default function UploadPage() {
                   <option value="Series">Series</option>
                   <option value="Short Film">Short Film</option>
                   <option value="Music">Music</option>
+                  <option value="Animation">Animation</option>
+                  <option value="Comedy">Comedy</option>
+                  <option value="Educational">Educational</option>
+                  <option value="Lifestyle">Lifestyle</option>
+                  <option value="Travel & Adventure">Travel & Adventure</option>
+                  <option value="Culture & Heritage">Culture & Heritage</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Poetry">Poetry</option>
                 </select>
               </div>
               <div>
