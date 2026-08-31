@@ -266,7 +266,7 @@ export default function HomePage() {
 
       if (profile.is_creator) {
         if (profile.terms_accepted) {
-          window.location.href = '/upload'
+          window.location.href = '/dashboard'
         } else {
           window.location.href = '/terms'
         }
