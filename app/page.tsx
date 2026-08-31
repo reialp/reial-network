@@ -460,9 +460,12 @@ export default function HomePage() {
               </span>
             </h1>
             
-            <p className="text-gray-300 text-sm sm:text-base md:text-lg max-w-2xl mb-4 sm:mb-6">
-              Discover and buy exclusive films, documentaries, series and more 
-              <span className="text-[#f5c518] font-medium"> directly from independent creators.</span>
+            <p className="text-gray-300 text-sm sm:text-base md:text-lg max-w-2xl mb-2 sm:mb-3">
+              Discover bold films, documentaries, series, music, poetry, and more
+              <span className="text-[#f5c518] font-medium"> from independent creators.</span>
+            </p>
+            <p className="text-gray-400 text-xs sm:text-sm md:text-base max-w-2xl mb-4 sm:mb-6 tracking-wide">
+              Choose <span className="text-[#f5c518] px-1">→</span> Pay securely <span className="text-[#f5c518] px-1">→</span> Watch anytime
             </p>
             
             <div className="flex flex-wrap gap-3 sm:gap-4">
