@@ -237,6 +237,10 @@ export default function DashboardPage() {
     router.refresh()
   }
 
+  const handleHowItWorks = () => {
+    setIsOnboardingOpen(true)
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved': return 'bg-green-500/20 text-green-400'
@@ -384,10 +388,12 @@ export default function DashboardPage() {
                   Full Analytics
                 </Link>
                 <button
-                  onClick={() => setIsOnboardingOpen(true)}
+                  type="button"
+                  onClick={handleHowItWorks}
+                  aria-label="Open creator onboarding guide"
                   className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
                 >
-                  How it works
+                  How It Works
                 </button>
               </>
             )}
