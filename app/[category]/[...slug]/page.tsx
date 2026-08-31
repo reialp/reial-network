@@ -245,8 +245,8 @@ export default async function ContentPage({
 
               {showFeeBreakdown && isApproved && (
                 <div className="mt-4 pt-4 border-t border-white/10 text-xs text-gray-500 space-y-1">
-                  <p>Platform Fee (15%): <span className="text-yellow-400">KES {Math.round(content.price * 0.15)}</span></p>
-                  <p>You Earn (85%): <span className="text-green-400">KES {Math.round(content.price * 0.85)}</span></p>
+                  <p>Platform/Admin Fee (30%): <span className="text-yellow-400">KES {Number((Number(content.price) * 0.30).toFixed(2))}</span></p>
+                  <p>You Earn (70%): <span className="text-green-400">KES {Number((Number(content.price) - Number((Number(content.price) * 0.30).toFixed(2))).toFixed(2))}</span></p>
                 </div>
               )}
 
