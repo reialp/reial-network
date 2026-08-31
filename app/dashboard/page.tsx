@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import OnboardingGuide from '@/components/OnboardingGuide'
 
 interface Content {
   id: string
@@ -42,6 +43,7 @@ export default function DashboardPage() {
   const [payoutMessage, setPayoutMessage] = useState('')
 
   const [userId, setUserId] = useState('')
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
 
   useEffect(() => {
     loadDashboard()
@@ -260,7 +262,7 @@ export default function DashboardPage() {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // COMPACT ONBOARDING FOR NON-CREATORS (no emojis)
+  // COMPACT ONBOARDING FOR NON-CREATORS
   // ──────────────────────────────────────────────────────────────
   if (!isCreator) {
     return (
@@ -293,7 +295,7 @@ export default function DashboardPage() {
                 <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#f5c518]/20 text-[#f5c518] flex items-center justify-center text-[10px] font-bold">2</span>
                 <div>
                   <p className="font-medium text-white">Enable Creator mode</p>
-                  <p className="text-xs text-gray-500">Toggle “Become a Creator”</p>
+                  <p className="text-xs text-gray-500">Toggle "Become a Creator"</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 mt-3">
@@ -318,7 +320,6 @@ export default function DashboardPage() {
             <p className="text-gray-500 text-xs mt-3">Setup takes less than 2 minutes.</p>
           </div>
 
-          {/* Contact – clean, inline */}
           <div className="mt-6 pt-4 border-t border-white/5 text-xs text-gray-500 flex flex-wrap justify-center gap-x-5 gap-y-1.5">
             <span className="flex items-center gap-1.5">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -350,7 +351,7 @@ export default function DashboardPage() {
   }
 
   // ──────────────────────────────────────────────────────────────
-  // CREATOR DASHBOARD (no emojis, with "How it works")
+  // CREATOR DASHBOARD
   // ──────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -382,12 +383,12 @@ export default function DashboardPage() {
                 >
                   Full Analytics
                 </Link>
-                <Link
-                  href="/how-it-works"
+                <button
+                  onClick={() => setIsOnboardingOpen(true)}
                   className="text-xs sm:text-sm text-gray-400 hover:text-[#f5c518] transition flex items-center gap-1"
                 >
                   How it works
-                </Link>
+                </button>
               </>
             )}
           </div>
@@ -614,7 +615,6 @@ export default function DashboardPage() {
             {isRequesting ? 'Submitting...' : stats.availableBalance < 500 ? 'Insufficient Balance' : 'Request Payout'}
           </button>
 
-          {/* Payout History */}
           {payoutHistory.length > 0 && (
             <div className="mt-4 sm:mt-6">
               <h3 className="text-xs sm:text-sm font-medium text-gray-400 mb-2 sm:mb-3">Payout History</h3>
@@ -652,9 +652,8 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Contact + Logout Section */}
+        {/* Contact + Logout */}
         <div className="mt-6 sm:mt-8 md:mt-10 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          {/* Contact Card */}
           <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 sm:mb-4">Contact Us</h3>
             <div className="space-y-3">
@@ -696,7 +695,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Logout Card */}
           <div className="bg-[#1a1a1a] rounded-xl border border-white/5 p-4 sm:p-5 flex flex-col justify-center">
             <button
               onClick={handleLogout}
@@ -710,6 +708,15 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Onboarding Guide Modal */}
+      {userId && (
+        <OnboardingGuide
+          userId={userId}
+          forceOpen={isOnboardingOpen}
+          onClose={() => setIsOnboardingOpen(false)}
+        />
+      )}
     </div>
   )
 }
