@@ -1,253 +1,87 @@
-import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { finalizePurchase } from '@/lib/pesapal/finalizePurchase'
 
-// --- Shared IPN Logic ---
-async function processIPN(orderTrackingId: string | null, orderMerchantReference: string | null) {
-  // 1. Validate inputs
-  if (!orderTrackingId || !orderMerchantReference) {
-    console.error('❌ Missing OrderTrackingId or OrderMerchantReference')
-    return NextResponse.json({ error: 'Invalid IPN' }, { status: 400 })
-  }
+async function getPaymentDetails(req: Request) {
+  const url = new URL(req.url)
 
-  console.log('📦 IPN received:', { orderTrackingId, orderMerchantReference })
+  let purchaseId = url.searchParams.get('OrderMerchantReference')
+  let trackingId = url.searchParams.get('OrderTrackingId')
 
-  // 2. Re-verify with Pesapal (never trust the webhook status)
-  let verified
-  try {
-    verified = await verifyTransactionStatus(orderTrackingId)
-  } catch (verifyErr: any) {
-    console.error('❌ Verification failed:', verifyErr.message)
-    return NextResponse.json({ message: 'Verification failed, will retry' }, { status: 200 })
-  }
+  if (!purchaseId || !trackingId) {
+    const contentType = req.headers.get('content-type') || ''
 
-  console.log('🔒 Verified status:', verified.payment_status_description, 'status_code:', verified.status_code)
+    if (contentType.includes('application/json')) {
+      const body = await req.json().catch(() => ({}))
 
-  // 3. ONLY mark as completed if status_code is 1 (COMPLETED)
-  if (verified.status_code !== 1) {
-    console.log('⏳ Not completed. status_code:', verified.status_code)
-    return NextResponse.json({ message: 'Payment not completed' }, { status: 200 })
-  }
+      purchaseId =
+        purchaseId ||
+        body.OrderMerchantReference ||
+        body.orderMerchantReference ||
+        body.purchaseId
 
-  const supabase = await createClient()
+      trackingId =
+        trackingId ||
+        body.OrderTrackingId ||
+        body.orderTrackingId ||
+        body.trackingId
+    } else {
+      const text = await req.text()
+      const params = new URLSearchParams(text)
 
-  // 4. Check for duplicate IPN
-  const { data: existing } = await supabase
-    .from('purchases')
-    .select('id')
-    .eq('pesapal_transaction_id', orderTrackingId)
-    .single()
+      purchaseId =
+        purchaseId || params.get('OrderMerchantReference')
 
-  if (existing) {
-    console.log('🔄 Duplicate IPN ignored for transaction:', orderTrackingId)
-    return NextResponse.json({ message: 'Already processed' }, { status: 200 })
-  }
-
-  // 5. Find the purchase
-  const { data: purchase, error: purchaseError } = await supabase
-    .from('purchases')
-    .select('*')
-    .eq('id', orderMerchantReference)
-    .single()
-
-  if (purchaseError || !purchase) {
-    console.error('❌ Purchase not found:', orderMerchantReference)
-    return NextResponse.json({ error: 'Purchase not found' }, { status: 404 })
-  }
-
-  // 6. Cross-check amount
-  const expectedAmount = Number(purchase.amount_paid)
-  const confirmedAmount = Number(verified.amount)
-
-  if (isNaN(confirmedAmount) || confirmedAmount < expectedAmount) {
-    console.error('❌ Amount mismatch. Expected:', expectedAmount, 'Confirmed:', confirmedAmount)
-    await supabase
-      .from('purchases')
-      .update({
-        pesapal_transaction_id: orderTrackingId,
-        status: 'flagged_amount_mismatch',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', purchase.id)
-    return NextResponse.json({ error: 'Amount mismatch' }, { status: 400 })
-  }
-
-  // ------------------------------------------------------------
-  // 7. FETCH THE CONTENT TO GET THE CREATOR_ID
-  // ------------------------------------------------------------
-  const { data: content, error: contentError } = await supabase
-    .from('content')
-    .select('creator_id, title')
-    .eq('id', purchase.content_id)
-    .single()
-
-  if (contentError || !content) {
-    console.error('❌ Content not found for content_id:', purchase.content_id)
-    await supabase
-      .from('purchases')
-      .update({
-        pesapal_transaction_id: orderTrackingId,
-        status: 'completed_no_creator',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', purchase.id)
-    return NextResponse.json({ error: 'Content not found' }, { status: 200 })
-  }
-
-  console.log('📊 Content found:', content.title, 'Creator ID:', content.creator_id)
-
-  // ------------------------------------------------------------
-  // 8. CALCULATE 70/30 REVENUE SPLIT
-  // ------------------------------------------------------------
-  const totalAmount = Number(purchase.amount_paid)
-  const creatorShare = Math.round((totalAmount * 0.70) * 100) / 100
-  const platformShare = Math.round((totalAmount * 0.30) * 100) / 100
-
-  console.log(`💰 Total: ${totalAmount} | Creator (70%): ${creatorShare} | Platform (30%): ${platformShare}`)
-
-  // ------------------------------------------------------------
-  // 9. ✅ UPDATE CREATOR'S BALANCE AUTOMATICALLY (LIVE MONEY)
-  // ------------------------------------------------------------
-  // Fetch current balance
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('balance')
-    .eq('id', content.creator_id)
-    .single()
-
-  if (profileError) {
-    console.error('❌ Failed to fetch creator profile:', profileError)
-    await supabase
-      .from('purchases')
-      .update({
-        pesapal_transaction_id: orderTrackingId,
-        status: 'completed_balance_failed',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', purchase.id)
-    return NextResponse.json({ error: 'Creator profile not found' }, { status: 200 })
-  }
-
-  const currentBalance = Number(profile.balance) || 0
-  const newBalance = currentBalance + creatorShare
-
-  const { error: updateBalanceError } = await supabase
-    .from('profiles')
-    .update({ balance: newBalance })
-    .eq('id', content.creator_id)
-
-  if (updateBalanceError) {
-    console.error('❌ Failed to update creator balance:', updateBalanceError)
-    await supabase
-      .from('purchases')
-      .update({
-        pesapal_transaction_id: orderTrackingId,
-        status: 'completed_balance_failed',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', purchase.id)
-    return NextResponse.json({ error: 'Balance update failed' }, { status: 200 })
-  }
-
-  console.log(`✅ Creator ${content.creator_id} balance updated from ${currentBalance} to ${newBalance}`)
-
-  // ------------------------------------------------------------
-  // 10. UPDATE PURCHASE TO 'completed'
-  // ------------------------------------------------------------
-  const { error: updateError } = await supabase
-    .from('purchases')
-    .update({
-      pesapal_transaction_id: orderTrackingId,
-      status: 'completed',
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', purchase.id)
-
-  if (updateError) {
-    console.error('❌ Update error:', updateError)
-    return NextResponse.json({ error: updateError.message }, { status: 500 })
-  }
-
-  console.log('✅ Purchase updated to completed:', purchase.id)
-
-  // 11. Increment sales count (optional)
-  if (purchase.content_id) {
-    try {
-      await supabase.rpc('increment_sales', { content_id: purchase.content_id })
-      console.log('✅ Sales incremented for content:', purchase.content_id)
-    } catch (err) {
-      console.error('❌ RPC error (increment_sales):', err)
+      trackingId =
+        trackingId || params.get('OrderTrackingId')
     }
   }
 
-  return NextResponse.json({ success: true })
+  return { purchaseId, trackingId }
 }
 
-// --- Helper: Get Pesapal Token ---
-async function getPesapalToken() {
-  const consumerKey = process.env.PESAPAL_CONSUMER_KEY?.trim()
-  const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET?.trim()
-  const environment = process.env.PESAPAL_ENVIRONMENT || 'production'
-  const baseUrl = environment === 'sandbox'
-    ? 'https://cybqa.pesapal.com/pesapalv3/api'
-    : 'https://pay.pesapal.com/v3/api'
-
-  const authResponse = await fetch(`${baseUrl}/Auth/RequestToken`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ consumer_key: consumerKey, consumer_secret: consumerSecret }),
-  })
-
-  if (!authResponse.ok) {
-    const errorText = await authResponse.text()
-    throw new Error(`Auth failed: ${authResponse.status} ${errorText}`)
-  }
-
-  const authData = await authResponse.json()
-  if (!authData.token) throw new Error('No token in Pesapal auth response')
-  return { token: authData.token, baseUrl }
-}
-
-// --- Helper: Verify Transaction ---
-async function verifyTransactionStatus(orderTrackingId: string) {
-  const { token, baseUrl } = await getPesapalToken()
-  const res = await fetch(
-    `${baseUrl}/Transactions/GetTransactionStatus?orderTrackingId=${orderTrackingId}`,
-    { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
-  )
-  if (!res.ok) {
-    const errorText = await res.text()
-    throw new Error(`GetTransactionStatus failed: ${res.status} ${errorText}`)
-  }
-  return res.json()
-}
-
-// --- Route Handlers ---
-
-// 🟢 GET: Pesapal sends IPN as query params
 export async function GET(req: Request) {
-  try {
-    const url = new URL(req.url)
-    const orderTrackingId = url.searchParams.get('OrderTrackingId')
-    const orderMerchantReference = url.searchParams.get('OrderMerchantReference')
-    console.log('📩 GET IPN received with query:', { orderTrackingId, orderMerchantReference })
-    return processIPN(orderTrackingId, orderMerchantReference)
-  } catch (error: any) {
-    console.error('❌ GET IPN error:', error)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
-  }
+  return processPaymentNotification(req)
 }
 
-// 🟡 POST: Handles IPN if sent as form data (fallback)
 export async function POST(req: Request) {
+  return processPaymentNotification(req)
+}
+
+async function processPaymentNotification(req: Request) {
   try {
-    const body = await req.text()
-    const params = new URLSearchParams(body)
-    const orderTrackingId = params.get('OrderTrackingId')
-    const orderMerchantReference = params.get('OrderMerchantReference')
-    console.log('📩 POST IPN received with body:', { orderTrackingId, orderMerchantReference })
-    return processIPN(orderTrackingId, orderMerchantReference)
-  } catch (error: any) {
-    console.error('❌ POST IPN error:', error)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    const { purchaseId, trackingId } = await getPaymentDetails(req)
+
+    if (!purchaseId || !trackingId) {
+      console.error('Pesapal IPN is missing payment details')
+
+      return NextResponse.json(
+        { error: 'Missing payment details' },
+        { status: 400 }
+      )
+    }
+
+    const result = await finalizePurchase(
+      purchaseId,
+      trackingId
+    )
+
+    console.log('Pesapal IPN processed:', {
+      purchaseId,
+      trackingId,
+      state: result.state,
+    })
+
+    return NextResponse.json({
+      success: true,
+      state: result.state,
+    })
+  } catch (error) {
+    console.error('Pesapal IPN processing failed:', error)
+
+    // Status 500 tells Pesapal to retry if there was a temporary failure.
+    return NextResponse.json(
+      { error: 'Temporary processing failure' },
+      { status: 500 }
+    )
   }
 }
