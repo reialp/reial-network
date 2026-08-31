@@ -50,6 +50,18 @@ export default function LibraryPage() {
           loadPurchases()
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'purchases',
+        },
+        () => {
+          console.log('🔄 Purchase status updated (IPN completed), refreshing library...')
+          loadPurchases()
+        }
+      )
       .subscribe()
 
     return () => {
