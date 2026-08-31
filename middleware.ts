@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },
@@ -49,9 +49,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/checkout/') ||
     pathname.startsWith('/watch/')
 
-  // ✅ Creator-only routes (login + terms + creator status required)
-  const isCreatorRoute =
-    pathname.startsWith('/upload')
+  // ✅ Creator routes (login + terms + creator status required)
+  const isCreatorRoute = pathname.startsWith('/upload')
+  const isCreatorDashboard = pathname.startsWith('/dashboard')
 
   // ✅ If protected and no session, redirect to login with redirectTo
   if (isProtected && !session) {
@@ -68,8 +68,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // ✅ ONLY check terms for upload route
-  if (session && isCreatorRoute) {
+  // ✅ Check creator status and agreement before creator tools or the creator dashboard
+  if (session && (isCreatorRoute || isCreatorDashboard)) {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -83,13 +83,14 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/profile', request.url))
       }
 
-      // If not a creator, redirect to profile
-      if (!profile?.is_creator) {
+      // Keep the dashboard available for non-creators so they can start onboarding.
+      // Uploading, however, always requires creator status.
+      if (isCreatorRoute && !profile?.is_creator) {
         return NextResponse.redirect(new URL('/profile?intent=creator', request.url))
       }
 
-      // If creator but hasn't accepted terms, redirect to terms
-      if (!profile?.terms_accepted) {
+      // Creator dashboards and tools require an accepted creator agreement.
+      if (profile?.is_creator && !profile?.terms_accepted) {
         return NextResponse.redirect(new URL('/terms', request.url))
       }
     } catch (err) {
