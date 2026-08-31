@@ -84,8 +84,30 @@ index 93bc97f..585cd7e 100644
                  </button>
                </>
              )}
+diff --git a/app/layout.tsx b/app/layout.tsx
+index f2de6f2..60f6f2d 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -11,7 +11,7 @@ const inter = Inter({ subsets: ['latin'] })
+ export const metadata: Metadata = {
+   title: 'Cheki – powered by Reial Production',
+   description:
+-    'Discover and buy premium films, documentaries, series and more directly from independent creators.',
++    'Discover bold films, documentaries, series, music, poetry, and more from independent creators. Choose, pay securely, and watch anytime.',
+   manifest: '/manifest.json',
+   themeColor: '#f5c518',
+   appleWebApp: {
+@@ -22,7 +22,7 @@ export const metadata: Metadata = {
+   openGraph: {
+     title: 'Cheki – powered by Reial Production',
+     description:
+-      'Discover and buy premium films, documentaries, series and more directly from independent creators.',
++      'Discover bold films, documentaries, series, music, poetry, and more from independent creators. Choose, pay securely, and watch anytime.',
+     type: 'website',
+     siteName: 'Cheki',
+   },
 diff --git a/app/page.tsx b/app/page.tsx
-index bb62f21..f7d3239 100644
+index bb62f21..cabbcdc 100644
 --- a/app/page.tsx
 +++ b/app/page.tsx
 @@ -266,7 +266,7 @@ export default function HomePage() {
@@ -97,6 +119,22 @@ index bb62f21..f7d3239 100644
          } else {
            window.location.href = '/terms'
          }
+@@ -460,9 +460,12 @@ export default function HomePage() {
+               </span>
+             </h1>
+             
+-            <p className="text-gray-300 text-sm sm:text-base md:text-lg max-w-2xl mb-4 sm:mb-6">
+-              Discover and buy exclusive films, documentaries, series and more 
+-              <span className="text-[#f5c518] font-medium"> directly from independent creators.</span>
++            <p className="text-gray-300 text-sm sm:text-base md:text-lg max-w-2xl mb-2 sm:mb-3">
++              Discover bold films, documentaries, series, music, poetry, and more
++              <span className="text-[#f5c518] font-medium"> from independent creators.</span>
++            </p>
++            <p className="text-gray-400 text-xs sm:text-sm md:text-base max-w-2xl mb-4 sm:mb-6 tracking-wide">
++              Choose <span className="text-[#f5c518] px-1">→</span> Pay securely <span className="text-[#f5c518] px-1">→</span> Watch anytime
+             </p>
+             
+             <div className="flex flex-wrap gap-3 sm:gap-4">
 diff --git a/app/profile/page.tsx b/app/profile/page.tsx
 index 461d2d6..d2fc4ea 100644
 --- a/app/profile/page.tsx
@@ -378,3 +416,16 @@ index ac403ba..6852992 100644
          return NextResponse.redirect(new URL('/terms', request.url))
        }
      } catch (err) {
+diff --git a/public/manifest.json b/public/manifest.json
+index d3d2bb1..ebe947e 100644
+--- a/public/manifest.json
++++ b/public/manifest.json
+@@ -1,7 +1,7 @@
+ {
+   "name": "Cheki – powered by Reial Production",
+   "short_name": "Cheki",
+-  "description": "Discover and buy premium films, documentaries, series and more directly from independent creators.",
++  "description": "Discover bold films, documentaries, series, music, poetry, and more from independent creators. Choose, pay securely, and watch anytime.",
+   "start_url": "/",
+   "scope": "/",
+   "id": "/",
