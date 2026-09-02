@@ -274,10 +274,28 @@ index 54a3cd9..73d5baa 100644
            </div>
  
 diff --git a/app/upload/page.tsx b/app/upload/page.tsx
-index 3e855af..2ff7704 100644
+index 3e855af..420e491 100644
 --- a/app/upload/page.tsx
 +++ b/app/upload/page.tsx
-@@ -368,6 +368,14 @@ export default function UploadPage() {
+@@ -170,7 +170,16 @@ export default function UploadPage() {
+         .insert([payload])
+ 
+       if (insertError) {
+-        setError(insertError.message)
++        const isDuplicateContent =
++          insertError.code === '23505' &&
++          (insertError.message.includes('content_slug_key') ||
++            insertError.details?.includes('content_slug_key'))
++
++        setError(
++          isDuplicateContent
++            ? 'A project with this title or link already exists. Please use a different title or link.'
++            : insertError.message
++        )
+         setLoading(false)
+         return
+       }
+@@ -368,6 +377,14 @@ export default function UploadPage() {
                    <option value="Series">Series</option>
                    <option value="Short Film">Short Film</option>
                    <option value="Music">Music</option>
