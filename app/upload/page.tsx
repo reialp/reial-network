@@ -170,7 +170,16 @@ export default function UploadPage() {
         .insert([payload])
 
       if (insertError) {
-        setError(insertError.message)
+        const isDuplicateContent =
+          insertError.code === '23505' &&
+          (insertError.message.includes('content_slug_key') ||
+            insertError.details?.includes('content_slug_key'))
+
+        setError(
+          isDuplicateContent
+            ? 'A project with this title or link already exists. Please use a different title or link.'
+            : insertError.message
+        )
         setLoading(false)
         return
       }
